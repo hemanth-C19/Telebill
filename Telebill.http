@@ -1,0 +1,6 @@
+@Telebill_HostAddress = http://localhost:5183
+
+GET {{Telebill_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
