@@ -7,7 +7,7 @@ namespace Telebill.Services.Auth
 {
     public interface IAuthService
     {
-        bool Login(string email);
+        Task<bool> Login(string email);
         void Logout();
     }
 }

@@ -7,7 +7,7 @@ namespace Telebill.Repositories.Auth
 {
     public interface IAuthRepository
     {
-        bool Login(string email);
+        Task<bool> Login(string email);
         void Logout();
     }
 }

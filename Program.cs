@@ -1,3 +1,11 @@
+using Microsoft.Extensions.Options;
+using Telebill.Models;
+using Telebill.Repositories.Auth;
+using Telebill.Services.Auth;
+using Microsoft.EntityFrameworkCore;
+using Telebill.Services.MasterData;
+using Telebill.Repositories.MasterData;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -6,6 +14,15 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddTransient<IAuthService, AuthService>();
+builder.Services.AddTransient<IAuthRepository, AuthRepository>();
+builder.Services.AddTransient<IProviderService, ProviderService>();
+builder.Services.AddTransient<IProviderRepository, ProviderRepository>();
+
+
+builder.Services.AddDbContext<TeleBillContext>(
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb"))
+    );
 
 var app = builder.Build();
 

@@ -8,16 +8,21 @@ namespace Telebill.Services.Auth
 {
     public class AuthService : IAuthService
     {
-        IAuthRepository _authRepository = new AuthRepository();
+        IAuthRepository authRepository;
 
-        public bool Login(string email)
+        public AuthService(IAuthRepository _authRepository)
         {
-            return _authRepository.Login(email);
+            this.authRepository = _authRepository;
+        }
+
+        public async Task<bool> Login(string email)
+        {
+            return await authRepository.Login(email);
         }
 
         public void Logout()
         {
-            _authRepository.Logout();
+            authRepository.Logout();
         }
     }
 }

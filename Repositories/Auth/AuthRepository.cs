@@ -2,17 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Telebill.Models;
 
 namespace Telebill.Repositories.Auth
 {
     public class AuthRepository : IAuthRepository
     {
-        TeleBillContext _context = new TeleBillContext();
+        TeleBillContext context;
 
-        public bool Login(string email)
+        public AuthRepository(TeleBillContext _context)
         {
-            var user = _context.Users.SingleOrDefault(u => u.Email == email);
+            this.context = _context;
+        }
+
+        public async Task<bool> Login(string email)
+        {
+            var user = await context.Users.SingleOrDefaultAsync(u => u.Email == email);
             if (user != null)
             {
                 Console.WriteLine("Logged in");

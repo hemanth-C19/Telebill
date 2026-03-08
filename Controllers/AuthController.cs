@@ -8,13 +8,18 @@ namespace Telebill.Controllers
     [Route("api/[controller]-Module")]
     public class AuthController : ControllerBase
     {
-        IAuthService _authService = new AuthService();
+        IAuthService authService;
+
+        public AuthController(IAuthService _authService)
+        {
+            this.authService = _authService;
+        }
 
         [HttpPost]
         [Route("login")]
-        public IActionResult Login(string email)
+        public async Task<IActionResult> Login(string email)
         {
-            bool loginSuccess = _authService.Login(email);
+            bool loginSuccess = await authService.Login(email);
             if (loginSuccess)
                 return Ok(new { message = "Login successful" });
             else
@@ -24,7 +29,7 @@ namespace Telebill.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            _authService.Logout();
+            authService.Logout();
             return Ok(new { message = "Logout successful" });
         }
     }
