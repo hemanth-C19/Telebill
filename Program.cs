@@ -20,4 +20,8 @@ if (app.Environment.IsDevelopment())
 
 // app.UseHttpsRedirection();
 
+
+builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
+builder.Services.AddScoped<IEncounterService, EncounterService>();
+
 app.Run();
