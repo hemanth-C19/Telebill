@@ -18,6 +18,8 @@ builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddTransient<IAuthRepository, AuthRepository>();
 builder.Services.AddTransient<IProviderService, ProviderService>();
 builder.Services.AddTransient<IProviderRepository, ProviderRepository>();
+builder.Services.AddTransient<IPayerService, PayerService>();
+builder.Services.AddTransient<IPayerRepository, PayerRepository>();
 
 
 builder.Services.AddDbContext<TeleBillContext>(
