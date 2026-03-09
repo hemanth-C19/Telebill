@@ -1,0 +1,106 @@
+USE TeleBill;
+GO
+ 
+/* ===========================================================
+   1) Providers
+   ----------------------------------------------------------- */
+INSERT INTO Provider (NPI, Name, Taxonomy, TelehealthEnrolled, ContactInfo, Status)
+VALUES
+('NPI301', 'Dr. Arjun Mehta',  'Internal Medicine', 1, '9876500001', 'Active'),
+('NPI302', 'Dr. Kavya Rao',    'Psychiatry',        0, '9876500002', 'Active'),
+('NPI303', 'Dr. Michael Lee',  'Dermatology',       1, '9876500003', 'Active'),
+('NPI304', 'Dr. Sneha Patel',  'Pediatrics',        1, '9876500004', 'Active'),
+('NPI305', 'Dr. Rajesh Nair',  'Cardiology',        1, '9876500005', 'Active');
+GO
+ 
+/* Quick look (optional) */
+-- SELECT * FROM Provider;
+-- Expect ProviderID = 1..5
+GO
+ 
+/* ===========================================================
+   2) Patients
+   ----------------------------------------------------------- */
+INSERT INTO Patient (MRN, Name, DOB, Gender, AddressJSON, ContactInfo, Status) VALUES
+('MRN501', 'John Doe',       '1985-06-15', 'Male',   '{"street":"123 Main St","city":"Chennai"}',   '9876543210', 'Active'),
+('MRN502', 'Jane Smith',     '1990-09-20', 'Female', '{"street":"45 Park Ave","city":"Chennai"}',   '9876543211', 'Active'),
+('MRN503', 'Ravi Kumar',     '1978-12-05', 'Male',   '{"street":"78 Gandhi Rd","city":"Tambaram"}', '9876543212', 'Active'),
+('MRN504', 'Priya Sharma',   '1995-03-10', 'Female', '{"street":"56 Anna Nagar","city":"Chennai"}', '9876543213', 'Active'),
+('MRN505', 'David Johnson',  '1982-11-25', 'Male',   '{"street":"89 Mount Rd","city":"Chennai"}',   '9876543214', 'Active');
+GO
+ 
+/* Quick look (optional) */
+-- SELECT * FROM Patient;
+-- Expect PatientID = 1..5
+GO
+ 
+/* ===========================================================
+   3) Encounters (reference PatientID 1..5, ProviderID 1..5)
+   ----------------------------------------------------------- */
+INSERT INTO Encounter (PatientID, ProviderID, EncounterDateTime, VisitType, POS, DocumentationURI, Status) VALUES
+(1, 1, '2026-03-01T10:30:00', 'Video', '02', 'https://telebill/docs/encounter1001.pdf', 'Open'),
+(2, 2, '2026-03-02T14:15:00', 'Audio', '10', 'https://telebill/docs/encounter1002.pdf', 'ReadyForCoding'),
+(3, 3, '2026-03-03T09:00:00', 'Video', '02', 'https://telebill/docs/encounter1003.pdf', 'Finalized'),
+(4, 4, '2026-03-04T16:45:00', 'Async', '10', 'https://telebill/docs/encounter1004.pdf', 'Open'),
+(5, 5, '2026-03-05T11:20:00', 'Video', '02', 'https://telebill/docs/encounter1005.pdf', 'ReadyForCoding');
+GO
+ 
+/* Quick look (optional) */
+-- SELECT * FROM Encounter;
+-- Expect EncounterID = 1..5
+GO
+ 
+/* ===========================================================
+   4) ChargeLines for the Encounters (2–3 lines each)
+   Fields: (EncounterID, CPT_HCPCS, Modifiers, Units, ChargeAmount, RevenueCode, Notes, Status)
+   ----------------------------------------------------------- */
+ 
+-- Encounter 1 (Video, POS 02) - common E/M + possible add-on
+INSERT INTO ChargeLine (EncounterID, CPT_HCPCS, Modifiers, Units, ChargeAmount, RevenueCode, Notes, Status) VALUES
+(1, '99213', '["95"]',           1,  85.00, NULL, 'Telehealth E/M, established patient', 'Draft'),
+(1, '99417', '["95"]',           1,  35.00, NULL, 'Prolonged services (add-on)',        'Draft');
+ 
+-- Encounter 2 (Audio, POS 10) - audio-only code
+INSERT INTO ChargeLine (EncounterID, CPT_HCPCS, Modifiers, Units, ChargeAmount, RevenueCode, Notes, Status) VALUES
+(2, '99441', '["93"]',           1,  40.00, NULL, 'Audio-only visit 5-10 minutes',      'Draft');
+ 
+-- Encounter 3 (Video, POS 02) - finalized lines
+INSERT INTO ChargeLine (EncounterID, CPT_HCPCS, Modifiers, Units, ChargeAmount, RevenueCode, Notes, Status) VALUES
+(3, '99214', '["95"]',           1, 120.00, NULL, 'Telehealth E/M, established patient', 'Finalized'),
+(3, '99072', '[]',               1,  15.00, NULL, 'Additional supplies/materials',       'Finalized');
+ 
+-- Encounter 4 (Async, POS 10) - online digital E/M
+INSERT INTO ChargeLine (EncounterID, CPT_HCPCS, Modifiers, Units, ChargeAmount, RevenueCode, Notes, Status) VALUES
+(4, '99422', '[]',               1,  55.00, NULL, 'Online digital E/M',                  'Draft');
+ 
+-- Encounter 5 (Video, POS 02) - multiple units example
+INSERT INTO ChargeLine (EncounterID, CPT_HCPCS, Modifiers, Units, ChargeAmount, RevenueCode, Notes, Status) VALUES
+(5, '99213', '["95"]',           1,  85.00, NULL, 'Telehealth E/M',                      'Draft'),
+(5, 'G2212', '["95"]',           2,  25.00, NULL, 'Prolonged services (per 15 min) x2', 'Draft');
+GO
+ 
+/* Quick look (optional) */
+-- SELECT * FROM ChargeLine ORDER BY EncounterID, ChargeID;
+GO
+ 
+/* ===========================================================
+   5) Attestations for the Encounters
+   Fields: (EncounterID, ProviderID, AttestText, AttestDate, Status)
+   - E1: Draft
+   - E2: Signed
+   - E3: Signed
+   - E4: Draft
+   - E5: Signed
+   ----------------------------------------------------------- */
+ 
+INSERT INTO Attestation (EncounterID, ProviderID, AttestText, AttestDate, Status) VALUES
+(1, 1, 'I attest that the services were performed via live video with patient consent.',      '2026-03-01T11:00:00', 'Draft'),
+(2, 2, 'I attest that the audio-only visit was medically necessary and documented.',          '2026-03-02T14:30:00', 'Signed'),
+(3, 3, 'I attest that the encounter and codes reflect services rendered and documented.',     '2026-03-03T10:00:00', 'Signed'),
+(4, 4, 'I attest that asynchronous review was performed per policy; details in notes.',       '2026-03-04T17:00:00', 'Draft'),
+(5, 5, 'I attest the telehealth services and time documented are accurate for this visit.',   '2026-03-05T11:45:00', 'Signed');
+GO
+ 
+/* Quick look (optional) */
+-- SELECT * FROM Attestation ORDER BY EncounterID, AttestID;
+GO
