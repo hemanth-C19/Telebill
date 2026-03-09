@@ -1,6 +1,7 @@
 using System;
 using Telebill.Models;
 using Repositories;
+using Telebill.Dto;
 
 namespace Services
 {
@@ -13,12 +14,16 @@ namespace Services
             _repo = repo;
         }
 
-        public async Task<List<Encounter>> GetAll()
+        public async Task<List<EncounterDTO>> GetAll()
         {
             return await _repo.GetAll();
         }
+        // public async Task<IEnumerable<EncounterSpecificDTO>> GetSpecDetails()
+        // {
+        //     return await _repo.GetSpecDetails();
+        // }
 
-        public async Task<Encounter?> GetById(int id)
+        public async Task<EncounterDTO?> GetById(int id)
         {
             return await _repo.GetById(id);
         }

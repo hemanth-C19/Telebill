@@ -2,6 +2,7 @@ using System;
 using Telebill.Models;
 using Telebill.Data;
 using Microsoft.EntityFrameworkCore;
+using Telebill.Dto;
 
 
 namespace Repositories
@@ -15,21 +16,56 @@ namespace Repositories
             _context = context;
         }
 
-        public async Task<List<Encounter>> GetAll()
+        // public async Task<List<Encounter>> GetAll()
+        // {
+        //     return await _context.Encounters.ToListAsync();
+        // }
+
+        
+        public async Task<List<EncounterDTO>> GetAll()
         {
             return await _context.Encounters
-                .Include(e => e.Patient)
-                .Include(e => e.Provider)
+                .Select(e => new EncounterDTO
+                {
+                    EncounterId       = e.EncounterId,
+                    PatientId         = e.PatientId,
+                    ProviderId        = e.ProviderId,
+                    EncounterDateTime = e.EncounterDateTime,
+                    VisitType         = e.VisitType,
+                    Pos               = e.Pos,
+                    DocumentationUri  = e.DocumentationUri,
+                    Status            = e.Status
+                })
                 .ToListAsync();
         }
 
-        public async Task<Encounter?> GetById(int id)
+
+        public async Task<EncounterDTO?> GetById(int id)
         {
             return await _context.Encounters
-                .Include(e => e.ChargeLines)
-                .Include(e => e.Attestations)
-                .FirstOrDefaultAsync(e => e.EncounterId == id);
+                .Select(e => new EncounterDTO
+                        {
+                            EncounterId       = e.EncounterId,
+                            PatientId         = e.PatientId,
+                            ProviderId        = e.ProviderId,
+                            EncounterDateTime = e.EncounterDateTime,
+                            VisitType         = e.VisitType,
+                            Pos               = e.Pos,
+                            DocumentationUri  = e.DocumentationUri,
+                            Status            = e.Status
+                        })
+                        .FirstOrDefaultAsync();
+
         }
+
+        // public async Task<IEnumerable<EncounterSpecificDTO>> GetSpecDetails()
+        // {
+        //     return await _context.Encounters.Select(e => new EncounterSpecificDTO
+        //     {
+        //         Status = e.Status,
+        //         VisitType = e.VisitType
+        //     }).ToListAsync();
+        // }
 
         public async Task<Encounter> Add(Encounter encounter)
         {

@@ -18,12 +18,20 @@ namespace Telebill.Controllers
             _service = service;
         }
 
-        [HttpGet]
+        [HttpGet("GetAllEncounters")]
+        
         public async Task<IActionResult> GetAll()
         {
             var data = await _service.GetAll();
             return Ok(data);
         }
+
+        // [HttpGet("GetSpecCounters")]
+        // public async Task<IActionResult> GetSpecDetails()
+        // {
+        //     var data = await _service.GetSpecDetails();
+        //     return Ok(data);
+        // }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)

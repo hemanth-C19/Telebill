@@ -12,20 +12,16 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
-// DbContext
-builder.Services.AddDbContext<TeleBillContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("MyConnection")), 
-    ServiceLifetime.Scoped
-);    
-
-
 // Repositories
 builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
 
 // Services
 builder.Services.AddScoped<IEncounterService, EncounterService>();
 
+builder.Services.AddDbContext<TeleBillContext>(
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("MyConnection")), 
+    ServiceLifetime.Scoped
+);    
 
 // build app --> comes after service registration 
 var app = builder.Build();
