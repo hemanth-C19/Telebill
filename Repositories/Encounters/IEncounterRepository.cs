@@ -8,7 +8,6 @@ namespace Repositories
     {
         Task<List<EncounterDTO>> GetAll();
 
-        // Task<IEnumerable<EncounterSpecificDTO>> GetSpecDetails();
         Task<EncounterDTO?> GetById(int id);
         Task<Encounter> Add(Encounter encounter);
         Task<Encounter> Update(Encounter encounter);

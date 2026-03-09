@@ -43,6 +43,7 @@ namespace Repositories
         public async Task<EncounterDTO?> GetById(int id)
         {
             return await _context.Encounters
+                .Where(e => e.EncounterId == id)
                 .Select(e => new EncounterDTO
                         {
                             EncounterId       = e.EncounterId,
@@ -58,14 +59,6 @@ namespace Repositories
 
         }
 
-        // public async Task<IEnumerable<EncounterSpecificDTO>> GetSpecDetails()
-        // {
-        //     return await _context.Encounters.Select(e => new EncounterSpecificDTO
-        //     {
-        //         Status = e.Status,
-        //         VisitType = e.VisitType
-        //     }).ToListAsync();
-        // }
 
         public async Task<Encounter> Add(Encounter encounter)
         {

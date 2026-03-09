@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace Telebill.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    // [Route("api/[controller]")]
+    [Route("EncounterModule/[controller]")]
+
     public class EncounterController : ControllerBase
     {
         private readonly IEncounterService _service;
@@ -26,12 +28,6 @@ namespace Telebill.Controllers
             return Ok(data);
         }
 
-        // [HttpGet("GetSpecCounters")]
-        // public async Task<IActionResult> GetSpecDetails()
-        // {
-        //     var data = await _service.GetSpecDetails();
-        //     return Ok(data);
-        // }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
@@ -44,21 +40,21 @@ namespace Telebill.Controllers
             return Ok(data);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create(Encounter encounter)
-        {
-            var result = await _service.Create(encounter);
-            return Ok(result);
-        }
+        // [HttpPost("AddEncounter")]
+        // public async Task<IActionResult> Create(Encounter encounter)
+        // {
+        //     var result = await _service.Create(encounter);
+        //     return Ok(result);
+        // }
 
-        [HttpPut]
-        public async Task<IActionResult> Update(Encounter encounter)
-        {
-            var result = await _service.Update(encounter);
-            return Ok(result);
-        }
+        // [HttpPut("UpdateEncounter")]
+        // public async Task<IActionResult> Update(Encounter encounter)
+        // {
+        //     var result = await _service.Update(encounter);
+        //     return Ok(result);
+        // }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("DeleteEncounter/{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _service.Delete(id);

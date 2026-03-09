@@ -18,11 +18,7 @@ namespace Services
         {
             return await _repo.GetAll();
         }
-        // public async Task<IEnumerable<EncounterSpecificDTO>> GetSpecDetails()
-        // {
-        //     return await _repo.GetSpecDetails();
-        // }
-
+    
         public async Task<EncounterDTO?> GetById(int id)
         {
             return await _repo.GetById(id);
