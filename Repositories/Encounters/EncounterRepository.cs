@@ -4,7 +4,7 @@ using Telebill.Data;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace Telebill.Repositories.Encounters
+namespace Repositories
 {
     public class EncounterRepository : IEncounterRepository
     {

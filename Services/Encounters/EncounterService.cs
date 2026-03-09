@@ -1,8 +1,8 @@
 using System;
 using Telebill.Models;
-using Telebill.Repositories;
+using Repositories;
 
-namespace Telebill.Services.Encounters
+namespace Services
 {
     public class EncounterService : IEncounterService
     {

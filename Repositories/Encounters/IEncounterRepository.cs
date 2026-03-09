@@ -1,7 +1,7 @@
 using System;
 using Telebill.Models;
 
-namespace Telebill.Repositories.Encounters
+namespace Repositories
 {
     public interface IEncounterRepository
     {

@@ -2,7 +2,7 @@ using System;
 using Telebill.Models;
 
 
-namespace Telebill.Services.Encounters
+namespace Services
 {
     public interface IEncounterService
     {

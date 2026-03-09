@@ -1,0 +1,346 @@
+CREATE DATABASE TeleBill
+ 
+USE TeleBill
+ 
+--------------------------------------------------------------------------------
+-- 1. IDENTITY & MASTER DATA TABLES
+--------------------------------------------------------------------------------
+ 
+CREATE TABLE [User] ( -- User is a keyword thats why square brackets
+    UserID INT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(255) NOT NULL,
+    Role NVARCHAR(50) NOT NULL, -- e.g., FrontDesk, Coder, Provider, AR, Finance, Admin [cite: 39]
+    Email NVARCHAR(255) UNIQUE NOT NULL,
+    Phone NVARCHAR(20),
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+CREATE TABLE AuditLog (
+    AuditID INT PRIMARY KEY IDENTITY(1,1),
+    UserID INT FOREIGN KEY REFERENCES [User](UserID),
+    Action NVARCHAR(100) NOT NULL,
+    Resource NVARCHAR(255),
+    Timestamp DATETIME DEFAULT GETDATE(),
+    Metadata NVARCHAR(MAX) -- JSON metadata [cite: 61]
+);
+ 
+CREATE TABLE Provider (
+    ProviderID INT PRIMARY KEY IDENTITY(1,1),
+    NPI NVARCHAR(10) UNIQUE NOT NULL,
+    Name NVARCHAR(255) NOT NULL,
+    Taxonomy NVARCHAR(100),
+    TelehealthEnrolled BIT DEFAULT 0, -- Yes/No [cite: 76]
+    ContactInfo NVARCHAR(MAX),
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+CREATE TABLE Payer (
+    PayerID INT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(255) NOT NULL,
+    PayerCode NVARCHAR(50),
+    ClearinghouseCode NVARCHAR(50),
+    ContactInfo NVARCHAR(MAX),
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+CREATE TABLE PayerPlan (
+    PlanID INT PRIMARY KEY IDENTITY(1,1),
+    PayerID INT FOREIGN KEY REFERENCES Payer(PayerID),
+    PlanName NVARCHAR(255) NOT NULL,
+    NetworkType NVARCHAR(50), -- HMO/PPO/Medicare/etc [cite: 93]
+    POSDefault NVARCHAR(5) DEFAULT '02', -- 02/10 [cite: 94]
+    TelehealthModifiersJSON NVARCHAR(MAX),
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+CREATE TABLE FeeSchedule (
+    FeeID INT PRIMARY KEY IDENTITY(1,1),
+    PlanID INT FOREIGN KEY REFERENCES PayerPlan(PlanID),
+    CPT_HCPCS NVARCHAR(10) NOT NULL,
+    ModifierCombo NVARCHAR(50),
+    AllowedAmount DECIMAL(18, 2),
+    EffectiveFrom DATE,
+    EffectiveTo DATE,
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+--------------------------------------------------------------------------------
+-- 2. PATIENT & ENCOUNTER TABLES
+--------------------------------------------------------------------------------
+ 
+CREATE TABLE Patient (
+    PatientID INT PRIMARY KEY IDENTITY(1,1),
+    MRN NVARCHAR(50) UNIQUE NOT NULL,
+    Name NVARCHAR(255) NOT NULL,
+    DOB DATE NOT NULL,
+    Gender NVARCHAR(20),
+    AddressJSON NVARCHAR(MAX),
+    ContactInfo NVARCHAR(MAX),
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+CREATE TABLE Coverage (
+    CoverageID INT PRIMARY KEY IDENTITY(1,1),
+    PatientID INT FOREIGN KEY REFERENCES Patient(PatientID),
+    PlanID INT FOREIGN KEY REFERENCES PayerPlan(PlanID),
+    MemberID NVARCHAR(50) NOT NULL,
+    GroupNumber NVARCHAR(50),
+    EffectiveFrom DATE,
+    EffectiveTo DATE,
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+CREATE TABLE EligibilityRef (
+    EligibilityID INT PRIMARY KEY IDENTITY(1,1),
+    CoverageID INT FOREIGN KEY REFERENCES Coverage(CoverageID),
+    RequestPayloadURI NVARCHAR(2048),
+    ResponsePayloadURI NVARCHAR(2048),
+    CheckedDate DATETIME DEFAULT GETDATE(),
+    Result NVARCHAR(50), -- Eligible/Ineligible/Partial [cite: 151]
+    Notes NVARCHAR(MAX)
+);
+ 
+CREATE TABLE Encounter (
+    EncounterID INT PRIMARY KEY IDENTITY(1,1),
+    PatientID INT FOREIGN KEY REFERENCES Patient(PatientID),
+    ProviderID INT FOREIGN KEY REFERENCES Provider(ProviderID),
+    EncounterDateTime DATETIME NOT NULL,
+    VisitType NVARCHAR(50), -- Audio/Video/Async [cite: 169]
+    POS NVARCHAR(5) DEFAULT '02',
+    DocumentationURI NVARCHAR(2048),
+    Status NVARCHAR(50) DEFAULT 'Open' -- Open/ReadyForCoding/Finalized [cite: 173]
+);
+ 
+CREATE TABLE ChargeLine (
+    ChargeID INT PRIMARY KEY IDENTITY(1,1),
+    EncounterID INT FOREIGN KEY REFERENCES Encounter(EncounterID),
+    CPT_HCPCS NVARCHAR(10) NOT NULL,
+    Modifiers NVARCHAR(MAX), -- JSON array of modifiers [cite: 180]
+    Units INT DEFAULT 1,
+    ChargeAmount DECIMAL(18, 2),
+    RevenueCode NVARCHAR(10),
+    Notes NVARCHAR(MAX),
+    Status NVARCHAR(20) DEFAULT 'Draft'
+);
+ 
+CREATE TABLE Attestation (
+    AttestID INT PRIMARY KEY IDENTITY(1,1),
+    EncounterID INT FOREIGN KEY REFERENCES Encounter(EncounterID),
+    ProviderID INT FOREIGN KEY REFERENCES Provider(ProviderID),
+    AttestText NVARCHAR(MAX),
+    AttestDate DATETIME DEFAULT GETDATE(),
+    Status NVARCHAR(20)
+);
+ 
+CREATE TABLE Diagnosis (
+    DxID INT PRIMARY KEY IDENTITY(1,1),
+    EncounterID INT FOREIGN KEY REFERENCES Encounter(EncounterID),
+    ICD10Code NVARCHAR(15) NOT NULL,
+    Description NVARCHAR(255),
+    Sequence INT DEFAULT 1,
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+CREATE TABLE CodingLock (
+    CodingLockID INT PRIMARY KEY IDENTITY(1,1),
+    EncounterID INT FOREIGN KEY REFERENCES Encounter(EncounterID),
+    CoderID INT FOREIGN KEY REFERENCES [User](UserID),
+    LockedDate DATETIME DEFAULT GETDATE(),
+    Notes NVARCHAR(MAX),
+    Status NVARCHAR(20) DEFAULT 'Locked'
+);
+ 
+--------------------------------------------------------------------------------
+-- 3. CLAIMS & SCRUBBING TABLES
+--------------------------------------------------------------------------------
+ 
+CREATE TABLE Claim (
+    ClaimID INT PRIMARY KEY IDENTITY(1,1),
+    EncounterID INT FOREIGN KEY REFERENCES Encounter(EncounterID),
+    PatientID INT FOREIGN KEY REFERENCES Patient(PatientID),
+    PlanID INT FOREIGN KEY REFERENCES PayerPlan(PlanID),
+    SubscriberRel NVARCHAR(50), -- Self/Spouse/Child/Other [cite: 237]
+    TotalCharge DECIMAL(18, 2),
+    ClaimStatus NVARCHAR(50) DEFAULT 'Draft',
+    CreatedDate DATETIME DEFAULT GETDATE()
+);
+ 
+CREATE TABLE ClaimLine (
+    ClaimLineID INT PRIMARY KEY IDENTITY(1,1),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    [LineNo] INT,
+    CPT_HCPCS NVARCHAR(10),
+    Modifiers NVARCHAR(MAX),
+    Units INT,
+    ChargeAmount DECIMAL(18, 2),
+    DxPointers NVARCHAR(MAX), -- JSON mapping to Dx codes [cite: 253]
+    POS NVARCHAR(5),
+    LineStatus NVARCHAR(20)
+);
+ 
+CREATE TABLE ScrubRule (
+    RuleID INT PRIMARY KEY IDENTITY(1,1),
+    Name NVARCHAR(255) NOT NULL,
+    ExpressionJSON NVARCHAR(MAX),
+    Severity NVARCHAR(20), -- Error/Warning [cite: 262]
+    Status NVARCHAR(20) DEFAULT 'Active'
+);
+ 
+CREATE TABLE ScrubIssue (
+    IssueID INT PRIMARY KEY IDENTITY(1,1),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    ClaimLineID INT FOREIGN KEY REFERENCES ClaimLine(ClaimLineID),
+    RuleID INT FOREIGN KEY REFERENCES ScrubRule(RuleID),
+    Message NVARCHAR(MAX),
+    DetectedDate DATETIME DEFAULT GETDATE(),
+    Status NVARCHAR(20) DEFAULT 'Open'
+);
+ 
+CREATE TABLE X12_837P_Ref (
+    X12ID INT PRIMARY KEY IDENTITY(1,1),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    PayloadURI NVARCHAR(2048),
+    GeneratedDate DATETIME DEFAULT GETDATE(),
+    Version NVARCHAR(20),
+    Status NVARCHAR(20)
+);
+ 
+--------------------------------------------------------------------------------
+-- 4. SUBMISSION & AR TABLES
+--------------------------------------------------------------------------------
+ 
+CREATE TABLE PriorAuth (
+    PAID INT PRIMARY KEY IDENTITY(1,1),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    PlanID INT FOREIGN KEY REFERENCES PayerPlan(PlanID),
+    AuthNumber NVARCHAR(100),
+    RequestedDate DATE,
+    ApprovedFrom DATE,
+    ApprovedTo DATE,
+    Status NVARCHAR(20)
+);
+ 
+CREATE TABLE AttachmentRef (
+    AttachID INT PRIMARY KEY IDENTITY(1,1),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    FileType NVARCHAR(50), -- PDF/Image/Doc [cite: 307]
+    FileURI NVARCHAR(2048),
+    Notes NVARCHAR(MAX),
+    UploadedBy INT FOREIGN KEY REFERENCES [User](UserID),
+    UploadedDate DATETIME DEFAULT GETDATE(),
+    Status NVARCHAR(20)
+);
+ 
+CREATE TABLE SubmissionBatch (
+    BatchID INT PRIMARY KEY IDENTITY(1,1),
+    BatchDate DATETIME DEFAULT GETDATE(),
+    ItemCount INT,
+    TotalCharge DECIMAL(18, 2),
+    Status NVARCHAR(20)
+);
+ 
+CREATE TABLE SubmissionRef (
+    SubmitID INT PRIMARY KEY IDENTITY(1,1),
+    BatchID INT FOREIGN KEY REFERENCES SubmissionBatch(BatchID),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    ClearinghouseID NVARCHAR(50),
+    CorrelationID NVARCHAR(100),
+    SubmitDate DATETIME DEFAULT GETDATE(),
+    AckType NVARCHAR(20), -- 999/277CA [cite: 341]
+    AckStatus NVARCHAR(20),
+    AckDate DATETIME,
+    Notes NVARCHAR(MAX)
+);
+ 
+CREATE TABLE RemitRef (
+    RemitID INT PRIMARY KEY IDENTITY(1,1),
+    PayerID INT FOREIGN KEY REFERENCES Payer(PayerID),
+    BatchID INT FOREIGN KEY REFERENCES SubmissionBatch(BatchID),
+    PayloadURI NVARCHAR(2048),
+    ReceivedDate DATETIME DEFAULT GETDATE(),
+    Status NVARCHAR(20)
+);
+ 
+CREATE TABLE PaymentPost (
+    PaymentID INT PRIMARY KEY IDENTITY(1,1),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    ClaimLineID INT FOREIGN KEY REFERENCES ClaimLine(ClaimLineID),
+    AmountPaid DECIMAL(18, 2),
+    AdjustmentJSON NVARCHAR(MAX),
+    PostedDate DATETIME DEFAULT GETDATE(),
+    PostedBy INT FOREIGN KEY REFERENCES [User](UserID),
+    Status NVARCHAR(20)
+);
+ 
+CREATE TABLE PatientBalance (
+    BalanceID INT PRIMARY KEY IDENTITY(1,1),
+    PatientID INT FOREIGN KEY REFERENCES Patient(PatientID),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    AmountDue DECIMAL(18, 2),
+    AgingBucket NVARCHAR(20), -- 0-30/31-60 etc [cite: 387]
+    LastStatementDate DATE,
+    Status NVARCHAR(20)
+);
+ 
+CREATE TABLE Statement (
+    StatementID INT PRIMARY KEY IDENTITY(1,1),
+    PatientID INT FOREIGN KEY REFERENCES Patient(PatientID),
+    PeriodStart DATE,
+    PeriodEnd DATE,
+    GeneratedDate DATETIME DEFAULT GETDATE(),
+    AmountDue DECIMAL(18, 2),
+    SummaryJSON NVARCHAR(MAX),
+    Status NVARCHAR(20) DEFAULT 'Open'
+);
+ 
+CREATE TABLE Denial (
+    DenialID INT PRIMARY KEY IDENTITY(1,1),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    ClaimLineID INT FOREIGN KEY REFERENCES ClaimLine(ClaimLineID),
+    ReasonCode NVARCHAR(20),
+    RemarkCode NVARCHAR(20),
+    DenialDate DATE,
+    AmountDenied DECIMAL(18, 2),
+    Status NVARCHAR(20)
+);
+ 
+CREATE TABLE Appeal (
+    AppealID INT PRIMARY KEY IDENTITY(1,1),
+    DenialID INT FOREIGN KEY REFERENCES Denial(DenialID),
+    SubmittedDate DATETIME DEFAULT GETDATE(),
+    Method NVARCHAR(50), -- Portal/Mail/Fax [cite: 435]
+    AttachmentURI NVARCHAR(2048),
+    Outcome NVARCHAR(50), -- Pending/Won/Lost [cite: 438]
+    OutcomeDate DATE,
+    Notes NVARCHAR(MAX)
+);
+ 
+CREATE TABLE ARWorkitem (
+    WorkID INT PRIMARY KEY IDENTITY(1,1),
+    ClaimID INT FOREIGN KEY REFERENCES Claim(ClaimID),
+    Priority NVARCHAR(20), -- High/Normal [cite: 448]
+    AssignedTo INT FOREIGN KEY REFERENCES [User](UserID),
+    NextActionDate DATE,
+    Notes NVARCHAR(MAX),
+    Status NVARCHAR(20) DEFAULT 'Open'
+);
+ 
+--------------------------------------------------------------------------------
+-- 5. REPORTING & NOTIFICATIONS
+--------------------------------------------------------------------------------
+ 
+CREATE TABLE BillingReport (
+    ReportID INT PRIMARY KEY IDENTITY(1,1),
+    Scope NVARCHAR(255), -- Payer/Plan/Provider/Period [cite: 462]
+    MetricsJSON NVARCHAR(MAX),
+    GeneratedDate DATETIME DEFAULT GETDATE()
+);
+ 
+CREATE TABLE Notification (
+    NotificationID INT PRIMARY KEY IDENTITY(1,1),
+    UserID INT FOREIGN KEY REFERENCES [User](UserID),
+    Message NVARCHAR(MAX) NOT NULL,
+    Category NVARCHAR(50), -- Scrub/Submission/Denial/etc [cite: 481]
+    Status NVARCHAR(20) DEFAULT 'Unread',
+    CreatedDate DATETIME DEFAULT GETDATE()
+);

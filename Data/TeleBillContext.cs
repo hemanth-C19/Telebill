@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using Telebill.Models;
 
-namespace Telebill.Models;
+namespace Telebill.Data;
 
 public partial class TeleBillContext : DbContext
 {
