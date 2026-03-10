@@ -67,11 +67,28 @@ namespace Repositories
             return encounter;
         }
 
-        public async Task<Encounter> Update(Encounter encounter)
+        public async Task<EncounterUpdateDTO?> Update(int id, EncounterUpdateDTO dto)
         {
-            _context.Encounters.Update(encounter);
+            var encounter = await _context.Encounters.FirstOrDefaultAsync(e=> e.EncounterId == id );
+            if(encounter == null) return null;
+
+            encounter.EncounterDateTime = dto.EncounterDateTime;
+            encounter.VisitType = dto.VisitType;
+            encounter.Status = dto.Status;
+            encounter.Pos = dto.Pos;
+            encounter.DocumentationUri = dto.DocumentationUri;
+
             await _context.SaveChangesAsync();
-            return encounter;
+
+            var enc =  new EncounterUpdateDTO
+            {
+                EncounterDateTime = encounter.EncounterDateTime,
+                VisitType = encounter.VisitType,
+                Status = encounter.Status,
+                Pos = encounter.Pos,
+                DocumentationUri = encounter.DocumentationUri
+            };
+            return enc;
         }
 
         public async Task<bool> Delete(int id)

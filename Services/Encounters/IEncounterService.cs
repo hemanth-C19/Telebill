@@ -11,7 +11,7 @@ namespace Services
         Task<EncounterDTO?> GetById(int id);
 
         Task<Encounter> Create(Encounter encounter);
-        Task<Encounter> Update(Encounter encounter);
+        Task<EncounterUpdateDTO?> Update( int id, EncounterUpdateDTO dto);
         Task<bool> Delete(int id);
     }
 }
