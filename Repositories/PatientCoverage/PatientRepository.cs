@@ -1,6 +1,7 @@
 using System;
 using Telebill.Models;
 using Microsoft.EntityFrameworkCore;
+using Telebill.Data;
 
 namespace Telebill.Repositories.PatientCoverage
 {

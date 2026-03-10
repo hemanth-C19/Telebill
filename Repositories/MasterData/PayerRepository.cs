@@ -2,6 +2,7 @@ using System;
 using Telebill.Dto.MasterData;
 using Telebill.Models;
 using Microsoft.EntityFrameworkCore;
+using Telebill.Data;
 
 namespace Telebill.Repositories.MasterData
 {
