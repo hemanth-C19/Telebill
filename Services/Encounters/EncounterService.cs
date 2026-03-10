@@ -2,6 +2,7 @@ using System;
 using Telebill.Models;
 using Repositories;
 using Telebill.Dto;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Services
 {
@@ -30,9 +31,9 @@ namespace Services
             return await _repo.Add(encounter);
         }
 
-        public async Task<Encounter> Update(Encounter encounter)
+        public async Task<EncounterUpdateDTO?> Update( int id,  [FromBody] EncounterUpdateDTO dto)
         {
-            return await _repo.Update(encounter);
+            return await _repo.Update(id, dto);
         }
 
         public async Task<bool> Delete(int id)

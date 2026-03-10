@@ -17,6 +17,15 @@ namespace Telebill.Dto
         public string? Status { get; set; }
 
     }
+    public class EncounterUpdateDTO
+    {
+        public DateTime EncounterDateTime { get; set; }
+        public string? VisitType { get; set; }
+        public string? Pos { get; set; }
+        public string? DocumentationUri { get; set; }
+        public string? Status { get; set; }
+
+    }
 
 
     

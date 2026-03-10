@@ -3,6 +3,7 @@ using Telebill.Models;
 using Services;
 using Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Telebill.Dto;
 
 
 namespace Telebill.Controllers
@@ -47,12 +48,14 @@ namespace Telebill.Controllers
         //     return Ok(result);
         // }
 
-        // [HttpPut("UpdateEncounter")]
-        // public async Task<IActionResult> Update(Encounter encounter)
-        // {
-        //     var result = await _service.Update(encounter);
-        //     return Ok(result);
-        // }
+        [HttpPut("UpdateEncounter")]
+        public async Task<IActionResult> Update(int id,  [FromBody] EncounterUpdateDTO dto)
+        {
+            var result = await _service.Update(id, dto);
+            return Ok(result);
+        }
+
+        
 
         [HttpDelete("DeleteEncounter/{id}")]
         public async Task<IActionResult> Delete(int id)
