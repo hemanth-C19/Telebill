@@ -5,6 +5,7 @@ using Telebill.Services.Auth;
 using Microsoft.EntityFrameworkCore;
 using Telebill.Services.MasterData;
 using Telebill.Repositories.MasterData;
+using Telebill.Repositories.Claims;
 
 using Telebill.Repositories.PatientCoverage;
 using Telebill.Services.PatientCoverage; 
@@ -41,6 +42,15 @@ builder.Services.AddScoped<IChargeLineService, ChargeLineService>();
 builder.Services.AddScoped<IAttestationService, AttestationService>();
 builder.Services.AddTransient<IPatientRepository, PatientRepository>();
 builder.Services.AddTransient<IPatientService, PatientService>();
+
+builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
+builder.Services.AddScoped<IClaimService, ClaimService>();
+builder.Services.AddScoped<IClaimBuildService, ClaimBuildService>();
+builder.Services.AddScoped<IClaimQueryService, ClaimQueryService>();
+builder.Services.AddScoped<IClaimStatusService, ClaimStatusService>();
+builder.Services.AddScoped<IClaimScrubService, ClaimScrubService>();
+builder.Services.AddScoped<IClaimRuleService, ClaimRuleService>();
+builder.Services.AddScoped<IClaimX12Service, ClaimX12Service>();
 
 builder.Services.AddDbContext<TeleBillContext>(
     options => options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb"))

@@ -55,6 +55,7 @@ public interface IClaimRepository
     Task<Provider?> GetProviderByIdAsync(int providerID);
     Task<CodingLock?> GetActiveCodingLockAsync(int encounterID);
     Task<bool> HasApprovedPriorAuthAsync(int claimID);
-    Task<List<int>> GetUserIDsByRoleAsync(string role);
+
+    // (Audit / notifications removed for now)
 }
 
