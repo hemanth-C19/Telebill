@@ -22,6 +22,8 @@ using Microsoft.EntityFrameworkCore;
 using Telebill.Models;
 using Telebill.Repositories.IdentityAccess;
 using Telebill.Services.IdentityAccess;
+using Telebill.Repositories.Coding;
+using Telebill.Services.Coding;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,19 +52,21 @@ builder.Services.AddScoped<IAttestationService, AttestationService>();
 builder.Services.AddTransient<IPatientRepository, PatientRepository>();
 builder.Services.AddTransient<IPatientService, PatientService>();
 
-builder.Services.AddDbContext<TeleBillContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb"))
-    ); 
-
 // build app --> comes after service registration 
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<IAuditRepository, AuditRepository>();
 builder.Services.AddTransient<IAuditService, AuditService>();
+builder.Services.AddScoped<ICodingEncounterRepository, CodingEncounterRepository>();
+builder.Services.AddScoped<IDiagnosisRepository, DiagnosisRepository>();
+builder.Services.AddScoped<ICodingLockRepository, CodingLockRepository>();
+builder.Services.AddScoped<IProviderCodingService, ProviderCodingService>();
+builder.Services.AddScoped<ICoderWorklistService, CoderWorklistService>();
+builder.Services.AddScoped<ICodingLockService, CodingLockService>();
 
 // Add DbContext to DI (Scoped by default)
 builder.Services.AddDbContext<TeleBillContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TeleBillConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb")));
 
 var app = builder.Build();
 app.MapControllers();

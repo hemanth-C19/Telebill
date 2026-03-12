@@ -1,0 +1,529 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Telebill.Dto.Coding;
+using Telebill.Models;
+using Telebill.Repositories.Coding;
+
+namespace Telebill.Services.Coding
+{
+    public class CoderWorklistService : ICoderWorklistService
+    {
+        private readonly ICodingEncounterRepository _encounterRepo;
+        private readonly IDiagnosisRepository _diagnosisRepo;
+
+        public CoderWorklistService(
+            ICodingEncounterRepository encounterRepo,
+            IDiagnosisRepository diagnosisRepo)
+        {
+            _encounterRepo = encounterRepo;
+            _diagnosisRepo = diagnosisRepo;
+        }
+
+        public async Task<List<CodingWorklistItemDto>> GetCodingWorklistAsync(int? providerId, int? planId)
+        {
+            var encounters = await _encounterRepo.GetReadyForCodingEncountersAsync(providerId, planId);
+            var list = new List<CodingWorklistItemDto>();
+
+            foreach (var enc in encounters)
+            {
+                var patient = enc.PatientId.HasValue
+                    ? await _encounterRepo.GetPatientByIdAsync(enc.PatientId.Value)
+                    : null;
+
+                var provider = enc.ProviderId.HasValue
+                    ? await _encounterRepo.GetProviderByIdAsync(enc.ProviderId.Value)
+                    : null;
+
+                var chargeLines = await _encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
+                var diagnoses = await _diagnosisRepo.GetActiveDiagnosesByEncounterAsync(enc.EncounterId);
+
+                var dto = new CodingWorklistItemDto
+                {
+                    EncounterId = enc.EncounterId,
+                    PatientName = patient?.Name,
+                    ProviderName = provider?.Name,
+                    EncounterDateTime = enc.EncounterDateTime,
+                    VisitType = enc.VisitType,
+                    ChargeLineCount = chargeLines.Count,
+                    TotalCharge = chargeLines.Sum(c => c.ChargeAmount ?? 0m),
+                    DiagnosisCount = diagnoses.Count,
+                    HasPrimaryDiagnosis = diagnoses.Any(d => d.Sequence == 1),
+                    Status = enc.Status
+                };
+
+                list.Add(dto);
+            }
+
+            return list;
+        }
+
+        public async Task<CodingEncounterCardDto?> GetCodingEncounterCardAsync(int encounterId)
+        {
+            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            if (enc == null)
+            {
+                return null;
+            }
+
+            var provider = enc.ProviderId.HasValue
+                ? await _encounterRepo.GetProviderByIdAsync(enc.ProviderId.Value)
+                : null;
+
+            var attestation = await _encounterRepo.GetAttestedAttestationAsync(enc.EncounterId);
+            var patient = enc.PatientId.HasValue
+                ? await _encounterRepo.GetPatientByIdAsync(enc.PatientId.Value)
+                : null;
+
+            var allChargeLines = await _encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
+            var finalizedLines = allChargeLines.Where(c => c.Status == "Finalized").ToList();
+
+            var coverage = enc.PatientId.HasValue
+                ? await _encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
+                : null;
+
+            PayerPlan? plan = null;
+            if (coverage != null && coverage.PlanId.HasValue)
+            {
+                plan = await _encounterRepo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
+            }
+
+            var diagnoses = await _diagnosisRepo.GetActiveDiagnosesByEncounterAsync(enc.EncounterId);
+            var activeLock = await _encounterRepo.GetActiveCoverageForEncounterAsync(0, DateTime.UtcNow); // placeholder to avoid unused warnings
+
+            var acceptedModifiers = new List<string>();
+            var requiredModifiers = new List<string>();
+
+            if (plan?.TelehealthModifiersJson != null)
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(plan.TelehealthModifiersJson);
+                    if (doc.RootElement.TryGetProperty("accepted", out var acc))
+                    {
+                        acceptedModifiers = acc.Deserialize<List<string>>() ?? new List<string>();
+                    }
+
+                    if (doc.RootElement.TryGetProperty("required", out var req))
+                    {
+                        requiredModifiers = req.Deserialize<List<string>>() ?? new List<string>();
+                    }
+                }
+                catch
+                {
+                    acceptedModifiers = new List<string>();
+                    requiredModifiers = new List<string>();
+                }
+            }
+
+            var chargeLineDtos = new List<ChargeLineInfoDto>();
+
+            foreach (var line in finalizedLines)
+            {
+                var modifierList = new List<string>();
+                if (!string.IsNullOrEmpty(line.Modifiers))
+                {
+                    try
+                    {
+                        modifierList = JsonSerializer.Deserialize<List<string>>(line.Modifiers) ?? new List<string>();
+                    }
+                    catch
+                    {
+                        modifierList = new List<string>();
+                    }
+                }
+
+                var modifiersValid = acceptedModifiers.Count == 0 ||
+                                     modifierList.All(m => acceptedModifiers.Contains(m));
+
+                var dto = new ChargeLineInfoDto
+                {
+                    ChargeId = line.ChargeId,
+                    CptHcpcs = line.CptHcpcs,
+                    Modifiers = line.Modifiers,
+                    ModifierList = modifierList,
+                    Units = line.Units,
+                    ChargeAmount = line.ChargeAmount,
+                    Notes = line.Notes,
+                    Status = line.Status,
+                    ModifiersValid = modifiersValid
+                };
+
+                chargeLineDtos.Add(dto);
+            }
+
+            var diagnosisDtos = diagnoses
+                .Select(d => new DiagnosisResultDto
+                {
+                    DxId = d.DxId,
+                    EncounterId = d.EncounterId ?? 0,
+                    ICD10Code = d.Icd10code,
+                    Description = d.Description,
+                    Sequence = d.Sequence ?? 0,
+                    Status = d.Status
+                })
+                .ToList();
+
+            CodingLockInfoDto? activeLockDto = null;
+            // Active lock details will be filled by CodingLockService when needed.
+
+            var card = new CodingEncounterCardDto
+            {
+                EncounterId = enc.EncounterId,
+                Status = enc.Status,
+                EncounterDateTime = enc.EncounterDateTime,
+                VisitType = enc.VisitType,
+                Pos = enc.Pos,
+                DocumentationUri = enc.DocumentationUri,
+                Provider = provider == null
+                    ? null
+                    : new ProviderInfoDto
+                    {
+                        ProviderId = provider.ProviderId,
+                        Name = provider.Name,
+                        Npi = provider.Npi,
+                        Taxonomy = provider.Taxonomy
+                    },
+                Attestation = attestation == null
+                    ? null
+                    : new AttestationInfoDto
+                    {
+                        AttestId = attestation.AttestId,
+                        AttestText = attestation.AttestText,
+                        AttestDate = attestation.AttestDate,
+                        Status = attestation.Status
+                    },
+                Patient = patient == null
+                    ? null
+                    : new PatientInfoDto
+                    {
+                        PatientId = patient.PatientId,
+                        Name = patient.Name,
+                        Gender = patient.Gender
+                    },
+                ChargeLines = chargeLineDtos,
+                PrimaryPayerPlan = plan == null
+                    ? null
+                    : new PayerPlanInfoDto
+                    {
+                        PlanId = plan.PlanId,
+                        PlanName = plan.PlanName,
+                        NetworkType = plan.NetworkType,
+                        Posdefault = plan.Posdefault,
+                        RequiredModifiers = requiredModifiers,
+                        AcceptedModifiers = acceptedModifiers,
+                        MemberID = coverage?.MemberId
+                    },
+                CoverageWarning = coverage == null,
+                Diagnoses = diagnosisDtos,
+                ActiveLock = activeLockDto
+            };
+
+            return card;
+        }
+
+        public async Task<(bool success, string error)> UpdateEncounterPosAsync(int encounterId, UpdateEncounterPosDto dto, int userId)
+        {
+            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            if (enc == null)
+            {
+                return (false, "Encounter not found");
+            }
+
+            if (dto.Pos != "02" && dto.Pos != "10")
+            {
+                return (false, "Invalid POS. Must be 02 or 10.");
+            }
+
+            await _encounterRepo.UpdateEncounterPosAsync(encounterId, dto.Pos);
+            return (true, string.Empty);
+        }
+
+        public async Task<(bool success, string error, ChargeLineInfoDto? updated)> UpdateChargeLineModifiersAsync(
+            int encounterId,
+            int chargeId,
+            UpdateChargeLineModifiersDto dto,
+            int userId)
+        {
+            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            if (enc == null)
+            {
+                return (false, "Encounter not found", null);
+            }
+
+            if (!string.Equals(enc.Status, "ReadyForCoding", StringComparison.OrdinalIgnoreCase))
+            {
+                return (false, "Encounter is not ReadyForCoding", null);
+            }
+
+            var chargeLine = await _encounterRepo.GetChargeLineByIdAsync(chargeId);
+            if (chargeLine == null)
+            {
+                return (false, "Charge line not found", null);
+            }
+
+            if (chargeLine.EncounterId != encounterId)
+            {
+                return (false, "Charge line does not belong to this encounter", null);
+            }
+
+            if (dto.Modifiers.Count > 4)
+            {
+                return (false, "Maximum 4 modifiers per charge line (CMS rule)", null);
+            }
+
+            var coverage = enc.PatientId.HasValue
+                ? await _encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
+                : null;
+
+            var acceptedModifiers = new List<string>();
+
+            if (coverage != null && coverage.PlanId.HasValue)
+            {
+                var plan = await _encounterRepo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
+                if (plan?.TelehealthModifiersJson != null)
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(plan.TelehealthModifiersJson);
+                        if (doc.RootElement.TryGetProperty("accepted", out var acc))
+                        {
+                            acceptedModifiers = acc.Deserialize<List<string>>() ?? new List<string>();
+                        }
+                    }
+                    catch
+                    {
+                        acceptedModifiers = new List<string>();
+                    }
+                }
+            }
+
+            if (acceptedModifiers.Count > 0)
+            {
+                var invalid = dto.Modifiers
+                    .Where(m => !acceptedModifiers.Contains(m))
+                    .ToList();
+
+                if (invalid.Any())
+                {
+                    return (false, $"Modifiers not accepted: {string.Join(", ", invalid)}", null);
+                }
+            }
+
+            var modJson = JsonSerializer.Serialize(dto.Modifiers);
+            await _encounterRepo.UpdateChargeLineModifiersAsync(chargeId, modJson);
+
+            var updated = await _encounterRepo.GetChargeLineByIdAsync(chargeId);
+            if (updated == null)
+            {
+                return (true, string.Empty, null);
+            }
+
+            var modifierList = dto.Modifiers;
+            var modifiersValid = acceptedModifiers.Count == 0 ||
+                                 modifierList.All(m => acceptedModifiers.Contains(m));
+
+            var dtoResult = new ChargeLineInfoDto
+            {
+                ChargeId = updated.ChargeId,
+                CptHcpcs = updated.CptHcpcs,
+                Modifiers = updated.Modifiers,
+                ModifierList = modifierList,
+                Units = updated.Units,
+                ChargeAmount = updated.ChargeAmount,
+                Notes = updated.Notes,
+                Status = updated.Status,
+                ModifiersValid = modifiersValid
+            };
+
+            return (true, string.Empty, dtoResult);
+        }
+
+        public async Task<(bool success, string error, DiagnosisResultDto? result)> AddDiagnosisAsync(AddDiagnosisDto dto, int userId)
+        {
+            var enc = await _encounterRepo.GetEncounterByIdAsync(dto.EncounterId);
+            if (enc == null)
+            {
+                return (false, "Encounter not found", null);
+            }
+
+            if (!string.Equals(enc.Status, "ReadyForCoding", StringComparison.OrdinalIgnoreCase))
+            {
+                return (false, "Encounter must be ReadyForCoding to add diagnoses", null);
+            }
+
+            var upperCode = dto.ICD10Code.Trim().ToUpperInvariant();
+
+            var exists = await _diagnosisRepo.DiagnosisCodeExistsActiveAsync(dto.EncounterId, upperCode);
+            if (exists)
+            {
+                return (false, $"Diagnosis {upperCode} already exists for this encounter", null);
+            }
+
+            var count = await _diagnosisRepo.GetActiveDiagnosisCountAsync(dto.EncounterId);
+            if (count >= 12)
+            {
+                return (false, "Maximum 12 diagnoses reached", null);
+            }
+
+            int sequence;
+            if (dto.Sequence.HasValue)
+            {
+                if (dto.Sequence.Value < 1 || dto.Sequence.Value > 12)
+                {
+                    return (false, "Sequence must be between 1 and 12", null);
+                }
+
+                var taken = await _diagnosisRepo.SequenceTakenAsync(dto.EncounterId, dto.Sequence.Value);
+                if (taken)
+                {
+                    return (false, $"Sequence {dto.Sequence} is already taken", null);
+                }
+
+                sequence = dto.Sequence.Value;
+            }
+            else
+            {
+                var maxSeq = await _diagnosisRepo.GetMaxDiagnosisSequenceAsync(dto.EncounterId);
+                sequence = maxSeq + 1;
+                if (sequence > 12)
+                {
+                    return (false, "Cannot exceed 12 active diagnoses (CMS limit)", null);
+                }
+            }
+
+            var dx = new Diagnosis
+            {
+                EncounterId = dto.EncounterId,
+                Icd10code = upperCode,
+                Description = dto.Description,
+                Sequence = sequence,
+                Status = "Active"
+            };
+
+            dx = await _diagnosisRepo.AddDiagnosisAsync(dx);
+
+            var result = new DiagnosisResultDto
+            {
+                DxId = dx.DxId,
+                EncounterId = dx.EncounterId ?? 0,
+                ICD10Code = dx.Icd10code,
+                Description = dx.Description,
+                Sequence = dx.Sequence ?? 0,
+                Status = dx.Status
+            };
+
+            return (true, string.Empty, result);
+        }
+
+        public async Task<List<DiagnosisResultDto>> GetDiagnosesByEncounterAsync(int encounterId)
+        {
+            var list = await _diagnosisRepo.GetDiagnosesByEncounterAsync(encounterId);
+
+            return list
+                .Select(d => new DiagnosisResultDto
+                {
+                    DxId = d.DxId,
+                    EncounterId = d.EncounterId ?? 0,
+                    ICD10Code = d.Icd10code,
+                    Description = d.Description,
+                    Sequence = d.Sequence ?? 0,
+                    Status = d.Status
+                })
+                .ToList();
+        }
+
+        public async Task<(bool success, string error, DiagnosisResultDto? result)> UpdateDiagnosisAsync(
+            int dxId,
+            UpdateDiagnosisDto dto,
+            int userId)
+        {
+            var dx = await _diagnosisRepo.GetDiagnosisByIdAsync(dxId);
+            if (dx == null)
+            {
+                return (false, "Diagnosis not found", null);
+            }
+
+            if (dx.EncounterId == null)
+            {
+                return (false, "Diagnosis is not linked to an encounter", null);
+            }
+
+            var enc = await _encounterRepo.GetEncounterByIdAsync(dx.EncounterId.Value);
+            if (enc == null)
+            {
+                return (false, "Encounter not found", null);
+            }
+
+            if (!string.Equals(enc.Status, "ReadyForCoding", StringComparison.OrdinalIgnoreCase))
+            {
+                return (false, "Encounter must be ReadyForCoding to update diagnoses", null);
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.ICD10Code))
+            {
+                var upper = dto.ICD10Code.Trim().ToUpperInvariant();
+
+                var exists = await _diagnosisRepo.DiagnosisCodeExistsActiveAsync(dx.EncounterId.Value, upper);
+                if (exists && !string.Equals(upper, dx.Icd10code, StringComparison.OrdinalIgnoreCase))
+                {
+                    return (false, $"Diagnosis {upper} already exists for this encounter", null);
+                }
+
+                dx.Icd10code = upper;
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Description))
+            {
+                dx.Description = dto.Description;
+            }
+
+            if (dto.Sequence.HasValue)
+            {
+                if (dto.Sequence.Value < 1 || dto.Sequence.Value > 12)
+                {
+                    return (false, "Sequence must be between 1 and 12", null);
+                }
+
+                var taken = await _diagnosisRepo.SequenceTakenAsync(dx.EncounterId.Value, dto.Sequence.Value, dxId);
+                if (taken)
+                {
+                    return (false, $"Sequence {dto.Sequence} is already taken", null);
+                }
+
+                dx.Sequence = dto.Sequence.Value;
+            }
+
+            await _diagnosisRepo.UpdateDiagnosisAsync(dx);
+
+            var result = new DiagnosisResultDto
+            {
+                DxId = dx.DxId,
+                EncounterId = dx.EncounterId ?? 0,
+                ICD10Code = dx.Icd10code,
+                Description = dx.Description,
+                Sequence = dx.Sequence ?? 0,
+                Status = dx.Status
+            };
+
+            return (true, string.Empty, result);
+        }
+
+        public async Task<(bool success, string error)> RemoveDiagnosisAsync(int dxId, int userId)
+        {
+            var dx = await _diagnosisRepo.GetDiagnosisByIdAsync(dxId);
+            if (dx == null)
+            {
+                return (false, "Diagnosis not found");
+            }
+
+            dx.Status = "Inactive";
+            await _diagnosisRepo.UpdateDiagnosisAsync(dx);
+
+            return (true, string.Empty);
+        }
+    }
+}
+
