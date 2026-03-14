@@ -17,22 +17,19 @@ using Telebill.Repositories.ChargeLines;
 using Telebill.Services.Attestations;
 using Telebill.Services.ChargeLines;
 using Telebill.Repositories.Claims;
-
 using Telebill.Repositories.PreCert;
 using Telebill.Services.PreCert;
-using Telebill.Repositories.IdentityAccess;
-using Telebill.Services.IdentityAccess;
-using Telebill.Repositories.Coding;
-using Telebill.Services.Coding;
+using Telebill.Repositories.Batch;
+using Telebill.Services.Batch;
+using Telebill.Repositories.Posting;
+using Telebill.Services.Posting;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// MVC / Controllers
 builder.Services.AddControllers();
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<IAuthService, AuthService>();
@@ -45,39 +42,30 @@ builder.Services.AddTransient<IPayerRepository, PayerRepository>();
 builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
 builder.Services.AddScoped<IChargeLineRepository, ChargeLineRepository>();
 builder.Services.AddScoped<IAttestationRepository, AttestationRepository>();
+builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
+builder.Services.AddScoped<IPreCertRepository, PreCertRepository>();
+builder.Services.AddScoped<IBatchRepository, BatchRepository>();
+builder.Services.AddScoped<IPostingRepository, PostingRepository>();
 
 builder.Services.AddScoped<IEncounterService, EncounterService>();
 builder.Services.AddScoped<IChargeLineService, ChargeLineService>();
 builder.Services.AddScoped<IAttestationService, AttestationService>();
+builder.Services.AddScoped<IClaimService, ClaimService>();
+builder.Services.AddScoped<IPreCertService, PreCertService>();
+builder.Services.AddScoped<IBatchService, BatchService>();
+builder.Services.AddScoped<IPostingService, PostingService>();
 builder.Services.AddTransient<IPatientRepository, PatientRepository>();
 builder.Services.AddTransient<IPatientService, PatientService>();
 
+builder.Services.AddDbContext<TeleBillContext>(
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb"))
+    ); 
+
 // build app --> comes after service registration 
-builder.Services.AddTransient<IUserRepository, UserRepository>();
-builder.Services.AddTransient<IUserService, UserService>();
-builder.Services.AddTransient<IAuditRepository, AuditRepository>();
-builder.Services.AddTransient<IAuditService, AuditService>();
-builder.Services.AddScoped<ICodingEncounterRepository, CodingEncounterRepository>();
-builder.Services.AddScoped<IDiagnosisRepository, DiagnosisRepository>();
-builder.Services.AddScoped<ICodingLockRepository, CodingLockRepository>();
-builder.Services.AddScoped<IProviderCodingService, ProviderCodingService>();
-builder.Services.AddScoped<ICoderWorklistService, CoderWorklistService>();
-builder.Services.AddScoped<ICodingLockService, CodingLockService>();
-
-builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
-builder.Services.AddScoped<IClaimService, ClaimService>();
-
-builder.Services.AddScoped<IPreCertRepository, PreCertRepository>();
-builder.Services.AddScoped<IPreCertService, PreCertService>();
-
-// Add DbContext to DI (Scoped by default)
-builder.Services.AddDbContext<TeleBillContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb")));
-
 var app = builder.Build();
 app.MapControllers();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline. --> Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
