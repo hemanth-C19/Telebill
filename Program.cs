@@ -16,7 +16,7 @@ using Telebill.Repositories.Attestations;
 using Telebill.Repositories.ChargeLines;
 using Telebill.Services.Attestations;
 using Telebill.Services.ChargeLines;
-
+using Telebill.Repositories.Claims;
 
 using Microsoft.EntityFrameworkCore;
 using Telebill.Models;
@@ -63,6 +63,9 @@ builder.Services.AddScoped<ICodingLockRepository, CodingLockRepository>();
 builder.Services.AddScoped<IProviderCodingService, ProviderCodingService>();
 builder.Services.AddScoped<ICoderWorklistService, CoderWorklistService>();
 builder.Services.AddScoped<ICodingLockService, CodingLockService>();
+
+builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
+builder.Services.AddScoped<IClaimService, ClaimService>();
 
 // Add DbContext to DI (Scoped by default)
 builder.Services.AddDbContext<TeleBillContext>(options =>
