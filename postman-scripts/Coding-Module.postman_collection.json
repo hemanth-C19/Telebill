@@ -1,0 +1,404 @@
+{
+  "info": {
+    "name": "Telebill Coding Module",
+    "description": "API collection for Telebill Coding module",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Provider Portal",
+      "item": [
+        {
+          "name": "Get Provider Encounters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/provider/encounters?providerId={{providerId}}&status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "provider", "encounters"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{providerId}}"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Provider Encounter Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/provider/encounters/{{encounterId}}?providerId={{providerId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "provider", "encounters", "{{encounterId}}"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{providerId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Set Documentation URI",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentationUri\": \"https://example.com/docs/encounter-123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/provider/encounters/{{encounterId}}/documentation?providerId={{providerId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "provider", "encounters", "{{encounterId}}", "documentation"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{providerId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Ready for Coding",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/provider/encounters/{{encounterId}}/ready-for-coding?providerId={{providerId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "provider", "encounters", "{{encounterId}}", "ready-for-coding"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{providerId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Diagnoses",
+      "item": [
+        {
+          "name": "Add Diagnosis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"encounterId\": {{encounterId}},\n  \"code\": \"I10\",\n  \"description\": \"Essential hypertension\",\n  \"isPrimary\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/diagnoses?userId={{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "diagnoses"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Diagnoses by Encounter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/diagnoses/by-encounter/{{encounterId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "diagnoses", "by-encounter", "{{encounterId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Diagnosis",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"I11\",\n  \"description\": \"Hypertension with heart disease\",\n  \"isPrimary\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/diagnoses/{{dxId}}?userId={{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "diagnoses", "{{dxId}}"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Diagnosis",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/diagnoses/{{dxId}}?userId={{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "diagnoses", "{{dxId}}"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Coding Worklist",
+      "item": [
+        {
+          "name": "Get Worklist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/worklist?providerId={{providerId}}&planId={{planId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "worklist"],
+              "query": [
+                {
+                  "key": "providerId",
+                  "value": "{{providerId}}",
+                  "disabled": false
+                },
+                {
+                  "key": "planId",
+                  "value": "{{planId}}",
+                  "disabled": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Encounter Card",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/worklist/{{encounterId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "worklist", "{{encounterId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Encounter POS",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeOfService\": \"11\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/worklist/{{encounterId}}/pos?userId={{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "worklist", "{{encounterId}}", "pos"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Charge Line Modifiers",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"modifiers\": [\"25\", \"59\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/worklist/{{encounterId}}/charge-lines/{{chargeId}}/modifiers?userId={{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "worklist", "{{encounterId}}", "charge-lines", "{{chargeId}}", "modifiers"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Coding Lock",
+      "item": [
+        {
+          "name": "Validate Coding Lock",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/lock/validate/{{encounterId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "lock", "validate", "{{encounterId}}"]
+            }
+          }
+        },
+        {
+          "name": "Apply Coding Lock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"encounterId\": {{encounterId}},\n  \"codes\": [\"99213\", \"I10\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/lock/apply?userId={{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "lock", "apply"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unlock Coding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"encounterId\": {{encounterId}},\n  \"reason\": \"Correction needed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/lock/unlock?userId={{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "lock", "unlock"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Coding Lock History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/coding/lock/history/{{encounterId}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "coding", "lock", "history", "{{encounterId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "providerId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "encounterId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "dxId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "chargeId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "planId",
+      "value": "1",
+      "type": "string"
+    }
+  ]
+}
