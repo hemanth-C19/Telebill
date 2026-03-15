@@ -4,8 +4,12 @@ using Repositories;
 using Services;
 using Telebill.Repositories.Attestations;
 using Telebill.Repositories.ChargeLines;
+using Telebill.Services.AR;
 using Telebill.Services.Attestations;
 using Telebill.Services.ChargeLines;
+using Telebill.Services.Batch;
+using Telebill.Repositories.Batch;
+using Telebill.Repositories.AR;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,11 +24,19 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
 builder.Services.AddScoped<IChargeLineRepository, ChargeLineRepository>();
 builder.Services.AddScoped<IAttestationRepository, AttestationRepository>();
+builder.Services.AddScoped<IBatchRepository, BatchRepository>();
+builder.Services.AddScoped<IArRepository,ArRepository>();
+
 
 // Services
 builder.Services.AddScoped<IEncounterService, EncounterService>();
 builder.Services.AddScoped<IChargeLineService, ChargeLineService>();
 builder.Services.AddScoped<IAttestationService, AttestationService>();
+builder.Services.AddScoped<IBatchService, BatchService>();
+builder.Services.AddScoped<IArDashboardService,ArDashboardService>();
+builder.Services.AddScoped<DenialService,DenialService>();
+builder.Services.AddScoped<IUnderpaymentService,UnderpaymentService>();
+
 
 
 

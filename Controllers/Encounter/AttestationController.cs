@@ -20,7 +20,7 @@ namespace Telebill.Controllers
         }
 
         // GET: EncounterModule/Attestation/ByEncounter/123
-        [HttpGet("ByEncounter/{encounterId:int}")]
+        [HttpGet("ByEncounter/get-by-encounterId")]
         public async Task<IActionResult> GetByEncounterId([FromRoute] int encounterId, CancellationToken ct)
         {
             try
@@ -36,7 +36,7 @@ namespace Telebill.Controllers
         }
 
         // GET: EncounterModule/Attestation/123
-        [HttpGet("{attestId:int}")]
+        [HttpGet("get-attestation-by-{attestId:int}")]
         public async Task<IActionResult> GetById([FromRoute] int attestId, CancellationToken ct)
         {
             try
@@ -67,7 +67,7 @@ namespace Telebill.Controllers
         }
 
         // PUT: EncounterModule/Attestation/123
-        [HttpPut("{attestId:int}")]
+        [HttpPut("update-attestation")]
         public async Task<IActionResult> Update([FromRoute] int attestId, [FromBody] AttestationUpdateDto dto, CancellationToken ct)
         {
             try
@@ -83,7 +83,7 @@ namespace Telebill.Controllers
         }
 
         // DELETE: EncounterModule/Attestation/123
-        [HttpDelete("{attestId:int}")]
+        [HttpDelete("delete-attestation")]
         public async Task<IActionResult> Delete([FromRoute] int attestId, CancellationToken ct)
         {
             try
