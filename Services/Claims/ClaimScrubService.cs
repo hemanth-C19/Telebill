@@ -8,7 +8,6 @@ using Telebill.Models;
 using Telebill.Repositories.Claims;
  
 namespace Services;
- 
 public class ClaimScrubService : IClaimScrubService
 {
     private readonly IClaimRepository _repo;

@@ -66,6 +66,12 @@ builder.Services.AddScoped<ICodingLockService, CodingLockService>();
 
 builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
 builder.Services.AddScoped<IClaimService, ClaimService>();
+builder.Services.AddScoped<Services.IClaimBuildService, Services.ClaimBuildService>();
+builder.Services.AddScoped<Services.IClaimScrubService, Services.ClaimScrubService>();
+builder.Services.AddScoped<Services.IClaimQueryService, Services.ClaimQueryService>();
+builder.Services.AddScoped<Services.IClaimStatusService, Services.ClaimStatusService>();
+builder.Services.AddScoped<Services.IClaimRuleService, Services.ClaimRuleService>();
+builder.Services.AddScoped<Services.IClaimX12Service, Services.ClaimX12Service>();
 
 builder.Services.AddScoped<IPreCertRepository, PreCertRepository>();
 builder.Services.AddScoped<IPreCertService, PreCertService>();
