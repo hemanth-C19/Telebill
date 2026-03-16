@@ -48,11 +48,12 @@ public partial class ClaimRepository
 
     public Task<Coverage?> GetActiveCoverageForEncounterAsync(int patientID, DateTime encounterDate)
     {
+        var encounterDateOnly = DateOnly.FromDateTime(encounterDate);
         return _context.Coverages
             .Where(c => c.PatientId == patientID &&
                         c.Status == "Active" &&
-                        c.EffectiveFrom <= encounterDate &&
-                        (c.EffectiveTo == null || c.EffectiveTo >= encounterDate))
+                        c.EffectiveFrom <= encounterDateOnly &&
+                        (c.EffectiveTo == null || c.EffectiveTo >= encounterDateOnly))
             .OrderByDescending(c => c.EffectiveFrom)
             .FirstOrDefaultAsync();
     }
@@ -66,13 +67,14 @@ public partial class ClaimRepository
 
     public Task<FeeSchedule?> GetFeeScheduleAsync(int planID, string cptHcpcs, string? modifierCombo, DateTime serviceDate)
     {
+        var serviceDateOnly = DateOnly.FromDateTime(serviceDate);
         var query = _context.FeeSchedules
             .Where(f =>
                 f.PlanId == planID &&
                 f.CptHcpcs == cptHcpcs &&
                 f.Status == "Active" &&
-                f.EffectiveFrom <= serviceDate &&
-                (f.EffectiveTo == null || f.EffectiveTo >= serviceDate));
+                f.EffectiveFrom <= serviceDateOnly &&
+                (f.EffectiveTo == null || f.EffectiveTo >= serviceDateOnly));
 
         if (!string.IsNullOrWhiteSpace(modifierCombo))
         {
