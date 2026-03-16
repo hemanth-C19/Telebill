@@ -24,6 +24,8 @@ using Telebill.Repositories.Coding;
 using Telebill.Services.Coding;
 using Telebill.Repositories.PreCert;
 using Telebill.Services.PreCert;
+using Telebill.Services.Batch;
+using Telebill.Repositories.Batch;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -78,6 +80,9 @@ builder.Services.AddTransient<ICodingLockRepository, CodingLockRepository>();
 builder.Services.AddTransient<IProviderCodingService, ProviderCodingService>();
 builder.Services.AddTransient<ICoderWorklistService, CoderWorklistService>();
 builder.Services.AddTransient<ICodingLockService, CodingLockService>();
+
+builder.Services.AddTransient<IBatchService, BatchService>();
+builder.Services.AddTransient<IBatchRepository, BatchRepository>();
 
 // Add DbContext to DI (Scoped by default)
 builder.Services.AddDbContext<TeleBillContext>(options =>
