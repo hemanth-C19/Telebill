@@ -17,13 +17,12 @@ using Telebill.Repositories.ChargeLines;
 using Telebill.Services.Attestations;
 using Telebill.Services.ChargeLines;
 
-
-using Microsoft.EntityFrameworkCore;
-using Telebill.Models;
 using Telebill.Repositories.IdentityAccess;
 using Telebill.Services.IdentityAccess;
 using Telebill.Repositories.Coding;
 using Telebill.Services.Coding;
+using Telebill.Repositories.PreCert;
+using Telebill.Services.PreCert;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,27 +41,33 @@ builder.Services.AddTransient<IProviderRepository, ProviderRepository>();
 builder.Services.AddTransient<IPayerService, PayerService>();
 builder.Services.AddTransient<IPayerRepository, PayerRepository>();
 
-builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
-builder.Services.AddScoped<IChargeLineRepository, ChargeLineRepository>();
-builder.Services.AddScoped<IAttestationRepository, AttestationRepository>();
+builder.Services.AddTransient<IEncounterRepository, EncounterRepository>();
+builder.Services.AddTransient<IChargeLineRepository, ChargeLineRepository>();
+builder.Services.AddTransient<IAttestationRepository, AttestationRepository>();
 
-builder.Services.AddScoped<IEncounterService, EncounterService>();
-builder.Services.AddScoped<IChargeLineService, ChargeLineService>();
-builder.Services.AddScoped<IAttestationService, AttestationService>();
+builder.Services.AddTransient<IEncounterService, EncounterService>();
+builder.Services.AddTransient<IChargeLineService, ChargeLineService>();
+builder.Services.AddTransient<IAttestationService, AttestationService>();
 builder.Services.AddTransient<IPatientRepository, PatientRepository>();
 builder.Services.AddTransient<IPatientService, PatientService>();
+
+builder.Services.AddTransient<IPreCertRepository, PreCertRepository>();
+builder.Services.AddTransient<IPreCertService, PreCertService>();
+
+builder.Services.AddTransient<IPreCertRepository, PreCertRepository>();
+builder.Services.AddTransient<IPreCertService, PreCertService>();
 
 // build app --> comes after service registration 
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<IAuditRepository, AuditRepository>();
 builder.Services.AddTransient<IAuditService, AuditService>();
-builder.Services.AddScoped<ICodingEncounterRepository, CodingEncounterRepository>();
-builder.Services.AddScoped<IDiagnosisRepository, DiagnosisRepository>();
-builder.Services.AddScoped<ICodingLockRepository, CodingLockRepository>();
-builder.Services.AddScoped<IProviderCodingService, ProviderCodingService>();
-builder.Services.AddScoped<ICoderWorklistService, CoderWorklistService>();
-builder.Services.AddScoped<ICodingLockService, CodingLockService>();
+builder.Services.AddTransient<ICodingEncounterRepository, CodingEncounterRepository>();
+builder.Services.AddTransient<IDiagnosisRepository, DiagnosisRepository>();
+builder.Services.AddTransient<ICodingLockRepository, CodingLockRepository>();
+builder.Services.AddTransient<IProviderCodingService, ProviderCodingService>();
+builder.Services.AddTransient<ICoderWorklistService, CoderWorklistService>();
+builder.Services.AddTransient<ICodingLockService, CodingLockService>();
 
 // Add DbContext to DI (Scoped by default)
 builder.Services.AddDbContext<TeleBillContext>(options =>
