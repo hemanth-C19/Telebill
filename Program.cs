@@ -5,6 +5,7 @@ using Telebill.Services.Auth;
 using Microsoft.EntityFrameworkCore;
 using Telebill.Services.MasterData;
 using Telebill.Repositories.MasterData;
+using Telebill.Repositories.Claims;
 
 using Telebill.Repositories.PatientCoverage;
 using Telebill.Services.PatientCoverage; 
@@ -24,6 +25,7 @@ using Telebill.Services.Coding;
 using Telebill.Repositories.PreCert;
 using Telebill.Services.PreCert;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -32,6 +34,7 @@ builder.Services.AddControllers();
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<IAuthService, AuthService>();
@@ -44,12 +47,33 @@ builder.Services.AddTransient<IPayerRepository, PayerRepository>();
 builder.Services.AddTransient<IEncounterRepository, EncounterRepository>();
 builder.Services.AddTransient<IChargeLineRepository, ChargeLineRepository>();
 builder.Services.AddTransient<IAttestationRepository, AttestationRepository>();
+builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
+builder.Services.AddScoped<IChargeLineRepository, ChargeLineRepository>();
+builder.Services.AddScoped<IAttestationRepository, AttestationRepository>();
 
 builder.Services.AddTransient<IEncounterService, EncounterService>();
 builder.Services.AddTransient<IChargeLineService, ChargeLineService>();
 builder.Services.AddTransient<IAttestationService, AttestationService>();
 builder.Services.AddTransient<IPatientRepository, PatientRepository>();
 builder.Services.AddTransient<IPatientService, PatientService>();
+
+builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
+builder.Services.AddScoped<IClaimService, ClaimService>();
+builder.Services.AddScoped<IClaimBuildService, ClaimBuildService>();
+builder.Services.AddScoped<IClaimQueryService, ClaimQueryService>();
+builder.Services.AddScoped<IClaimStatusService, ClaimStatusService>();
+builder.Services.AddScoped<IClaimScrubService, ClaimScrubService>();
+builder.Services.AddScoped<IClaimRuleService, ClaimRuleService>();
+builder.Services.AddScoped<IClaimX12Service, ClaimX12Service>();
+
+builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
+builder.Services.AddScoped<IClaimService, ClaimService>();
+builder.Services.AddScoped<IClaimBuildService, ClaimBuildService>();
+builder.Services.AddScoped<IClaimQueryService, ClaimQueryService>();
+builder.Services.AddScoped<IClaimStatusService, ClaimStatusService>();
+builder.Services.AddScoped<IClaimScrubService, ClaimScrubService>();
+builder.Services.AddScoped<IClaimRuleService, ClaimRuleService>();
+builder.Services.AddScoped<IClaimX12Service, ClaimX12Service>();
 
 builder.Services.AddTransient<IPreCertRepository, PreCertRepository>();
 builder.Services.AddTransient<IPreCertService, PreCertService>();
@@ -58,6 +82,7 @@ builder.Services.AddTransient<IPreCertRepository, PreCertRepository>();
 builder.Services.AddTransient<IPreCertService, PreCertService>();
 
 // build app --> comes after service registration 
+
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IUserService, UserService>();
 builder.Services.AddTransient<IAuditRepository, AuditRepository>();
