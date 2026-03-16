@@ -16,6 +16,8 @@ using Telebill.Repositories.Attestations;
 using Telebill.Repositories.ChargeLines;
 using Telebill.Services.Attestations;
 using Telebill.Services.ChargeLines;
+using Telebill.Services.Batch;
+using Telebill.Repositories.Batch;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,15 +34,18 @@ builder.Services.AddTransient<IProviderRepository, ProviderRepository>();
 builder.Services.AddTransient<IPayerService, PayerService>();
 builder.Services.AddTransient<IPayerRepository, PayerRepository>();
 
-builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
-builder.Services.AddScoped<IChargeLineRepository, ChargeLineRepository>();
-builder.Services.AddScoped<IAttestationRepository, AttestationRepository>();
+builder.Services.AddTransient<IEncounterRepository, EncounterRepository>();
+builder.Services.AddTransient<IChargeLineRepository, ChargeLineRepository>();
+builder.Services.AddTransient<IAttestationRepository, AttestationRepository>();
 
-builder.Services.AddScoped<IEncounterService, EncounterService>();
-builder.Services.AddScoped<IChargeLineService, ChargeLineService>();
-builder.Services.AddScoped<IAttestationService, AttestationService>();
+builder.Services.AddTransient<IEncounterService, EncounterService>();
+builder.Services.AddTransient<IChargeLineService, ChargeLineService>();
+builder.Services.AddTransient<IAttestationService, AttestationService>();
 builder.Services.AddTransient<IPatientRepository, PatientRepository>();
 builder.Services.AddTransient<IPatientService, PatientService>();
+
+builder.Services.AddTransient<IBatchService, BatchService>();
+builder.Services.AddTransient<IBatchRepository, BatchRepository>();
 
 builder.Services.AddDbContext<TeleBillContext>(
     options => options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb"))
