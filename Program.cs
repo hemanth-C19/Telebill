@@ -16,6 +16,8 @@ using Telebill.Repositories.Attestations;
 using Telebill.Repositories.ChargeLines;
 using Telebill.Services.Attestations;
 using Telebill.Services.ChargeLines;
+using Telebill.Repositories.PreCert;
+using Telebill.Services.PreCert;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +43,9 @@ builder.Services.AddScoped<IChargeLineService, ChargeLineService>();
 builder.Services.AddScoped<IAttestationService, AttestationService>();
 builder.Services.AddTransient<IPatientRepository, PatientRepository>();
 builder.Services.AddTransient<IPatientService, PatientService>();
+
+builder.Services.AddTransient<IPreCertRepository, PreCertRepository>();
+builder.Services.AddTransient<IPreCertService, PreCertService>();
 
 builder.Services.AddDbContext<TeleBillContext>(
     options => options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb"))
