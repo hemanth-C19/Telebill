@@ -1,4 +1,14 @@
+using Microsoft.Extensions.Options;
+using Telebill.Models;
+using Telebill.Repositories.Auth;
+using Telebill.Services.Auth;
 using Microsoft.EntityFrameworkCore;
+using Telebill.Services.MasterData;
+using Telebill.Repositories.MasterData;
+
+using Telebill.Repositories.PatientCoverage;
+using Telebill.Services.PatientCoverage; 
+
 using Telebill.Data;
 using Repositories;
 using Services;
@@ -19,8 +29,13 @@ builder.Services.AddControllers();
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddTransient<IAuthService, AuthService>();
+builder.Services.AddTransient<IAuthRepository, AuthRepository>();
+builder.Services.AddTransient<IProviderService, ProviderService>();
+builder.Services.AddTransient<IProviderRepository, ProviderRepository>();
+builder.Services.AddTransient<IPayerService, PayerService>();
+builder.Services.AddTransient<IPayerRepository, PayerRepository>();
 
-// Repositories
 builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
 builder.Services.AddScoped<IChargeLineRepository, ChargeLineRepository>();
 builder.Services.AddScoped<IAttestationRepository, AttestationRepository>();
@@ -28,7 +43,6 @@ builder.Services.AddScoped<IBatchRepository, BatchRepository>();
 builder.Services.AddScoped<IArRepository,ArRepository>();
 
 
-// Services
 builder.Services.AddScoped<IEncounterService, EncounterService>();
 builder.Services.AddScoped<IChargeLineService, ChargeLineService>();
 builder.Services.AddScoped<IAttestationService, AttestationService>();
@@ -41,13 +55,12 @@ builder.Services.AddScoped<IUnderpaymentService,UnderpaymentService>();
 
 
 builder.Services.AddDbContext<TeleBillContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("MyConnection")), 
-    ServiceLifetime.Scoped
-);    
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb"))
+    ); 
 
 // build app --> comes after service registration 
 var app = builder.Build();
-
+app.MapControllers();
 
 // Configure the HTTP request pipeline. --> Middleware
 if (app.Environment.IsDevelopment())
@@ -56,6 +69,4 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
-app.MapControllers();
 app.Run();
