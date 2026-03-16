@@ -47,9 +47,6 @@ builder.Services.AddTransient<IPayerRepository, PayerRepository>();
 builder.Services.AddTransient<IEncounterRepository, EncounterRepository>();
 builder.Services.AddTransient<IChargeLineRepository, ChargeLineRepository>();
 builder.Services.AddTransient<IAttestationRepository, AttestationRepository>();
-builder.Services.AddScoped<IEncounterRepository, EncounterRepository>();
-builder.Services.AddScoped<IChargeLineRepository, ChargeLineRepository>();
-builder.Services.AddScoped<IAttestationRepository, AttestationRepository>();
 
 builder.Services.AddTransient<IEncounterService, EncounterService>();
 builder.Services.AddTransient<IChargeLineService, ChargeLineService>();
@@ -57,26 +54,14 @@ builder.Services.AddTransient<IAttestationService, AttestationService>();
 builder.Services.AddTransient<IPatientRepository, PatientRepository>();
 builder.Services.AddTransient<IPatientService, PatientService>();
 
-builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
-builder.Services.AddScoped<IClaimService, ClaimService>();
-builder.Services.AddScoped<IClaimBuildService, ClaimBuildService>();
-builder.Services.AddScoped<IClaimQueryService, ClaimQueryService>();
-builder.Services.AddScoped<IClaimStatusService, ClaimStatusService>();
-builder.Services.AddScoped<IClaimScrubService, ClaimScrubService>();
-builder.Services.AddScoped<IClaimRuleService, ClaimRuleService>();
-builder.Services.AddScoped<IClaimX12Service, ClaimX12Service>();
-
-builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
-builder.Services.AddScoped<IClaimService, ClaimService>();
-builder.Services.AddScoped<IClaimBuildService, ClaimBuildService>();
-builder.Services.AddScoped<IClaimQueryService, ClaimQueryService>();
-builder.Services.AddScoped<IClaimStatusService, ClaimStatusService>();
-builder.Services.AddScoped<IClaimScrubService, ClaimScrubService>();
-builder.Services.AddScoped<IClaimRuleService, ClaimRuleService>();
-builder.Services.AddScoped<IClaimX12Service, ClaimX12Service>();
-
-builder.Services.AddTransient<IPreCertRepository, PreCertRepository>();
-builder.Services.AddTransient<IPreCertService, PreCertService>();
+builder.Services.AddTransient<IClaimRepository, ClaimRepository>();
+builder.Services.AddTransient<IClaimService, ClaimService>();
+builder.Services.AddTransient<IClaimBuildService, ClaimBuildService>();
+builder.Services.AddTransient<IClaimQueryService, ClaimQueryService>();
+builder.Services.AddTransient<IClaimStatusService, ClaimStatusService>();
+builder.Services.AddTransient<IClaimScrubService, ClaimScrubService>();
+builder.Services.AddTransient<IClaimRuleService, ClaimRuleService>();
+builder.Services.AddTransient<IClaimX12Service, ClaimX12Service>();
 
 builder.Services.AddTransient<IPreCertRepository, PreCertRepository>();
 builder.Services.AddTransient<IPreCertService, PreCertService>();
