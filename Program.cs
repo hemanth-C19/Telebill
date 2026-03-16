@@ -3,13 +3,15 @@ using Telebill.Data;
 using Repositories;
 using Services;
 using Telebill.Repositories.Attestations;
-using Telebill.Repositories.ChargeLines;
-using Telebill.Services.AR;
 using Telebill.Services.Attestations;
+using Telebill.Repositories.ChargeLines;
 using Telebill.Services.ChargeLines;
-using Telebill.Services.Batch;
 using Telebill.Repositories.Batch;
+using Telebill.Services.Batch;
 using Telebill.Repositories.AR;
+using Telebill.Services.AR;
+using Telebill.Repositories.Posting;
+using Telebill.Services.Posting;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +28,7 @@ builder.Services.AddScoped<IChargeLineRepository, ChargeLineRepository>();
 builder.Services.AddScoped<IAttestationRepository, AttestationRepository>();
 builder.Services.AddScoped<IBatchRepository, BatchRepository>();
 builder.Services.AddScoped<IArRepository,ArRepository>();
+builder.Services.AddScoped<IPostingRepository, PostingRepository>();
 
 
 // Services
@@ -36,6 +39,7 @@ builder.Services.AddScoped<IBatchService, BatchService>();
 builder.Services.AddScoped<IArDashboardService,ArDashboardService>();
 builder.Services.AddScoped<DenialService,DenialService>();
 builder.Services.AddScoped<IUnderpaymentService,UnderpaymentService>();
+builder.Services.AddScoped<IPostingService, PostingService>();
 
 
 
