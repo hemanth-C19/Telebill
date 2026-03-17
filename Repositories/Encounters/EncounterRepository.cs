@@ -23,56 +23,80 @@ namespace Repositories
         //     return await _context.Encounters.ToListAsync();
         // }
 
-        
-        public async Task<List<EncounterDTO>> GetAll()
+
+        public async Task<List<GetEncounterDTO>> GetAll()
         {
             return await _context.Encounters
-                .Select(e => new EncounterDTO
+                .Select(e => new GetEncounterDTO
                 {
-                    EncounterId       = e.EncounterId,
-                    PatientId         = e.PatientId,
-                    ProviderId        = e.ProviderId,
+                    EncounterId = e.EncounterId,
+                    PatientId = e.PatientId,
+                    ProviderId = e.ProviderId,
                     EncounterDateTime = e.EncounterDateTime,
-                    VisitType         = e.VisitType,
-                    Pos               = e.Pos,
-                    DocumentationUri  = e.DocumentationUri,
-                    Status            = e.Status
+                    VisitType = e.VisitType,
+                    Pos = e.Pos,
+                    DocumentationUri = e.DocumentationUri,
+                    Status = e.Status
                 })
                 .ToListAsync();
         }
 
 
-        public async Task<EncounterDTO?> GetById(int id)
+        public async Task<GetEncounterDTO?> GetById(int id)
         {
             return await _context.Encounters
                 .Where(e => e.EncounterId == id)
-                .Select(e => new EncounterDTO
-                        {
-                            EncounterId       = e.EncounterId,
-                            PatientId         = e.PatientId,
-                            ProviderId        = e.ProviderId,
-                            EncounterDateTime = e.EncounterDateTime,
-                            VisitType         = e.VisitType,
-                            Pos               = e.Pos,
-                            DocumentationUri  = e.DocumentationUri,
-                            Status            = e.Status
-                        })
+                .Select(e => new GetEncounterDTO
+                {
+                    EncounterId = e.EncounterId,
+                    PatientId = e.PatientId,
+                    ProviderId = e.ProviderId,
+                    EncounterDateTime = e.EncounterDateTime,
+                    VisitType = e.VisitType,
+                    Pos = e.Pos,
+                    DocumentationUri = e.DocumentationUri,
+                    Status = e.Status
+                })
                         .FirstOrDefaultAsync();
 
         }
 
 
-        public async Task<Encounter> Add(Encounter encounter)
-        {
-            _context.Encounters.Add(encounter);
-            await _context.SaveChangesAsync();
-            return encounter;
+        public async Task<AddEncounterDTO> Add(AddEncounterDTO dto)
+        {  
+            var entity = new Encounter
+                {
+                    PatientId = dto.PatientId,
+                    ProviderId = dto.ProviderId,
+                    EncounterDateTime = dto.EncounterDateTime,
+                    VisitType = dto.VisitType,
+                    Pos = dto.Pos,
+                    DocumentationUri = dto.DocumentationUri,
+                    Status = dto.Status ?? "Open"
+                };
+
+                _context.Encounters.Add(entity);
+                await _context.SaveChangesAsync();
+
+
+                
+                return new AddEncounterDTO
+                {
+                    // EncounterId = entity.EncounterId,
+                    PatientId = (int) entity.PatientId,
+                    ProviderId = (int) entity.ProviderId,
+                    EncounterDateTime = entity.EncounterDateTime,
+                    VisitType = entity.VisitType,
+                    Pos = entity.Pos,
+                    DocumentationUri = entity.DocumentationUri,
+                    Status = entity.Status
+                };
         }
 
         public async Task<EncounterUpdateDTO?> Update(int id, EncounterUpdateDTO dto)
         {
-            var encounter = await _context.Encounters.FirstOrDefaultAsync(e=> e.EncounterId == id );
-            if(encounter == null) return null;
+            var encounter = await _context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == id);
+            if (encounter == null) return null;
 
             encounter.EncounterDateTime = dto.EncounterDateTime;
             encounter.VisitType = dto.VisitType;
@@ -82,7 +106,7 @@ namespace Repositories
 
             await _context.SaveChangesAsync();
 
-            var enc =  new EncounterUpdateDTO
+            var enc = new EncounterUpdateDTO
             {
                 EncounterDateTime = encounter.EncounterDateTime,
                 VisitType = encounter.VisitType,

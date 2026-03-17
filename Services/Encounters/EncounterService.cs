@@ -15,17 +15,17 @@ namespace Services
             _repo = repo;
         }
 
-        public async Task<List<EncounterDTO>> GetAll()
+        public async Task<List<GetEncounterDTO>> GetAll()
         {
             return await _repo.GetAll();
         }
     
-        public async Task<EncounterDTO?> GetById(int id)
+        public async Task<GetEncounterDTO?> GetById(int id)
         {
             return await _repo.GetById(id);
         }
 
-        public async Task<Encounter> Create(Encounter encounter)
+        public async Task<AddEncounterDTO> Create(AddEncounterDTO encounter)
         {
             encounter.Status = "Open";
             return await _repo.Add(encounter);
