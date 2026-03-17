@@ -37,7 +37,7 @@ builder.Services.AddScoped<IChargeLineService, ChargeLineService>();
 builder.Services.AddScoped<IAttestationService, AttestationService>();
 builder.Services.AddScoped<IBatchService, BatchService>();
 builder.Services.AddScoped<IArDashboardService,ArDashboardService>();
-builder.Services.AddScoped<DenialService,DenialService>();
+builder.Services.AddScoped<IDenialService,DenialService>();
 builder.Services.AddScoped<IUnderpaymentService,UnderpaymentService>();
 builder.Services.AddScoped<IPostingService, PostingService>();
 
