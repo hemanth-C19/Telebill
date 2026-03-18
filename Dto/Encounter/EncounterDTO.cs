@@ -5,7 +5,19 @@ using System.Threading.Tasks;
 
 namespace Telebill.Dto
 {
-    public class EncounterDTO
+
+    public class AddEncounterDTO
+    {
+        public int PatientId { get; set; }
+        public int ProviderId { get; set; }
+        public DateTime EncounterDateTime { get; set; } = DateTime.Now;
+        public string? VisitType { get; set; }
+        public string? Pos { get; set; }
+        public string? DocumentationUri { get; set; }
+        public string? Status { get; set; } = "Open";
+    }
+
+    public class GetEncounterDTO
     {
         public int EncounterId { get; set; }
         public int? PatientId { get; set; }
@@ -28,8 +40,8 @@ namespace Telebill.Dto
     }
 
 
-    
-public class ChargeLineDTO
+
+    public class ChargeLineDTO
     {
         public int ChargeId { get; set; }
         public int? EncounterId { get; set; }

@@ -6,10 +6,10 @@ namespace Repositories
 {
     public interface IEncounterRepository
     {
-        Task<List<EncounterDTO>> GetAll();
+        Task<List<GetEncounterDTO>> GetAll();
 
-        Task<EncounterDTO?> GetById(int id);
-        Task<Encounter> Add(Encounter encounter);
+        Task<GetEncounterDTO?> GetById(int id);
+        Task<AddEncounterDTO> Add(AddEncounterDTO dto);
         Task<EncounterUpdateDTO?> Update(int id, EncounterUpdateDTO dto);
         Task<bool> Delete(int id);
     }
