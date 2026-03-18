@@ -65,7 +65,7 @@ namespace Telebill.Services.Coding
             var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
-                return null;
+                throw new KeyNotFoundException("Encounter not found");
             }
 
             var provider = enc.ProviderId.HasValue
@@ -229,12 +229,12 @@ namespace Telebill.Services.Coding
             var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
-                return (false, "Encounter not found");
+                throw new KeyNotFoundException("Encounter not found");
             }
 
             if (dto.Pos != "02" && dto.Pos != "10")
             {
-                return (false, "Invalid POS. Must be 02 or 10.");
+                throw new ArgumentException("Invalid POS. Must be 02 or 10.");
             }
 
             await _encounterRepo.UpdateEncounterPosAsync(encounterId, dto.Pos);
@@ -250,28 +250,28 @@ namespace Telebill.Services.Coding
             var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
-                return (false, "Encounter not found", null);
+                throw new KeyNotFoundException("Encounter not found");
             }
 
             if (!string.Equals(enc.Status, "ReadyForCoding", StringComparison.OrdinalIgnoreCase))
             {
-                return (false, "Encounter is not ReadyForCoding", null);
+                throw new InvalidOperationException("Encounter is not ReadyForCoding");
             }
 
             var chargeLine = await _encounterRepo.GetChargeLineByIdAsync(chargeId);
             if (chargeLine == null)
             {
-                return (false, "Charge line not found", null);
+                throw new KeyNotFoundException("Charge line not found");
             }
 
             if (chargeLine.EncounterId != encounterId)
             {
-                return (false, "Charge line does not belong to this encounter", null);
+                throw new ArgumentException("Charge line does not belong to this encounter");
             }
 
             if (dto.Modifiers.Count > 4)
             {
-                return (false, "Maximum 4 modifiers per charge line (CMS rule)", null);
+                throw new ArgumentException("Maximum 4 modifiers per charge line (CMS rule)");
             }
 
             var coverage = enc.PatientId.HasValue
@@ -308,7 +308,7 @@ namespace Telebill.Services.Coding
 
                 if (invalid.Any())
                 {
-                    return (false, $"Modifiers not accepted: {string.Join(", ", invalid)}", null);
+                    throw new ArgumentException($"Modifiers not accepted: {string.Join(", ", invalid)}");
                 }
             }
 
@@ -318,7 +318,7 @@ namespace Telebill.Services.Coding
             var updated = await _encounterRepo.GetChargeLineByIdAsync(chargeId);
             if (updated == null)
             {
-                return (true, string.Empty, null);
+                throw new KeyNotFoundException("Charge line not found");
             }
 
             var modifierList = dto.Modifiers;
@@ -346,12 +346,12 @@ namespace Telebill.Services.Coding
             var enc = await _encounterRepo.GetEncounterByIdAsync(dto.EncounterId);
             if (enc == null)
             {
-                return (false, "Encounter not found", null);
+                throw new KeyNotFoundException("Encounter not found");
             }
 
             if (!string.Equals(enc.Status, "ReadyForCoding", StringComparison.OrdinalIgnoreCase))
             {
-                return (false, "Encounter must be ReadyForCoding to add diagnoses", null);
+                throw new InvalidOperationException("Encounter must be ReadyForCoding to add diagnoses");
             }
 
             var upperCode = dto.ICD10Code.Trim().ToUpperInvariant();
@@ -359,13 +359,13 @@ namespace Telebill.Services.Coding
             var exists = await _diagnosisRepo.DiagnosisCodeExistsActiveAsync(dto.EncounterId, upperCode);
             if (exists)
             {
-                return (false, $"Diagnosis {upperCode} already exists for this encounter", null);
+                throw new InvalidOperationException($"Diagnosis {upperCode} already exists for this encounter");
             }
 
             var count = await _diagnosisRepo.GetActiveDiagnosisCountAsync(dto.EncounterId);
             if (count >= 12)
             {
-                return (false, "Maximum 12 diagnoses reached", null);
+                throw new InvalidOperationException("Maximum 12 diagnoses reached");
             }
 
             int sequence;
@@ -373,13 +373,13 @@ namespace Telebill.Services.Coding
             {
                 if (dto.Sequence.Value < 1 || dto.Sequence.Value > 12)
                 {
-                    return (false, "Sequence must be between 1 and 12", null);
+                    throw new ArgumentException("Sequence must be between 1 and 12");
                 }
 
                 var taken = await _diagnosisRepo.SequenceTakenAsync(dto.EncounterId, dto.Sequence.Value);
                 if (taken)
                 {
-                    return (false, $"Sequence {dto.Sequence} is already taken", null);
+                    throw new InvalidOperationException($"Sequence {dto.Sequence} is already taken");
                 }
 
                 sequence = dto.Sequence.Value;
@@ -390,7 +390,7 @@ namespace Telebill.Services.Coding
                 sequence = maxSeq + 1;
                 if (sequence > 12)
                 {
-                    return (false, "Cannot exceed 12 active diagnoses (CMS limit)", null);
+                    throw new InvalidOperationException("Cannot exceed 12 active diagnoses (CMS limit)");
                 }
             }
 
@@ -443,23 +443,23 @@ namespace Telebill.Services.Coding
             var dx = await _diagnosisRepo.GetDiagnosisByIdAsync(dxId);
             if (dx == null)
             {
-                return (false, "Diagnosis not found", null);
+                throw new KeyNotFoundException("Diagnosis not found");
             }
 
             if (dx.EncounterId == null)
             {
-                return (false, "Diagnosis is not linked to an encounter", null);
+                throw new InvalidOperationException("Diagnosis is not linked to an encounter");
             }
 
             var enc = await _encounterRepo.GetEncounterByIdAsync(dx.EncounterId.Value);
             if (enc == null)
             {
-                return (false, "Encounter not found", null);
+                throw new KeyNotFoundException("Encounter not found");
             }
 
             if (!string.Equals(enc.Status, "ReadyForCoding", StringComparison.OrdinalIgnoreCase))
             {
-                return (false, "Encounter must be ReadyForCoding to update diagnoses", null);
+                throw new InvalidOperationException("Encounter must be ReadyForCoding to update diagnoses");
             }
 
             if (!string.IsNullOrWhiteSpace(dto.ICD10Code))
@@ -469,7 +469,7 @@ namespace Telebill.Services.Coding
                 var exists = await _diagnosisRepo.DiagnosisCodeExistsActiveAsync(dx.EncounterId.Value, upper);
                 if (exists && !string.Equals(upper, dx.Icd10code, StringComparison.OrdinalIgnoreCase))
                 {
-                    return (false, $"Diagnosis {upper} already exists for this encounter", null);
+                    throw new InvalidOperationException($"Diagnosis {upper} already exists for this encounter");
                 }
 
                 dx.Icd10code = upper;
@@ -484,13 +484,13 @@ namespace Telebill.Services.Coding
             {
                 if (dto.Sequence.Value < 1 || dto.Sequence.Value > 12)
                 {
-                    return (false, "Sequence must be between 1 and 12", null);
+                    throw new ArgumentException("Sequence must be between 1 and 12");
                 }
 
                 var taken = await _diagnosisRepo.SequenceTakenAsync(dx.EncounterId.Value, dto.Sequence.Value, dxId);
                 if (taken)
                 {
-                    return (false, $"Sequence {dto.Sequence} is already taken", null);
+                    throw new InvalidOperationException($"Sequence {dto.Sequence} is already taken");
                 }
 
                 dx.Sequence = dto.Sequence.Value;
@@ -516,7 +516,7 @@ namespace Telebill.Services.Coding
             var dx = await _diagnosisRepo.GetDiagnosisByIdAsync(dxId);
             if (dx == null)
             {
-                return (false, "Diagnosis not found");
+                throw new KeyNotFoundException("Diagnosis not found");
             }
 
             dx.Status = "Inactive";

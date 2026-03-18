@@ -172,13 +172,13 @@ namespace Telebill.Services.Coding
             var enc = await _encounterRepo.GetEncounterByIdAsync(dto.EncounterId);
             if (enc == null)
             {
-                return (false, "Encounter not found", null);
+                throw new KeyNotFoundException("Encounter not found");
             }
 
             var activeLock = await _lockRepo.GetActiveCodingLockAsync(dto.EncounterId);
             if (activeLock == null)
             {
-                return (false, "Encounter is not currently locked", null);
+                throw new InvalidOperationException("Encounter is not currently locked");
             }
 
             var claimStatus = await _lockRepo.GetClaimStatusForEncounterAsync(dto.EncounterId);
@@ -186,7 +186,7 @@ namespace Telebill.Services.Coding
                 !string.Equals(claimStatus, "Draft", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(claimStatus, "ScrubError", StringComparison.OrdinalIgnoreCase))
             {
-                return (false, "Cannot unlock — claim is already in progress. Contact Admin.", null);
+                throw new InvalidOperationException("Cannot unlock — claim is already in progress. Contact Admin.");
             }
 
             activeLock.Status = "Unlocked";

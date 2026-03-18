@@ -19,7 +19,7 @@ public class ClaimStatusService : IClaimStatusService
         var claim = await _repo.GetByIdAsync(claimID);
         if (claim == null)
         {
-            return null;
+            throw new KeyNotFoundException("Claim not found");
         }
 
         var oldStatus = claim.ClaimStatus ?? "Draft";

@@ -56,7 +56,7 @@ public class ClaimRuleService : IClaimRuleService
         var rule = await _repo.GetScrubRuleByIdAsync(ruleID);
         if (rule == null)
         {
-            return null;
+            throw new KeyNotFoundException("Scrub rule not found");
         }
 
         if (!string.IsNullOrWhiteSpace(dto.Name)) rule.Name = dto.Name;

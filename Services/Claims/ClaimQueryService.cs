@@ -63,7 +63,7 @@ public class ClaimQueryService : IClaimQueryService
         var claim = await _repo.GetByIdWithLinesAsync(claimID);
         if (claim == null)
         {
-            return null;
+            throw new KeyNotFoundException("Claim not found");
         }
 
         var detail = new ClaimDetailDto
@@ -145,7 +145,7 @@ public class ClaimQueryService : IClaimQueryService
         var claim = await _repo.GetByIdAsync(claimID);
         if (claim == null)
         {
-            return null;
+            throw new KeyNotFoundException("Claim not found");
         }
 
         var openErrors = await _repo.CountOpenErrorsAsync(claimID);

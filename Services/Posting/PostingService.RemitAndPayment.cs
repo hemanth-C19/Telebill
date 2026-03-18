@@ -270,7 +270,7 @@ public partial class PostingService
     private async Task<(string newStatus, decimal totalPaid, decimal totalCharge, bool denialCreated)> RecalculateClaimStatusAsync(int claimID)
     {
         var claim = await _repo.GetClaimByIdAsync(claimID);
-        if (claim == null) return (string.Empty, 0m, 0m, false);
+        if (claim == null) throw new KeyNotFoundException("Claim not found");
 
         var lines = await _repo.GetActiveClaimLinesByClaimAsync(claimID);
         var posts = (await _repo.GetPaymentPostsByClaimAsync(claimID)).Where(p => p.Status == "Active").ToList();
@@ -300,7 +300,7 @@ public partial class PostingService
     private async Task<PatientBalanceDto> RecalculatePatientBalanceAsync(int claimID)
     {
         var claim = await _repo.GetClaimByIdAsync(claimID);
-        if (claim == null) return new PatientBalanceDto();
+        if (claim == null) throw new KeyNotFoundException("Claim not found");
 
         var posts = (await _repo.GetPaymentPostsByClaimAsync(claimID)).Where(p => p.Status == "Active").ToList();
         decimal totalPr = 0m;
@@ -351,7 +351,7 @@ public partial class PostingService
     private async Task<bool> CreateDenialRecordsAsync(int claimID, List<ClaimLine> lines, List<PaymentPost> posts)
     {
         var claim = await _repo.GetClaimByIdAsync(claimID);
-        if (claim == null) return false;
+        if (claim == null) throw new KeyNotFoundException("Claim not found");
 
         var reasonCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         int denialCount = 0;

@@ -26,6 +26,7 @@ using Telebill.Repositories.PreCert;
 using Telebill.Services.PreCert;
 using Telebill.Services.Batch;
 using Telebill.Repositories.Batch;
+using Telebill.Extensions;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -89,6 +90,8 @@ builder.Services.AddDbContext<TeleBillContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb")));
 
 var app = builder.Build();
+
+app.UseGlobalExceptionMiddleware();
 app.MapControllers();
 
 // Configure the HTTP request pipeline.

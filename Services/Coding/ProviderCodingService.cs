@@ -60,21 +60,32 @@ namespace Telebill.Services.Coding
         public async Task<ProviderEncounterSummaryDto?> GetProviderEncounterDetailAsync(int encounterId, int providerId)
         {
             var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
-            if (enc == null || enc.ProviderId != providerId)
+            if (enc == null)
             {
-                return null;
+                throw new KeyNotFoundException("Encounter not found");
+            }
+
+            if (enc.ProviderId != providerId)
+            {
+                throw new UnauthorizedAccessException("This encounter does not belong to you");
             }
 
             var list = await GetProviderEncountersAsync(providerId, null);
-            return list.FirstOrDefault(e => e.EncounterId == encounterId);
+            return list.FirstOrDefault(e => e.EncounterId == encounterId)
+                   ?? throw new KeyNotFoundException("Encounter not found");
         }
 
         public async Task<ProviderEncounterSummaryDto?> SetDocumentationUriAsync(int encounterId, SetDocumentationUriDto dto, int providerId)
         {
             var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
-            if (enc == null || enc.ProviderId != providerId)
+            if (enc == null)
             {
-                return null;
+                throw new KeyNotFoundException("Encounter not found");
+            }
+
+            if (enc.ProviderId != providerId)
+            {
+                throw new UnauthorizedAccessException("This encounter does not belong to you");
             }
 
             var uri = dto.DocumentationUri?.Trim() ?? string.Empty;
@@ -88,30 +99,30 @@ namespace Telebill.Services.Coding
             var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
-                return (false, "Encounter not found");
+                throw new KeyNotFoundException("Encounter not found");
             }
 
             if (enc.ProviderId != providerId)
             {
-                return (false, "This encounter does not belong to you");
+                throw new UnauthorizedAccessException("This encounter does not belong to you");
             }
 
             if (!string.Equals(enc.Status, "Open", StringComparison.OrdinalIgnoreCase))
             {
-                return (false, "Only Open encounters can be marked as ReadyForCoding");
+                throw new InvalidOperationException("Only Open encounters can be marked as ReadyForCoding");
             }
 
             var attestation = await _encounterRepo.GetAttestedAttestationAsync(encounterId);
             if (attestation == null)
             {
-                return (false, "No attested attestation found. Complete attestation first.");
+                throw new InvalidOperationException("No attested attestation found. Complete attestation first.");
             }
 
             var chargeLines = await _encounterRepo.GetChargeLinesByEncounterAsync(encounterId);
             var draftCount = chargeLines.Count(c => c.Status != "Finalized");
             if (draftCount > 0)
             {
-                return (false, $"{draftCount} charge line(s) are still in Draft. Finalize all charges first.");
+                throw new InvalidOperationException($"{draftCount} charge line(s) are still in Draft. Finalize all charges first.");
             }
 
             await _encounterRepo.UpdateEncounterStatusAsync(encounterId, "ReadyForCoding");

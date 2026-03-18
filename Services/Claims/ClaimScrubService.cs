@@ -25,7 +25,7 @@ public class ClaimScrubService : IClaimScrubService
         var claim = await _repo.GetByIdWithLinesAsync(claimID);
         if (claim == null)
         {
-            return null;
+            throw new KeyNotFoundException("Claim not found");
         }
 
         var rules = await _repo.GetActiveScrubRulesAsync();
@@ -165,7 +165,7 @@ public class ClaimScrubService : IClaimScrubService
         var issue = await _repo.GetIssueByIdAsync(issueID);
         if (issue == null || issue.ClaimId != claimID)
         {
-            return null;
+            throw new KeyNotFoundException("Scrub issue not found");
         }
 
         if (issue.Status == "Resolved")

@@ -20,7 +20,7 @@ public class ClaimX12Service : IClaimX12Service
         var claim = await _repo.GetByIdWithLinesAsync(claimID);
         if (claim == null)
         {
-            return null;
+            throw new KeyNotFoundException("Claim not found");
         }
 
         if (!string.Equals(claim.ClaimStatus, "Ready", StringComparison.OrdinalIgnoreCase))
@@ -83,7 +83,7 @@ public class ClaimX12Service : IClaimX12Service
         var x12 = await _repo.GetX12RefByClaimIDAsync(claimID);
         if (x12 == null)
         {
-            return null;
+            throw new KeyNotFoundException("837P reference not found");
         }
 
         return new X12RefDto

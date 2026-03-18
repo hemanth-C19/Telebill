@@ -30,8 +30,7 @@ public async Task<Patient> GetPatientById(int id)
     var patient = await _repo.GetPatientByIdAsync(id);
     if (patient == null)
     {
-        // You can throw a custom exception here or handle it in the controller
-        return null;
+        throw new KeyNotFoundException("Patient not found");
     }
     return patient;
 }
@@ -65,12 +64,20 @@ public async Task<Patient> GetPatientById(int id)
     }
 
     // Standard Read/Update methods...
-    public async Task<Coverage> GetCoverageDetailsAsync(int id) => await _repo.GetCoverageByIdAsync(id);
+    public async Task<Coverage> GetCoverageDetailsAsync(int id)
+    {
+        var coverage = await _repo.GetCoverageByIdAsync(id);
+        if (coverage == null)
+        {
+            throw new KeyNotFoundException("Coverage not found");
+        }
+        return coverage;
+    }
     public async Task<IEnumerable<Patient>> ListAllPatients() => await _repo.GetAllPatientsAsync();
     public async Task<IEnumerable<Coverage>> GetPatientInsurance(int patientId) => await _repo.GetCoveragesByPatientIdAsync(patientId);
     public async Task UpdatePatient(int id, PatientDto dto) {
         var p = await _repo.GetPatientByIdAsync(id);
-        if (p == null) return;
+        if (p == null) throw new KeyNotFoundException("Patient not found");
         p.Name = dto.Name;
         p.ContactInfo = dto.ContactInfo;
         _repo.UpdatePatient(p);
@@ -102,8 +109,10 @@ public async Task<bool> RemoveCoverage(int patientId ,int CoverageId)
     return true;
 }
 
-    public Task<bool> DeleteCoverageAsync(int coverageId)
+    public async Task<bool> DeleteCoverageAsync(int coverageId)
     {
-        throw new NotImplementedException();
+        await _repo.DeleteCoverageAsync(coverageId);
+        await _repo.SaveChangesAsync();
+        return true;
     }
 }
