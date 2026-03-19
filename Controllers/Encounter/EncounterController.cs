@@ -41,12 +41,12 @@ namespace Telebill.Controllers
             return Ok(data);
         }
 
-        // [HttpPost("AddEncounter")]
-        // public async Task<IActionResult> Create(Encounter encounter)
-        // {
-        //     var result = await _service.Create(encounter);
-        //     return Ok(result);
-        // }
+        [HttpPost("AddEncounter")]
+        public async Task<IActionResult> Create(AddEncounterDTO encounter)
+        {
+            var result = await _service.Create(encounter);
+            return Ok(result);
+        }
 
         [HttpPut("UpdateEncounter")]
         public async Task<IActionResult> Update(int id,  [FromBody] EncounterUpdateDTO dto)

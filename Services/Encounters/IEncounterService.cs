@@ -7,10 +7,10 @@ namespace Services
 {
     public interface IEncounterService
     {
-        Task<List<EncounterDTO>> GetAll();
-        Task<EncounterDTO?> GetById(int id);
+        Task<List<GetEncounterDTO>> GetAll();
+        Task<GetEncounterDTO?> GetById(int id);
 
-        Task<Encounter> Create(Encounter encounter);
+        Task<AddEncounterDTO> Create(AddEncounterDTO encounter);
         Task<EncounterUpdateDTO?> Update( int id, EncounterUpdateDTO dto);
         Task<bool> Delete(int id);
     }
