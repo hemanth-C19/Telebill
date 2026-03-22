@@ -11,37 +11,37 @@ public partial class ClaimRepository
 {
     public Task<X12837pRef?> GetX12RefByClaimIDAsync(int claimID)
     {
-        return _context.X12837pRefs.FirstOrDefaultAsync(x => x.ClaimId == claimID);
+        return context.X12837pRefs.FirstOrDefaultAsync(x => x.ClaimId == claimID);
     }
 
     public async Task<X12837pRef> CreateX12RefAsync(X12837pRef x12Ref)
     {
-        _context.X12837pRefs.Add(x12Ref);
-        await _context.SaveChangesAsync();
+        context.X12837pRefs.Add(x12Ref);
+        await context.SaveChangesAsync();
         return x12Ref;
     }
 
     public async Task UpdateX12RefAsync(X12837pRef x12Ref)
     {
-        _context.X12837pRefs.Update(x12Ref);
-        await _context.SaveChangesAsync();
+        context.X12837pRefs.Update(x12Ref);
+        await context.SaveChangesAsync();
     }
 
     public Task<Encounter?> GetEncounterByIdAsync(int encounterID)
     {
-        return _context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == encounterID);
+        return context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == encounterID);
     }
 
     public Task<List<ChargeLine>> GetFinalizedChargeLinesByEncounterAsync(int encounterID)
     {
-        return _context.ChargeLines
+        return context.ChargeLines
             .Where(c => c.EncounterId == encounterID && c.Status == "Finalized")
             .ToListAsync();
     }
 
     public Task<List<Diagnosis>> GetActiveDiagnosesByEncounterAsync(int encounterID)
     {
-        return _context.Diagnoses
+        return context.Diagnoses
             .Where(d => d.EncounterId == encounterID && d.Status == "Active")
             .ToListAsync();
     }
@@ -49,7 +49,7 @@ public partial class ClaimRepository
     public Task<Coverage?> GetActiveCoverageForEncounterAsync(int patientID, DateTime encounterDate)
     {
         var encounterDateOnly = DateOnly.FromDateTime(encounterDate);
-        return _context.Coverages
+        return context.Coverages
             .Where(c => c.PatientId == patientID &&
                         c.Status == "Active" &&
                         c.EffectiveFrom <= encounterDateOnly &&
@@ -60,7 +60,7 @@ public partial class ClaimRepository
 
     public Task<PayerPlan?> GetPayerPlanByIdAsync(int planID)
     {
-        return _context.PayerPlans
+        return context.PayerPlans
             .Include(p => p.Payer)
             .FirstOrDefaultAsync(p => p.PlanId == planID);
     }
@@ -68,7 +68,7 @@ public partial class ClaimRepository
     public Task<FeeSchedule?> GetFeeScheduleAsync(int planID, string cptHcpcs, string? modifierCombo, DateTime serviceDate)
     {
         var serviceDateOnly = DateOnly.FromDateTime(serviceDate);
-        var query = _context.FeeSchedules
+        var query = context.FeeSchedules
             .Where(f =>
                 f.PlanId == planID &&
                 f.CptHcpcs == cptHcpcs &&
@@ -88,18 +88,18 @@ public partial class ClaimRepository
 
     public Task<Provider?> GetProviderByIdAsync(int providerID)
     {
-        return _context.Providers.FirstOrDefaultAsync(p => p.ProviderId == providerID);
+        return context.Providers.FirstOrDefaultAsync(p => p.ProviderId == providerID);
     }
 
     public Task<CodingLock?> GetActiveCodingLockAsync(int encounterID)
     {
-        return _context.CodingLocks
+        return context.CodingLocks
             .FirstOrDefaultAsync(c => c.EncounterId == encounterID && c.Status == "Locked");
     }
 
     public Task<bool> HasApprovedPriorAuthAsync(int claimID)
     {
-        return _context.PriorAuths.AnyAsync(p => p.ClaimId == claimID && p.Status == "Approved");
+        return context.PriorAuths.AnyAsync(p => p.ClaimId == claimID && p.Status == "Approved");
     }
 
 }

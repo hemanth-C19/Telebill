@@ -9,19 +9,12 @@ namespace Telebill.Controllers.Batch;
 
 [ApiController]
 [Route("api/v1/batch")]
-public class BatchController : ControllerBase
+public class BatchController(IBatchService service) : ControllerBase
 {
-    private readonly IBatchService _service;
-
-    public BatchController(IBatchService service)
-    {
-        _service = service;
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateBatchRequestDto dto)
     {
-        var result = await _service.CreateBatchAsync(dto, GetCurrentUserId());
+        var result = await service.CreateBatchAsync(dto, GetCurrentUserId());
         return StatusCode(201, result);
     }
 
@@ -33,7 +26,7 @@ public class BatchController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25)
     {
-        var result = await _service.GetBatchesAsync(status, dateFrom, dateTo, page, pageSize);
+        var result = await service.GetBatchesAsync(status, dateFrom, dateTo, page, pageSize);
         return Ok(result);
     }
 
@@ -42,7 +35,7 @@ public class BatchController : ControllerBase
     {
         try
         {
-            var result = await _service.GetBatchDetailAsync(batchID);
+            var result = await service.GetBatchDetailAsync(batchID);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -56,7 +49,7 @@ public class BatchController : ControllerBase
     {
         try
         {
-            var result = await _service.AddClaimsToBatchAsync(batchID, dto, GetCurrentUserId());
+            var result = await service.AddClaimsToBatchAsync(batchID, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -74,7 +67,7 @@ public class BatchController : ControllerBase
     {
         try
         {
-            await _service.RemoveClaimFromBatchAsync(batchID, claimID, GetCurrentUserId());
+            await service.RemoveClaimFromBatchAsync(batchID, claimID, GetCurrentUserId());
             return NoContent();
         }
         catch (KeyNotFoundException ex)
@@ -92,7 +85,7 @@ public class BatchController : ControllerBase
     {
         try
         {
-            var result = await _service.GenerateBatchAsync(batchID, GetCurrentUserId());
+            var result = await service.GenerateBatchAsync(batchID, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -110,7 +103,7 @@ public class BatchController : ControllerBase
     {
         try
         {
-            var result = await _service.MarkBatchSubmittedAsync(batchID, dto, GetCurrentUserId());
+            var result = await service.MarkBatchSubmittedAsync(batchID, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

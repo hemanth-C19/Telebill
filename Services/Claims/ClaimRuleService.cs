@@ -7,18 +7,11 @@ using Telebill.Repositories.Claims;
 
 namespace Services;
 
-public class ClaimRuleService : IClaimRuleService
+public class ClaimRuleService(IClaimRepository repo) : IClaimRuleService
 {
-    private readonly IClaimRepository _repo;
-
-    public ClaimRuleService(IClaimRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<List<ScrubRuleDto>> GetScrubRulesAsync(string? severity, string? status)
     {
-        var rules = await _repo.GetScrubRulesFilteredAsync(severity, status);
+        var rules = await repo.GetScrubRulesFilteredAsync(severity, status);
         return rules.Select(r => new ScrubRuleDto
         {
             RuleID = r.RuleId,
@@ -39,7 +32,7 @@ public class ClaimRuleService : IClaimRuleService
             Status = "Active"
         };
 
-        var created = await _repo.CreateScrubRuleAsync(rule);
+        var created = await repo.CreateScrubRuleAsync(rule);
 
         return new ScrubRuleDto
         {
@@ -53,7 +46,7 @@ public class ClaimRuleService : IClaimRuleService
 
     public async Task<ScrubRuleDto?> UpdateScrubRuleAsync(int ruleID, UpdateScrubRuleRequestDto dto)
     {
-        var rule = await _repo.GetScrubRuleByIdAsync(ruleID);
+        var rule = await repo.GetScrubRuleByIdAsync(ruleID);
         if (rule == null)
         {
             throw new KeyNotFoundException("Scrub rule not found");
@@ -64,7 +57,7 @@ public class ClaimRuleService : IClaimRuleService
         if (!string.IsNullOrWhiteSpace(dto.Severity)) rule.Severity = dto.Severity;
         if (!string.IsNullOrWhiteSpace(dto.Status)) rule.Status = dto.Status;
 
-        var updated = await _repo.UpdateScrubRuleAsync(rule);
+        var updated = await repo.UpdateScrubRuleAsync(rule);
 
         return new ScrubRuleDto
         {

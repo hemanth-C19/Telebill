@@ -9,18 +9,11 @@ using Telebill.Data;
 
 namespace Telebill.Repositories.MasterData
 {
-    public class ProviderRepository: IProviderRepository
+    public class ProviderRepository(TeleBillContext context) : IProviderRepository
     {
-        private readonly TeleBillContext _context;
-
-        public ProviderRepository(TeleBillContext context)
-        {
-            _context = context;
-        }
-
         public async Task<IEnumerable<Provider>> GetAllProvidersAsync()
         {
-            return await _context.Providers.ToListAsync();
+            return await context.Providers.ToListAsync();
         }
 
         public async Task RegisterProviderAsync(CreateUpdateProviderDTO obj)
@@ -33,14 +26,14 @@ namespace Telebill.Repositories.MasterData
                 ContactInfo = obj.ProviderContact,
                 Status = obj.ProviderStatus
             };
-            _context.Providers.Add(newProvider);
-            await _context.SaveChangesAsync();
+            context.Providers.Add(newProvider);
+            await context.SaveChangesAsync();
         }
 
         public async Task UpdateProviderTelehealthAsync(int Pid, CreateUpdateProviderDTO dto)
         {
 
-            var existingProvider = await _context.Providers.FirstOrDefaultAsync(p => p.ProviderId == Pid);
+            var existingProvider = await context.Providers.FirstOrDefaultAsync(p => p.ProviderId == Pid);
             
             existingProvider.Name = dto.ProviderName;
             existingProvider.Npi = dto.ProviderNpi;
@@ -49,13 +42,13 @@ namespace Telebill.Repositories.MasterData
             existingProvider.ContactInfo = dto.ProviderContact;
             existingProvider.Status = dto.ProviderStatus;
 
-            _context.Providers.Update(existingProvider);
-            await _context.SaveChangesAsync();
+            context.Providers.Update(existingProvider);
+            await context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<ProviderActiveInfo>> GetActiveProvidersAsync()
         {
-            var Providers = await _context.Providers
+            var Providers = await context.Providers
                 .Where(p => p.Status == "Active" && p.TelehealthEnrolled == true)
                 .Select(p => new ProviderActiveInfo{
                     ProviderId = p.ProviderId,
@@ -67,7 +60,7 @@ namespace Telebill.Repositories.MasterData
 
         public async Task<Provider> GetProviderByNameAsync(string ProviderName)
         {
-            var prd = await _context.Providers.FirstOrDefaultAsync(p => p.Name == ProviderName);
+            var prd = await context.Providers.FirstOrDefaultAsync(p => p.Name == ProviderName);
             if(prd == null){
                 return null;
             }
@@ -76,7 +69,7 @@ namespace Telebill.Repositories.MasterData
 
         public async Task<Provider> GetProviderByNPIAsync(string NpiId)
         {
-            var prd = await _context.Providers.FirstOrDefaultAsync(p => p.Npi == NpiId);
+            var prd = await context.Providers.FirstOrDefaultAsync(p => p.Npi == NpiId);
             if(prd == null){
                 return null;
             }
@@ -85,9 +78,9 @@ namespace Telebill.Repositories.MasterData
 
         public async Task DeleteProviderByIdAsync(int Pid)
         {
-            var prd = await _context.Providers.FirstOrDefaultAsync(p=> p.ProviderId == Pid);
-            _context.Providers.Remove(prd);
-            await _context.SaveChangesAsync();
+            var prd = await context.Providers.FirstOrDefaultAsync(p=> p.ProviderId == Pid);
+            context.Providers.Remove(prd);
+            await context.SaveChangesAsync();
         }
     }
 }

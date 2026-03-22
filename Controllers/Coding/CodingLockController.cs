@@ -8,19 +8,12 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/coding/lock")]
-    public class CodingLockController : ControllerBase
+    public class CodingLockController(ICodingLockService service) : ControllerBase
     {
-        private readonly ICodingLockService _service;
-
-        public CodingLockController(ICodingLockService service)
-        {
-            _service = service;
-        }
-
         [HttpGet("validate/{encounterId:int}")]
         public async Task<ActionResult<CodingValidationResultDto>> Validate(int encounterId)
         {
-            var result = await _service.ValidateCodingLockAsync(encounterId);
+            var result = await service.ValidateCodingLockAsync(encounterId);
             return Ok(result);
         }
 
@@ -29,7 +22,7 @@ namespace Telebill.Controllers
             [FromBody] ApplyCodingLockDto dto,
             [FromQuery] int userId)
         {
-            var result = await _service.ApplyCodingLockAsync(dto, userId);
+            var result = await service.ApplyCodingLockAsync(dto, userId);
             return Ok(result);
         }
 
@@ -38,7 +31,7 @@ namespace Telebill.Controllers
             [FromBody] UnlockCodingDto dto,
             [FromQuery] int userId)
         {
-            var (success, error, result) = await _service.UnlockCodingAsync(dto, userId);
+            var (success, error, result) = await service.UnlockCodingAsync(dto, userId);
             if (!success)
             {
                 return BadRequest(error);
@@ -55,7 +48,7 @@ namespace Telebill.Controllers
         [HttpGet("history/{encounterId:int}")]
         public async Task<ActionResult<List<CodingLockResultDto>>> History(int encounterId)
         {
-            var list = await _service.GetCodingLockHistoryAsync(encounterId);
+            var list = await service.GetCodingLockHistoryAsync(encounterId);
             return Ok(list);
         }
     }

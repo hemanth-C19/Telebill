@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Telebill.Dto.Auth;
 
-namespace Telebill.Services.Auth
+namespace Telebill.Services.Auth;
+
+public interface IAuthService
 {
-    public interface IAuthService
-    {
-        Task<bool> Login(string email);
-        void Logout();
-    }
+    Task<LoginResponseDto?> LoginAsync(LoginDto loginDto);
+
+    void Logout();
 }

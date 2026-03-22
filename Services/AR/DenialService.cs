@@ -8,18 +8,11 @@ using Telebill.Repositories.AR;
 
 namespace Telebill.Services.AR;
 
-public class DenialService : IDenialService
+public class DenialService(IArRepository repo) : IDenialService
 {
-    private readonly IArRepository _repo;
-
-    public DenialService(IArRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<List<ArWorklistItemDto>> GetArWorklistAsync(ArWorklistFilterParams filters)
     {
-        var denials = await _repo.GetDenialsAsync(filters);
+        var denials = await repo.GetDenialsAsync(filters);
         var today = DateOnly.FromDateTime(DateTime.Today);
         var result = new List<ArWorklistItemDto>();
 
@@ -30,26 +23,26 @@ public class DenialService : IDenialService
                 continue;
             }
 
-            var claim = await _repo.GetClaimByIdAsync(denial.ClaimId.Value);
+            var claim = await repo.GetClaimByIdAsync(denial.ClaimId.Value);
             if (claim == null)
             {
                 continue;
             }
 
             var patient = claim.PatientId.HasValue
-                ? await _repo.GetPatientByIdAsync(claim.PatientId.Value)
+                ? await repo.GetPatientByIdAsync(claim.PatientId.Value)
                 : null;
 
             PayerPlan? plan = claim.PlanId.HasValue
-                ? await _repo.GetPayerPlanByIdAsync(claim.PlanId.Value)
+                ? await repo.GetPayerPlanByIdAsync(claim.PlanId.Value)
                 : null;
 
             Payer? payer = plan != null
-                ? await _repo.GetPayerByPlanIdAsync(plan.PlanId)
+                ? await repo.GetPayerByPlanIdAsync(plan.PlanId)
                 : null;
 
-            var subs = await _repo.GetSubmissionRefsByClaimIdAsync(denial.ClaimId.Value);
-            var enc = await _repo.GetEncounterByClaimIdAsync(denial.ClaimId.Value);
+            var subs = await repo.GetSubmissionRefsByClaimIdAsync(denial.ClaimId.Value);
+            var enc = await repo.GetEncounterByClaimIdAsync(denial.ClaimId.Value);
 
             var denialDate = denial.DenialDate ?? DateOnly.FromDateTime(DateTime.Today);
             var days = today.DayNumber - denialDate.DayNumber;
@@ -87,35 +80,35 @@ public class DenialService : IDenialService
 
     public async Task<DenialDetailDto?> GetDenialDetailAsync(int denialId)
     {
-        var denial = await _repo.GetDenialByIdAsync(denialId);
+        var denial = await repo.GetDenialByIdAsync(denialId);
         if (denial == null || !denial.ClaimId.HasValue)
         {
             return null;
         }
 
-        var claim = await _repo.GetClaimByIdAsync(denial.ClaimId.Value);
+        var claim = await repo.GetClaimByIdAsync(denial.ClaimId.Value);
         if (claim == null)
         {
             return null;
         }
 
-        var lines = await _repo.GetClaimLinesByClaimIdAsync(claim.ClaimId);
+        var lines = await repo.GetClaimLinesByClaimIdAsync(claim.ClaimId);
         var patient = claim.PatientId.HasValue
-            ? await _repo.GetPatientByIdAsync(claim.PatientId.Value)
+            ? await repo.GetPatientByIdAsync(claim.PatientId.Value)
             : null;
 
         PayerPlan? plan = claim.PlanId.HasValue
-            ? await _repo.GetPayerPlanByIdAsync(claim.PlanId.Value)
+            ? await repo.GetPayerPlanByIdAsync(claim.PlanId.Value)
             : null;
 
         Payer? payer = plan != null
-            ? await _repo.GetPayerByPlanIdAsync(plan.PlanId)
+            ? await repo.GetPayerByPlanIdAsync(plan.PlanId)
             : null;
 
-        var enc = await _repo.GetEncounterByClaimIdAsync(claim.ClaimId);
-        var payments = await _repo.GetPaymentPostsByClaimIdAsync(claim.ClaimId);
-        var submissions = await _repo.GetSubmissionRefsByClaimIdAsync(claim.ClaimId);
-        var attachments = await _repo.GetAttachmentsByClaimIdAsync(claim.ClaimId);
+        var enc = await repo.GetEncounterByClaimIdAsync(claim.ClaimId);
+        var payments = await repo.GetPaymentPostsByClaimIdAsync(claim.ClaimId);
+        var submissions = await repo.GetSubmissionRefsByClaimIdAsync(claim.ClaimId);
+        var attachments = await repo.GetAttachmentsByClaimIdAsync(claim.ClaimId);
 
         var claimSummary = new ClaimSummaryForArDto
         {
@@ -196,7 +189,7 @@ public class DenialService : IDenialService
                 $"Invalid status '{dto.NewStatus}'. Allowed: Appealed, Resolved, WrittenOff");
         }
 
-        var denial = await _repo.GetDenialByIdAsync(denialId);
+        var denial = await repo.GetDenialByIdAsync(denialId);
         if (denial == null)
         {
             return (false, "Denial not found");
@@ -224,7 +217,7 @@ public class DenialService : IDenialService
         }
 
         denial.Status = target;
-        await _repo.UpdateDenialAsync(denial);
+        await repo.UpdateDenialAsync(denial);
 
         return (true, string.Empty);
     }
@@ -232,7 +225,7 @@ public class DenialService : IDenialService
     public async Task<(bool success, string error, AttachmentSummaryDto? result)> UploadAppealDocumentAsync(
         UploadAppealDocumentDto dto)
     {
-        var denial = await _repo.GetDenialByIdAsync(dto.DenialId);
+        var denial = await repo.GetDenialByIdAsync(dto.DenialId);
         if (denial == null)
         {
             return (false, "Denial not found", null);
@@ -266,12 +259,12 @@ public class DenialService : IDenialService
             Status = "Active"
         };
 
-        attachment = await _repo.AddAttachmentAsync(attachment);
+        attachment = await repo.AddAttachmentAsync(attachment);
 
         if (string.Equals(status, "Open", StringComparison.OrdinalIgnoreCase))
         {
             denial.Status = "Appealed";
-            await _repo.UpdateDenialAsync(denial);
+            await repo.UpdateDenialAsync(denial);
         }
 
         var result = new AttachmentSummaryDto
@@ -289,7 +282,7 @@ public class DenialService : IDenialService
     public async Task<(bool success, string error, ResetClaimResponseDto? result)> ResetClaimForResubmissionAsync(
         ResetClaimForResubmissionDto dto)
     {
-        var denial = await _repo.GetDenialByIdAsync(dto.DenialId);
+        var denial = await repo.GetDenialByIdAsync(dto.DenialId);
         if (denial == null || !denial.ClaimId.HasValue)
         {
             return (false, "Denial not found", null);
@@ -301,7 +294,7 @@ public class DenialService : IDenialService
             return (false, $"Denial is already {denial.Status}. Cannot resubmit.", null);
         }
 
-        var claim = await _repo.GetClaimByIdAsync(denial.ClaimId.Value);
+        var claim = await repo.GetClaimByIdAsync(denial.ClaimId.Value);
         if (claim == null)
         {
             return (false, "Parent claim not found", null);
@@ -316,9 +309,9 @@ public class DenialService : IDenialService
                 "Only Denied, Rejected, or ScrubError claims can be resubmitted.", null);
         }
 
-        await _repo.UpdateClaimStatusAsync(denial.ClaimId.Value, "Draft");
+        await repo.UpdateClaimStatusAsync(denial.ClaimId.Value, "Draft");
         denial.Status = "Resolved";
-        await _repo.UpdateDenialAsync(denial);
+        await repo.UpdateDenialAsync(denial);
 
         var response = new ResetClaimResponseDto
         {

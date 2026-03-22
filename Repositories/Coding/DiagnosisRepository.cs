@@ -7,18 +7,11 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.Coding
 {
-    public class DiagnosisRepository : IDiagnosisRepository
+    public class DiagnosisRepository(TeleBillContext context) : IDiagnosisRepository
     {
-        private readonly TeleBillContext _context;
-
-        public DiagnosisRepository(TeleBillContext context)
-        {
-            _context = context;
-        }
-
         public async Task<List<Diagnosis>> GetDiagnosesByEncounterAsync(int encounterId)
         {
-            return await _context.Diagnoses
+            return await context.Diagnoses
                 .Where(d => d.EncounterId == encounterId)
                 .OrderBy(d => d.Sequence)
                 .ToListAsync();
@@ -26,7 +19,7 @@ namespace Telebill.Repositories.Coding
 
         public async Task<List<Diagnosis>> GetActiveDiagnosesByEncounterAsync(int encounterId)
         {
-            return await _context.Diagnoses
+            return await context.Diagnoses
                 .Where(d => d.EncounterId == encounterId && d.Status == "Active")
                 .OrderBy(d => d.Sequence)
                 .ToListAsync();
@@ -34,12 +27,12 @@ namespace Telebill.Repositories.Coding
 
         public async Task<Diagnosis?> GetDiagnosisByIdAsync(int dxId)
         {
-            return await _context.Diagnoses.FindAsync(dxId);
+            return await context.Diagnoses.FindAsync(dxId);
         }
 
         public async Task<bool> DiagnosisCodeExistsActiveAsync(int encounterId, string icd10Code)
         {
-            return await _context.Diagnoses
+            return await context.Diagnoses
                 .AnyAsync(d =>
                     d.EncounterId == encounterId &&
                     d.Status == "Active" &&
@@ -48,7 +41,7 @@ namespace Telebill.Repositories.Coding
 
         public async Task<int> GetMaxDiagnosisSequenceAsync(int encounterId)
         {
-            var max = await _context.Diagnoses
+            var max = await context.Diagnoses
                 .Where(d => d.EncounterId == encounterId && d.Status == "Active")
                 .MaxAsync(d => (int?)d.Sequence);
 
@@ -57,7 +50,7 @@ namespace Telebill.Repositories.Coding
 
         public async Task<bool> SequenceTakenAsync(int encounterId, int sequence, int? excludeDxId = null)
         {
-            return await _context.Diagnoses
+            return await context.Diagnoses
                 .AnyAsync(d =>
                     d.EncounterId == encounterId &&
                     d.Sequence == sequence &&
@@ -67,21 +60,21 @@ namespace Telebill.Repositories.Coding
 
         public async Task<int> GetActiveDiagnosisCountAsync(int encounterId)
         {
-            return await _context.Diagnoses
+            return await context.Diagnoses
                 .CountAsync(d => d.EncounterId == encounterId && d.Status == "Active");
         }
 
         public async Task<Diagnosis> AddDiagnosisAsync(Diagnosis diagnosis)
         {
-            await _context.Diagnoses.AddAsync(diagnosis);
-            await _context.SaveChangesAsync();
+            await context.Diagnoses.AddAsync(diagnosis);
+            await context.SaveChangesAsync();
             return diagnosis;
         }
 
         public async Task UpdateDiagnosisAsync(Diagnosis diagnosis)
         {
-            _context.Diagnoses.Update(diagnosis);
-            await _context.SaveChangesAsync();
+            context.Diagnoses.Update(diagnosis);
+            await context.SaveChangesAsync();
         }
     }
 }

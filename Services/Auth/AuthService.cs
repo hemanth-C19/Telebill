@@ -1,28 +1,81 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using Telebill.Dto.Auth;
+using Telebill.Dto.IdentityAccess;
 using Telebill.Repositories.Auth;
+using Telebill.Services.IdentityAccess;
 
-namespace Telebill.Services.Auth
+namespace Telebill.Services.Auth;
+
+public class AuthService(
+    IAuthRepository authRepository,
+    IConfiguration config,
+    IAuditService auditService) : IAuthService
 {
-    public class AuthService : IAuthService
+    public async Task<LoginResponseDto?> LoginAsync(LoginDto loginDto)
     {
-        IAuthRepository authRepository;
+        var user = await authRepository.LoginAsync(loginDto.Email.ToLower(), loginDto.Password);
+        if (user == null)
+            return null;
 
-        public AuthService(IAuthRepository _authRepository)
+        var claims = new[]
         {
-            this.authRepository = _authRepository;
+            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            new Claim(ClaimTypes.Name, user.Email),
+            new Claim(ClaimTypes.Role, user.Role)
+        };
+
+        var tokenSecret = config["Token"]
+            ?? throw new InvalidOperationException("Token is not configured in appsettings.");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenSecret));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+
+        var expires = DateTime.UtcNow.AddDays(1);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = expires,
+            SigningCredentials = creds
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var finalToken = tokenHandler.CreateToken(tokenDescriptor);
+        var tokenString = tokenHandler.WriteToken(finalToken);
+
+        try
+        {
+            await auditService.AddAsync(new AuditLogDTO
+            {
+                UserId = user.UserId,
+                Action = "LOGIN",
+                Resource = "POST /api/AuthController-Module/login",
+                Timestamp = DateTime.UtcNow,
+                Metadata = JsonSerializer.Serialize(new { email = user.Email })
+            });
+        }
+        catch
+        {
+            // Do not block login if audit write fails.
         }
 
-        public async Task<bool> Login(string email)
+        return new LoginResponseDto
         {
-            return await authRepository.Login(email);
-        }
+            Token = tokenString,
+            ExpiresAt = expires,
+            UserId = user.UserId,
+            Email = user.Email,
+            Name = user.Name,
+            Role = user.Role
+        };
+    }
 
-        public void Logout()
-        {
-            authRepository.Logout();
-        }
+    public void Logout()
+    {
+        authRepository.Logout();
     }
 }

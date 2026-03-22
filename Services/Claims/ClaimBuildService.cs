@@ -9,20 +9,11 @@ using Telebill.Repositories.Claims;
 
 namespace Services;
 
-public class ClaimBuildService : IClaimBuildService
+public class ClaimBuildService(IClaimRepository repo, IClaimScrubService scrubService) : IClaimBuildService
 {
-    private readonly IClaimRepository _repo;
-    private readonly IClaimScrubService _scrubService;
-
-    public ClaimBuildService(IClaimRepository repo, IClaimScrubService scrubService)
-    {
-        _repo = repo;
-        _scrubService = scrubService;
-    }
-
     public async Task<BuildClaimResponseDto> BuildClaimAsync(BuildClaimRequestDto dto)
     {
-        var encounter = await _repo.GetEncounterByIdAsync(dto.EncounterID);
+        var encounter = await repo.GetEncounterByIdAsync(dto.EncounterID);
         if (encounter == null)
         {
             throw new ArgumentException("Encounter not found");
@@ -33,36 +24,36 @@ public class ClaimBuildService : IClaimBuildService
             throw new ArgumentException("Encounter is not Finalized");
         }
 
-        var codingLock = await _repo.GetActiveCodingLockAsync(dto.EncounterID);
+        var codingLock = await repo.GetActiveCodingLockAsync(dto.EncounterID);
         if (codingLock == null)
         {
             throw new ArgumentException("No active coding lock found");
         }
 
-        if (await _repo.ExistsForEncounterAsync(dto.EncounterID))
+        if (await repo.ExistsForEncounterAsync(dto.EncounterID))
         {
             throw new InvalidOperationException("Claim already exists for this encounter");
         }
 
-        var chargeLines = await _repo.GetFinalizedChargeLinesByEncounterAsync(dto.EncounterID);
+        var chargeLines = await repo.GetFinalizedChargeLinesByEncounterAsync(dto.EncounterID);
         if (chargeLines.Count == 0)
         {
             throw new ArgumentException("No finalized charge lines found");
         }
 
-        var diagnoses = await _repo.GetActiveDiagnosesByEncounterAsync(dto.EncounterID);
+        var diagnoses = await repo.GetActiveDiagnosesByEncounterAsync(dto.EncounterID);
 
         Coverage? coverage = null;
         PayerPlan? plan = null;
         if (encounter.PatientId.HasValue)
         {
-            coverage = await _repo.GetActiveCoverageForEncounterAsync(
+            coverage = await repo.GetActiveCoverageForEncounterAsync(
                 encounter.PatientId.Value,
                 encounter.EncounterDateTime);
 
             if (coverage != null && coverage.PlanId.HasValue)
             {
-                plan = await _repo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
+                plan = await repo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
             }
         }
 
@@ -77,7 +68,7 @@ public class ClaimBuildService : IClaimBuildService
             CreatedDate = DateTime.UtcNow
         };
 
-        claim = await _repo.CreateAsync(claim);
+        claim = await repo.CreateAsync(claim);
 
         var claimLines = new List<ClaimLine>();
         var lineNo = 1;
@@ -87,7 +78,7 @@ public class ClaimBuildService : IClaimBuildService
             FeeSchedule? fee = null;
             if (coverage?.PlanId != null)
             {
-                fee = await _repo.GetFeeScheduleAsync(
+                fee = await repo.GetFeeScheduleAsync(
                     coverage.PlanId.Value,
                     cl.CptHcpcs ?? string.Empty,
                     cl.Modifiers,
@@ -111,9 +102,9 @@ public class ClaimBuildService : IClaimBuildService
             });
         }
 
-        await _repo.CreateLinesAsync(claimLines);
+        await repo.CreateLinesAsync(claimLines);
 
-        var scrubResult = await _scrubService.ScrubClaimAsync(claim.ClaimId);
+        var scrubResult = await scrubService.ScrubClaimAsync(claim.ClaimId);
 
         var response = new BuildClaimResponseDto
         {
@@ -124,7 +115,7 @@ public class ClaimBuildService : IClaimBuildService
             ScrubTriggered = scrubResult != null
         };
 
-        var lines = await _repo.GetLinesByClaimIDAsync(claim.ClaimId);
+        var lines = await repo.GetLinesByClaimIDAsync(claim.ClaimId);
         foreach (var line in lines)
         {
             var modifiers = ClaimJsonHelper.SafeDeserializeStringList(line.Modifiers);

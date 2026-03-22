@@ -12,12 +12,12 @@ public partial class ClaimRepository
 {
     public async Task<Claim?> GetByIdAsync(int claimID)
     {
-        return await _context.Claims.FindAsync(claimID);
+        return await context.Claims.FindAsync(claimID);
     }
 
     public async Task<Claim?> GetByIdWithLinesAsync(int claimID)
     {
-        return await _context.Claims
+        return await context.Claims
             .Include(c => c.ClaimLines)
             .Include(c => c.ScrubIssues)
             .ThenInclude(i => i.Rule)
@@ -27,12 +27,12 @@ public partial class ClaimRepository
 
     public async Task<Claim?> GetByEncounterIDAsync(int encounterID)
     {
-        return await _context.Claims.FirstOrDefaultAsync(c => c.EncounterId == encounterID);
+        return await context.Claims.FirstOrDefaultAsync(c => c.EncounterId == encounterID);
     }
 
     public async Task<(List<Claim> claims, int totalCount)> GetClaimsPagedAsync(ClaimFilterParams filters)
     {
-        var query = _context.Claims
+        var query = context.Claims
             .Include(c => c.Patient)
             .Include(c => c.Plan)
             .ThenInclude(p => p.Payer)
@@ -73,8 +73,8 @@ public partial class ClaimRepository
         {
             bool hasErrors = filters.HasScrubErrors.Value;
             query = query.Where(c =>
-                _context.ScrubIssues
-                    .Join(_context.ScrubRules, i => i.RuleId, r => r.RuleId, (i, r) => new { i, r })
+                context.ScrubIssues
+                    .Join(context.ScrubRules, i => i.RuleId, r => r.RuleId, (i, r) => new { i, r })
                     .Any(j => j.i.ClaimId == c.ClaimId &&
                               j.i.Status == "Open" &&
                               j.r.Severity == "Error") == hasErrors);
@@ -104,44 +104,44 @@ public partial class ClaimRepository
 
     public async Task<Claim> CreateAsync(Claim claim)
     {
-        _context.Claims.Add(claim);
-        await _context.SaveChangesAsync();
+        context.Claims.Add(claim);
+        await context.SaveChangesAsync();
         return claim;
     }
 
     public async Task UpdateStatusAsync(int claimID, string newStatus)
     {
-        var claim = await _context.Claims.FindAsync(claimID);
+        var claim = await context.Claims.FindAsync(claimID);
         if (claim == null)
         {
             return;
         }
 
         claim.ClaimStatus = newStatus;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task<bool> ExistsForEncounterAsync(int encounterID)
     {
-        return await _context.Claims.AnyAsync(c => c.EncounterId == encounterID);
+        return await context.Claims.AnyAsync(c => c.EncounterId == encounterID);
     }
 
     public async Task<List<ClaimLine>> GetLinesByClaimIDAsync(int claimID)
     {
-        return await _context.ClaimLines
+        return await context.ClaimLines
             .Where(l => l.ClaimId == claimID)
             .ToListAsync();
     }
 
     public async Task CreateLinesAsync(List<ClaimLine> lines)
     {
-        _context.ClaimLines.AddRange(lines);
-        await _context.SaveChangesAsync();
+        context.ClaimLines.AddRange(lines);
+        await context.SaveChangesAsync();
     }
 
     public async Task<ClaimLine?> GetLineByIdAsync(int claimLineID)
     {
-        return await _context.ClaimLines.FindAsync(claimLineID);
+        return await context.ClaimLines.FindAsync(claimLineID);
     }
 }
 

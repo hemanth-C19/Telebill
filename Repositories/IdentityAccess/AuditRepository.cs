@@ -7,14 +7,9 @@ using Telebill.Data;
 
 namespace Telebill.Repositories.IdentityAccess
 {
-    public class AuditRepository : IAuditRepository
+    public class AuditRepository(TeleBillContext tb) : IAuditRepository
     {
-        private readonly TeleBillContext tb;
-
-        public AuditRepository(TeleBillContext _tb)
-        {
-            tb = _tb ?? throw new ArgumentNullException(nameof(_tb));
-        }
+        private readonly TeleBillContext _tb = tb ?? throw new ArgumentNullException(nameof(tb));
 
         public async Task AddAsync(AuditLogDTO auditLogDTO)
         {
@@ -27,8 +22,8 @@ namespace Telebill.Repositories.IdentityAccess
             Metadata = auditLogDTO.Metadata
         };
 
-        tb.AuditLogs.Add(entity);
-        await tb.SaveChangesAsync();
+        _tb.AuditLogs.Add(entity);
+        await _tb.SaveChangesAsync();
         }
 
         

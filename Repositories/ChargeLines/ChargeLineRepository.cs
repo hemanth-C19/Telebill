@@ -11,19 +11,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Telebill.Repositories.ChargeLines
 {
-    public class ChargeLineRepository : IChargeLineRepository
+    public class ChargeLineRepository(TeleBillContext context) : IChargeLineRepository
     {
-
-        private readonly TeleBillContext _context;
-
-        public ChargeLineRepository(TeleBillContext context)
-        {
-            _context = context;
-        }
-
         public async Task<List<ChargeLineDTO>> GetByEncounterId(int encounterId)
         {
-            return await _context.ChargeLines
+            return await context.ChargeLines
                 .Where(c => c.EncounterId == encounterId)
                 .Select(c => new ChargeLineDTO
                 {
@@ -42,7 +34,7 @@ namespace Telebill.Repositories.ChargeLines
 
         public async Task<ChargeLineDTO?> GetById(int chargeId)
         {
-            return await _context.ChargeLines
+            return await context.ChargeLines
                 .Where(c => c.ChargeId == chargeId)
                 .Select(c => new ChargeLineDTO
                 {
@@ -73,8 +65,8 @@ namespace Telebill.Repositories.ChargeLines
                 Status = "Draft"
             };
 
-            _context.ChargeLines.Add(entity);
-            await _context.SaveChangesAsync();
+            context.ChargeLines.Add(entity);
+            await context.SaveChangesAsync();
 
             return new ChargeLineDTO
             {
@@ -92,7 +84,7 @@ namespace Telebill.Repositories.ChargeLines
 
         public async Task<ChargeLineDTO?> Update(int chargeId, ChargeLineUpdateDto dto)
         {
-            var entity = await _context.ChargeLines.FirstOrDefaultAsync(c => c.ChargeId == chargeId);
+            var entity = await context.ChargeLines.FirstOrDefaultAsync(c => c.ChargeId == chargeId);
             if (entity == null) return null;
 
             entity.Modifiers = dto.Modifiers ?? entity.Modifiers;
@@ -102,7 +94,7 @@ namespace Telebill.Repositories.ChargeLines
             if (!string.IsNullOrWhiteSpace(dto.Status))
                 entity.Status = dto.Status;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return new ChargeLineDTO
             {
@@ -120,27 +112,27 @@ namespace Telebill.Repositories.ChargeLines
 
         public async Task<bool> Delete(int chargeId)
         {
-            var entity = await _context.ChargeLines.FindAsync(chargeId);
+            var entity = await context.ChargeLines.FindAsync(chargeId);
             if (entity == null) return false;
 
-            _context.ChargeLines.Remove(entity);
-            await _context.SaveChangesAsync();
+            context.ChargeLines.Remove(entity);
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> SetStatus(int chargeId, string status)
         {
-            var entity = await _context.ChargeLines.FindAsync(chargeId);
+            var entity = await context.ChargeLines.FindAsync(chargeId);
             if (entity == null) return false;
 
             entity.Status = status;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> ExistsForEncounter(int encounterId)
         {
-            return await _context.ChargeLines.AnyAsync(c => c.EncounterId == encounterId);
+            return await context.ChargeLines.AnyAsync(c => c.EncounterId == encounterId);
         }
 
     }

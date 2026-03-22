@@ -1,14 +1,17 @@
-using Microsoft.Extensions.Options;
-using Telebill.Models;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Telebill.Repositories.Auth;
 using Telebill.Services.Auth;
-using Microsoft.EntityFrameworkCore;
 using Telebill.Services.MasterData;
 using Telebill.Repositories.MasterData;
 using Telebill.Repositories.Claims;
 
 using Telebill.Repositories.PatientCoverage;
-using Telebill.Services.PatientCoverage; 
+using Telebill.Services.PatientCoverage;
 
 using Telebill.Data;
 using Repositories;
@@ -27,19 +30,54 @@ using Telebill.Services.PreCert;
 using Telebill.Services.Batch;
 using Telebill.Repositories.Batch;
 using Telebill.Extensions;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
+var tokenKey = builder.Configuration["Token"]
+    ?? throw new InvalidOperationException("Token is not configured in appsettings.json.");
+if (string.IsNullOrWhiteSpace(tokenKey))
+    throw new InvalidOperationException("Token must be a non-empty secret in appsettings.json.");
 
-// MVC / Controllers
-builder.Services.AddControllers();
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenKey)),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
-// Add services to the container.
+builder.Services.AddAuthorization();
+
+// MVC / Controllers — require authenticated user unless action/controller allows anonymous
+builder.Services.AddControllers(options =>
+{
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+    options.Filters.Add(new AuthorizeFilter(policy));
+});
+
+builder.Services.AddFluentValidationAutoValidation();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddTransient<IAuthService, AuthService>();
 builder.Services.AddTransient<IAuthRepository, AuthRepository>();
 builder.Services.AddTransient<IProviderService, ProviderService>();
@@ -85,6 +123,8 @@ builder.Services.AddTransient<ICodingLockService, CodingLockService>();
 builder.Services.AddTransient<IBatchService, BatchService>();
 builder.Services.AddTransient<IBatchRepository, BatchRepository>();
 
+builder.Services.AddValidatorsFromAssemblyContaining<Telebill.Validations.MasterData.PayerDtoValidator>();
+
 // Add DbContext to DI (Scoped by default)
 builder.Services.AddDbContext<TeleBillContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TelebillDb")));
@@ -92,6 +132,9 @@ builder.Services.AddDbContext<TeleBillContext>(options =>
 var app = builder.Build();
 
 app.UseGlobalExceptionMiddleware();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseAuditLogger();
 app.MapControllers();
 
 // Configure the HTTP request pipeline.

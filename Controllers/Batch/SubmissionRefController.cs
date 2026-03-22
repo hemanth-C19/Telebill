@@ -8,21 +8,14 @@ namespace Telebill.Controllers.Batch;
 
 [ApiController]
 [Route("api/v1/batch")]
-public class SubmissionRefController : ControllerBase
+public class SubmissionRefController(IBatchService service) : ControllerBase
 {
-    private readonly IBatchService _service;
-
-    public SubmissionRefController(IBatchService service)
-    {
-        _service = service;
-    }
-
     [HttpPost("{batchID:int}/ack/999")]
     public async Task<IActionResult> Record999(int batchID, [FromBody] Record999AckRequestDto dto)
     {
         try
         {
-            var result = await _service.Record999AckAsync(batchID, dto, GetCurrentUserId());
+            var result = await service.Record999AckAsync(batchID, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -40,7 +33,7 @@ public class SubmissionRefController : ControllerBase
     {
         try
         {
-            var result = await _service.Record277CAAckAsync(batchID, claimID, dto, GetCurrentUserId());
+            var result = await service.Record277CAAckAsync(batchID, claimID, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -58,7 +51,7 @@ public class SubmissionRefController : ControllerBase
     {
         try
         {
-            var result = await _service.GetSubmissionRefsForBatchAsync(batchID);
+            var result = await service.GetSubmissionRefsForBatchAsync(batchID);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -72,7 +65,7 @@ public class SubmissionRefController : ControllerBase
     {
         try
         {
-            var result = await _service.GetSubmissionRefsByClaimAsync(claimID);
+            var result = await service.GetSubmissionRefsByClaimAsync(claimID);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

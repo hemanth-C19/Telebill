@@ -8,21 +8,14 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/coding/provider")]
-    public class ProviderPortalController : ControllerBase
+    public class ProviderPortalController(IProviderCodingService service) : ControllerBase
     {
-        private readonly IProviderCodingService _service;
-
-        public ProviderPortalController(IProviderCodingService service)
-        {
-            _service = service;
-        }
-
         [HttpGet("encounters")]
         public async Task<ActionResult<List<ProviderEncounterSummaryDto>>> GetProviderEncounters(
             [FromQuery] int providerId,
             [FromQuery] string? status)
         {
-            var items = await _service.GetProviderEncountersAsync(providerId, status);
+            var items = await service.GetProviderEncountersAsync(providerId, status);
             return Ok(items);
         }
 
@@ -31,7 +24,7 @@ namespace Telebill.Controllers
             int encounterId,
             [FromQuery] int providerId)
         {
-            var detail = await _service.GetProviderEncounterDetailAsync(encounterId, providerId);
+            var detail = await service.GetProviderEncounterDetailAsync(encounterId, providerId);
             if (detail == null)
             {
                 return NotFound();
@@ -46,7 +39,7 @@ namespace Telebill.Controllers
             [FromBody] SetDocumentationUriDto dto,
             [FromQuery] int providerId)
         {
-            var updated = await _service.SetDocumentationUriAsync(encounterId, dto, providerId);
+            var updated = await service.SetDocumentationUriAsync(encounterId, dto, providerId);
             if (updated == null)
             {
                 return NotFound();
@@ -60,13 +53,13 @@ namespace Telebill.Controllers
             int encounterId,
             [FromQuery] int providerId)
         {
-            var (success, error) = await _service.MarkReadyForCodingAsync(encounterId, providerId);
+            var (success, error) = await service.MarkReadyForCodingAsync(encounterId, providerId);
             if (!success)
             {
                 return BadRequest(error);
             }
 
-            var detail = await _service.GetProviderEncounterDetailAsync(encounterId, providerId);
+            var detail = await service.GetProviderEncounterDetailAsync(encounterId, providerId);
             return Ok(detail);
         }
     }

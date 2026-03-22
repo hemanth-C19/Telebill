@@ -7,18 +7,11 @@ using Telebill.Repositories.Claims;
 
 namespace Services;
 
-public class ClaimQueryService : IClaimQueryService
+public class ClaimQueryService(IClaimRepository repo) : IClaimQueryService
 {
-    private readonly IClaimRepository _repo;
-
-    public ClaimQueryService(IClaimRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<ClaimListResponseDto> GetClaimsAsync(ClaimFilterParams filters)
     {
-        var (claims, totalCount) = await _repo.GetClaimsPagedAsync(filters);
+        var (claims, totalCount) = await repo.GetClaimsPagedAsync(filters);
 
         var items = new List<ClaimSummaryDto>();
 
@@ -29,8 +22,8 @@ public class ClaimQueryService : IClaimQueryService
             var payerName = plan?.Payer?.Name ?? string.Empty;
             var providerName = encounter?.Provider?.Name ?? string.Empty;
 
-            var openErrors = await _repo.CountOpenErrorsAsync(c.ClaimId);
-            var openWarnings = await _repo.CountOpenWarningsAsync(c.ClaimId);
+            var openErrors = await repo.CountOpenErrorsAsync(c.ClaimId);
+            var openWarnings = await repo.CountOpenWarningsAsync(c.ClaimId);
 
             items.Add(new ClaimSummaryDto
             {
@@ -60,7 +53,7 @@ public class ClaimQueryService : IClaimQueryService
 
     public async Task<ClaimDetailDto?> GetClaimDetailAsync(int claimID)
     {
-        var claim = await _repo.GetByIdWithLinesAsync(claimID);
+        var claim = await repo.GetByIdWithLinesAsync(claimID);
         if (claim == null)
         {
             throw new KeyNotFoundException("Claim not found");
@@ -142,16 +135,16 @@ public class ClaimQueryService : IClaimQueryService
 
     public async Task<ClaimStatusSummaryDto?> GetClaimSummaryAsync(int claimID)
     {
-        var claim = await _repo.GetByIdAsync(claimID);
+        var claim = await repo.GetByIdAsync(claimID);
         if (claim == null)
         {
             throw new KeyNotFoundException("Claim not found");
         }
 
-        var openErrors = await _repo.CountOpenErrorsAsync(claimID);
-        var openWarnings = await _repo.CountOpenWarningsAsync(claimID);
-        var hasPriorAuth = await _repo.HasApprovedPriorAuthAsync(claimID);
-        var x12 = await _repo.GetX12RefByClaimIDAsync(claimID);
+        var openErrors = await repo.CountOpenErrorsAsync(claimID);
+        var openWarnings = await repo.CountOpenWarningsAsync(claimID);
+        var hasPriorAuth = await repo.HasApprovedPriorAuthAsync(claimID);
+        var x12 = await repo.GetX12RefByClaimIDAsync(claimID);
 
         return new ClaimStatusSummaryDto
         {

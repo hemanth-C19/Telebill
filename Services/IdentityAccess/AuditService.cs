@@ -5,15 +5,8 @@ using Telebill.Dto.IdentityAccess;
 
 namespace Telebill.Services.IdentityAccess
 {
-    public class AuditService : IAuditService
+    public class AuditService(IAuditRepository auditRepository) : IAuditService
     {
-        private readonly IAuditRepository auditRepository;
-
-        public AuditService(IAuditRepository _auditRepository)
-        {
-            auditRepository = _auditRepository;
-        }
-
         public Task AddAsync(AuditLogDTO auditLogDTO)
         {
             return auditRepository.AddAsync(auditLogDTO);

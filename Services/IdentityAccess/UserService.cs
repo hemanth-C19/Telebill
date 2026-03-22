@@ -10,17 +10,8 @@ using Telebill.Dto.IdentityAccess;
 
 namespace Telebill.Services.IdentityAccess
 {
-    public class UserService:IUserService
+    public class UserService(IUserRepository userRepository) : IUserService
     {
-        private readonly IUserRepository userRepository;
-
-        public UserService(IUserRepository _userRepository)
-        {
-            userRepository = _userRepository;
-        }
- 
-        
-
         public Task AddAsync(UserDTO user)
         {
             return userRepository.AddUserAsync(user);

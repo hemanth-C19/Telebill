@@ -6,18 +6,11 @@ using Telebill.Repositories.Claims;
 
 namespace Services;
 
-public class ClaimX12Service : IClaimX12Service
+public class ClaimX12Service(IClaimRepository repo) : IClaimX12Service
 {
-    private readonly IClaimRepository _repo;
-
-    public ClaimX12Service(IClaimRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<X12RefDto?> Generate837PAsync(int claimID)
     {
-        var claim = await _repo.GetByIdWithLinesAsync(claimID);
+        var claim = await repo.GetByIdWithLinesAsync(claimID);
         if (claim == null)
         {
             throw new KeyNotFoundException("Claim not found");
@@ -28,20 +21,20 @@ public class ClaimX12Service : IClaimX12Service
             throw new ArgumentException("Claim is not in Ready status");
         }
 
-        var openErrors = await _repo.CountOpenErrorsAsync(claimID);
+        var openErrors = await repo.CountOpenErrorsAsync(claimID);
         if (openErrors > 0)
         {
             throw new ArgumentException("Claim has open scrub errors");
         }
 
-        if (!await _repo.HasApprovedPriorAuthAsync(claimID))
+        if (!await repo.HasApprovedPriorAuthAsync(claimID))
         {
             throw new ArgumentException("Prior authorization required but not approved");
         }
 
         var uri = $"claims/837p/{DateTime.UtcNow:yyyy-MM-dd}-claim-{claimID}.edi";
 
-        var existing = await _repo.GetX12RefByClaimIDAsync(claimID);
+        var existing = await repo.GetX12RefByClaimIDAsync(claimID);
         X12837pRef x12;
 
         if (existing != null)
@@ -50,7 +43,7 @@ public class ClaimX12Service : IClaimX12Service
             existing.GeneratedDate = DateTime.UtcNow;
             existing.Version = "005010X222A1";
             existing.Status = "Generated";
-            await _repo.UpdateX12RefAsync(existing);
+            await repo.UpdateX12RefAsync(existing);
             x12 = existing;
         }
         else
@@ -63,7 +56,7 @@ public class ClaimX12Service : IClaimX12Service
                 Version = "005010X222A1",
                 Status = "Generated"
             };
-            x12 = await _repo.CreateX12RefAsync(x12);
+            x12 = await repo.CreateX12RefAsync(x12);
         }
 
         return new X12RefDto
@@ -80,7 +73,7 @@ public class ClaimX12Service : IClaimX12Service
 
     public async Task<X12RefDto?> Get837PRefAsync(int claimID)
     {
-        var x12 = await _repo.GetX12RefByClaimIDAsync(claimID);
+        var x12 = await repo.GetX12RefByClaimIDAsync(claimID);
         if (x12 == null)
         {
             throw new KeyNotFoundException("837P reference not found");

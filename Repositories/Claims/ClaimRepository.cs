@@ -2,13 +2,7 @@ using Telebill.Data;
 
 namespace Telebill.Repositories.Claims;
 
-public partial class ClaimRepository : IClaimRepository
+public partial class ClaimRepository(TeleBillContext context) : IClaimRepository
 {
-    private readonly TeleBillContext _context;
-
-    public ClaimRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
 }
 

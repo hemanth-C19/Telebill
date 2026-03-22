@@ -6,9 +6,7 @@ using Telebill.Repositories.PatientCoverage;
 namespace Telebill.Services.PatientCoverage;
 
 
-public class PatientService : IPatientService {
-    private readonly IPatientRepository _repo;
-    public PatientService(IPatientRepository repo) => _repo = repo;
+public class PatientService(IPatientRepository repo) : IPatientService {
 
     public async Task<Patient> RegisterPatient(PatientDto dto) {
         var patient = new Patient {
@@ -20,14 +18,14 @@ public class PatientService : IPatientService {
             Status = "Active",
             AddressJson = JsonSerializer.Serialize(new { dto.Street, dto.Area, dto.City })
         };
-        await _repo.AddPatientAsync(patient);
-        await _repo.SaveChangesAsync();
+        await repo.AddPatientAsync(patient);
+        await repo.SaveChangesAsync();
         return patient;
     }
 
 public async Task<Patient> GetPatientById(int id)
 {
-    var patient = await _repo.GetPatientByIdAsync(id);
+    var patient = await repo.GetPatientByIdAsync(id);
     if (patient == null)
     {
         throw new KeyNotFoundException("Patient not found");
@@ -45,8 +43,8 @@ public async Task<Patient> GetPatientById(int id)
             EffectiveTo = DateOnly.FromDateTime(dto.EffectiveFrom),
             Status = "Active"
         };
-        await _repo.AddCoverageAsync(coverage);
-        await _repo.SaveChangesAsync();
+        await repo.AddCoverageAsync(coverage);
+        await repo.SaveChangesAsync();
         return coverage;
     }
 
@@ -58,61 +56,61 @@ public async Task<Patient> GetPatientById(int id)
             Result = "Eligible",
             Notes = "Verified via TeleBill Phase-1 Mocking System"
         };
-        await _repo.AddEligibilityRefAsync(result);
-        await _repo.SaveChangesAsync();
+        await repo.AddEligibilityRefAsync(result);
+        await repo.SaveChangesAsync();
         return result;
     }
 
     // Standard Read/Update methods...
     public async Task<Coverage> GetCoverageDetailsAsync(int id)
     {
-        var coverage = await _repo.GetCoverageByIdAsync(id);
+        var coverage = await repo.GetCoverageByIdAsync(id);
         if (coverage == null)
         {
             throw new KeyNotFoundException("Coverage not found");
         }
         return coverage;
     }
-    public async Task<IEnumerable<Patient>> ListAllPatients() => await _repo.GetAllPatientsAsync();
-    public async Task<IEnumerable<Coverage>> GetPatientInsurance(int patientId) => await _repo.GetCoveragesByPatientIdAsync(patientId);
+    public async Task<IEnumerable<Patient>> ListAllPatients() => await repo.GetAllPatientsAsync();
+    public async Task<IEnumerable<Coverage>> GetPatientInsurance(int patientId) => await repo.GetCoveragesByPatientIdAsync(patientId);
     public async Task UpdatePatient(int id, PatientDto dto) {
-        var p = await _repo.GetPatientByIdAsync(id);
+        var p = await repo.GetPatientByIdAsync(id);
         if (p == null) throw new KeyNotFoundException("Patient not found");
         p.Name = dto.Name;
         p.ContactInfo = dto.ContactInfo;
-        _repo.UpdatePatient(p);
-        await _repo.SaveChangesAsync();
+        repo.UpdatePatient(p);
+        await repo.SaveChangesAsync();
     }
 public async Task<bool> RemovePatient(int patientId)
 {
     // 1. Get all coverages associated with this patient
-    var coverages = await _repo.GetCoveragesByPatientIdAsync(patientId);
+    var coverages = await repo.GetCoveragesByPatientIdAsync(patientId);
 
     // 2. Delete each coverage first
     foreach (var coverage in coverages)
     {
-        await _repo.DeleteCoverageAsync(coverage.CoverageId);
+        await repo.DeleteCoverageAsync(coverage.CoverageId);
     }
 
     // 3. Now it is safe to delete the patient
-    await _repo.DeletePatientAsync(patientId);
+    await repo.DeletePatientAsync(patientId);
 
     // 4. Save all changes together in one transaction
-    await _repo.SaveChangesAsync();
+    await repo.SaveChangesAsync();
     
     return true;
 }
 public async Task<bool> RemoveCoverage(int patientId ,int CoverageId)
 {
-    await _repo.DeleteCoverageByCoverageIdAsync(patientId, CoverageId);
-    await _repo.SaveChangesAsync();
+    await repo.DeleteCoverageByCoverageIdAsync(patientId, CoverageId);
+    await repo.SaveChangesAsync();
     return true;
 }
 
     public async Task<bool> DeleteCoverageAsync(int coverageId)
     {
-        await _repo.DeleteCoverageAsync(coverageId);
-        await _repo.SaveChangesAsync();
+        await repo.DeleteCoverageAsync(coverageId);
+        await repo.SaveChangesAsync();
         return true;
     }
 }

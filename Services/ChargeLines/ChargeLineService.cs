@@ -10,17 +10,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Telebill.Services.ChargeLines
 {
-    public class ChargeLineService : IChargeLineService
+    public class ChargeLineService(IChargeLineRepository repo, TeleBillContext context) : IChargeLineService
     {
-        
-private readonly IChargeLineRepository _repo;
-        private readonly TeleBillContext _context; // optional: for cross-entity validations
-
-        public ChargeLineService(IChargeLineRepository repo, TeleBillContext context)
-        {
-            _repo = repo ?? throw new ArgumentNullException(nameof(repo));
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
+        private readonly IChargeLineRepository _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+        private readonly TeleBillContext _context = context ?? throw new ArgumentNullException(nameof(context)); // optional: for cross-entity validations
 
         public Task<List<ChargeLineDTO>> GetByEncounterId(int encounterId)
             => _repo.GetByEncounterId(encounterId);

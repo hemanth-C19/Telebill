@@ -10,22 +10,15 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("EncounterModule/[controller]")]
-    public class ChargeLineController : ControllerBase
+    public class ChargeLineController(IChargeLineService service) : ControllerBase
     {
-        private readonly IChargeLineService _service;
-
-        public ChargeLineController(IChargeLineService service)
-        {
-            _service = service;
-        }
-
         // GET: EncounterModule/ChargeLine/ByEncounter/123
         [HttpGet("ByEncounter/{encounterId:int}")]
         public async Task<IActionResult> GetByEncounterId([FromRoute] int encounterId, CancellationToken ct)
         {
             try
             {
-                var items = await _service.GetByEncounterId(encounterId);
+                var items = await service.GetByEncounterId(encounterId);
                 return Ok(items);
             }
             catch (ValidationException ex)
@@ -40,7 +33,7 @@ namespace Telebill.Controllers
         {
             try
             {
-                var item = await _service.GetById(chargeId);
+                var item = await service.GetById(chargeId);
                 if (item is null) return NotFound();
                 return Ok(item);
             }
@@ -56,7 +49,7 @@ namespace Telebill.Controllers
         {
             try
             {
-                var created = await _service.Add(encounterId, dto);
+                var created = await service.Add(encounterId, dto);
                 // Route to self by id
                 return CreatedAtAction(nameof(GetById), new { chargeId = created.ChargeId }, created);
             }
@@ -72,7 +65,7 @@ namespace Telebill.Controllers
         {
             try
             {
-                var updated = await _service.Update(chargeId, dto);
+                var updated = await service.Update(chargeId, dto);
                 if (updated is null) return NotFound();
                 return Ok(updated);
             }
@@ -88,7 +81,7 @@ namespace Telebill.Controllers
         {
             try
             {
-                var ok = await _service.Delete(chargeId);
+                var ok = await service.Delete(chargeId);
                 return ok ? NoContent() : NotFound();
             }
             catch (ValidationException ex)
@@ -103,7 +96,7 @@ namespace Telebill.Controllers
         {
             try
             {
-                var ok = await _service.SetStatus(chargeId, value);
+                var ok = await service.SetStatus(chargeId, value);
                 return ok ? NoContent() : NotFound();
             }
             catch (ValidationException ex)

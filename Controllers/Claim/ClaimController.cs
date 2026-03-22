@@ -8,21 +8,14 @@ namespace Telebill.Controllers;
 
 [ApiController]
 [Route("api/claims")]
-public class ClaimController : ControllerBase
+public class ClaimController(IClaimService claimService) : ControllerBase
 {
-    private readonly IClaimService _claimService;
-
-    public ClaimController(IClaimService claimService)
-    {
-        _claimService = claimService;
-    }
-
     [HttpPost("build")]
     public async Task<IActionResult> BuildClaim([FromBody] BuildClaimRequestDto dto)
     {
         try
         {
-            var result = await _claimService.BuildClaimAsync(dto);
+            var result = await claimService.BuildClaimAsync(dto);
             return StatusCode(201, result);
         }
         catch (ArgumentException ex)
@@ -64,14 +57,14 @@ public class ClaimController : ControllerBase
             SortOrder = sortOrder
         };
 
-        var result = await _claimService.GetClaimsAsync(filters);
+        var result = await claimService.GetClaimsAsync(filters);
         return Ok(result);
     }
 
     [HttpGet("{claimID:int}")]
     public async Task<IActionResult> GetClaimDetail(int claimID)
     {
-        var result = await _claimService.GetClaimDetailAsync(claimID);
+        var result = await claimService.GetClaimDetailAsync(claimID);
         if (result == null)
         {
             return NotFound();
@@ -83,7 +76,7 @@ public class ClaimController : ControllerBase
     [HttpGet("{claimID:int}/summary")]
     public async Task<IActionResult> GetClaimSummary(int claimID)
     {
-        var result = await _claimService.GetClaimSummaryAsync(claimID);
+        var result = await claimService.GetClaimSummaryAsync(claimID);
         if (result == null)
         {
             return NotFound();
@@ -97,7 +90,7 @@ public class ClaimController : ControllerBase
     {
         try
         {
-            var result = await _claimService.UpdateClaimStatusAsync(claimID, dto);
+            var result = await claimService.UpdateClaimStatusAsync(claimID, dto);
             if (result == null)
             {
                 return NotFound();

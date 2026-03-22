@@ -1,13 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Telebill.Models;
 
-namespace Telebill.Repositories.Auth
+namespace Telebill.Repositories.Auth;
+
+public interface IAuthRepository
 {
-    public interface IAuthRepository
-    {
-        Task<bool> Login(string email);
-        void Logout();
-    }
+    /// <summary>Validates credentials. User table has no password column yet — only non-empty password is required; add hash verification when you store passwords.</summary>
+    Task<User?> LoginAsync(string email, string password);
+
+    void Logout();
 }

@@ -8,21 +8,14 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/coding/diagnoses")]
-    public class DiagnosisController : ControllerBase
+    public class DiagnosisController(ICoderWorklistService service) : ControllerBase
     {
-        private readonly ICoderWorklistService _service;
-
-        public DiagnosisController(ICoderWorklistService service)
-        {
-            _service = service;
-        }
-
         [HttpPost]
         public async Task<IActionResult> AddDiagnosis(
             [FromBody] AddDiagnosisDto dto,
             [FromQuery] int userId)
         {
-            var (success, error, result) = await _service.AddDiagnosisAsync(dto, userId);
+            var (success, error, result) = await service.AddDiagnosisAsync(dto, userId);
             if (!success)
             {
                 return BadRequest(error);
@@ -34,7 +27,7 @@ namespace Telebill.Controllers
         [HttpGet("by-encounter/{encounterId:int}")]
         public async Task<ActionResult<List<DiagnosisResultDto>>> GetByEncounter(int encounterId)
         {
-            var list = await _service.GetDiagnosesByEncounterAsync(encounterId);
+            var list = await service.GetDiagnosesByEncounterAsync(encounterId);
             return Ok(list);
         }
 
@@ -44,7 +37,7 @@ namespace Telebill.Controllers
             [FromBody] UpdateDiagnosisDto dto,
             [FromQuery] int userId)
         {
-            var (success, error, result) = await _service.UpdateDiagnosisAsync(dxId, dto, userId);
+            var (success, error, result) = await service.UpdateDiagnosisAsync(dxId, dto, userId);
             if (!success)
             {
                 return BadRequest(error);
@@ -63,7 +56,7 @@ namespace Telebill.Controllers
             int dxId,
             [FromQuery] int userId)
         {
-            var (success, error) = await _service.RemoveDiagnosisAsync(dxId, userId);
+            var (success, error) = await service.RemoveDiagnosisAsync(dxId, userId);
             if (!success)
             {
                 return BadRequest(error);

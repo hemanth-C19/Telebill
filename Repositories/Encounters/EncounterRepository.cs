@@ -9,24 +9,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Repositories
 {
-    public class EncounterRepository : IEncounterRepository
+    public class EncounterRepository(TeleBillContext context) : IEncounterRepository
     {
-        private readonly TeleBillContext _context;
-
-        public EncounterRepository(TeleBillContext context)
-        {
-            _context = context;
-        }
-
         // public async Task<List<Encounter>> GetAll()
         // {
-        //     return await _context.Encounters.ToListAsync();
+        //     return await context.Encounters.ToListAsync();
         // }
 
 
         public async Task<List<GetEncounterDTO>> GetAll()
         {
-            return await _context.Encounters
+            return await context.Encounters
                 .Select(e => new GetEncounterDTO
                 {
                     EncounterId = e.EncounterId,
@@ -44,7 +37,7 @@ namespace Repositories
 
         public async Task<GetEncounterDTO?> GetById(int id)
         {
-            return await _context.Encounters
+            return await context.Encounters
                 .Where(e => e.EncounterId == id)
                 .Select(e => new GetEncounterDTO
                 {
@@ -75,8 +68,8 @@ namespace Repositories
                     Status = dto.Status ?? "Open"
                 };
 
-                _context.Encounters.Add(entity);
-                await _context.SaveChangesAsync();
+                context.Encounters.Add(entity);
+                await context.SaveChangesAsync();
 
 
                 
@@ -95,7 +88,7 @@ namespace Repositories
 
         public async Task<EncounterUpdateDTO?> Update(int id, EncounterUpdateDTO dto)
         {
-            var encounter = await _context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == id);
+            var encounter = await context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == id);
             if (encounter == null) return null;
 
             encounter.EncounterDateTime = dto.EncounterDateTime;
@@ -104,7 +97,7 @@ namespace Repositories
             encounter.Pos = dto.Pos;
             encounter.DocumentationUri = dto.DocumentationUri;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             var enc = new EncounterUpdateDTO
             {
@@ -119,12 +112,12 @@ namespace Repositories
 
         public async Task<bool> Delete(int id)
         {
-            var enc = await _context.Encounters.FindAsync(id);
+            var enc = await context.Encounters.FindAsync(id);
 
             if (enc == null) return false;
 
-            _context.Encounters.Remove(enc);
-            await _context.SaveChangesAsync();
+            context.Encounters.Remove(enc);
+            await context.SaveChangesAsync();
             return true;
         }
     }

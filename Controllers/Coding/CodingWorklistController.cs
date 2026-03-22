@@ -8,28 +8,21 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/coding/worklist")]
-    public class CodingWorklistController : ControllerBase
+    public class CodingWorklistController(ICoderWorklistService service) : ControllerBase
     {
-        private readonly ICoderWorklistService _service;
-
-        public CodingWorklistController(ICoderWorklistService service)
-        {
-            _service = service;
-        }
-
         [HttpGet]
         public async Task<ActionResult<List<CodingWorklistItemDto>>> GetWorklist(
             [FromQuery] int? providerId,
             [FromQuery] int? planId)
         {
-            var items = await _service.GetCodingWorklistAsync(providerId, planId);
+            var items = await service.GetCodingWorklistAsync(providerId, planId);
             return Ok(items);
         }
 
         [HttpGet("{encounterId:int}")]
         public async Task<IActionResult> GetEncounterCard(int encounterId)
         {
-            var card = await _service.GetCodingEncounterCardAsync(encounterId);
+            var card = await service.GetCodingEncounterCardAsync(encounterId);
             if (card == null)
             {
                 return NotFound();
@@ -44,7 +37,7 @@ namespace Telebill.Controllers
             [FromBody] UpdateEncounterPosDto dto,
             [FromQuery] int userId)
         {
-            var (success, error) = await _service.UpdateEncounterPosAsync(encounterId, dto, userId);
+            var (success, error) = await service.UpdateEncounterPosAsync(encounterId, dto, userId);
             if (!success)
             {
                 return BadRequest(error);
@@ -61,7 +54,7 @@ namespace Telebill.Controllers
             [FromQuery] int userId)
         {
             var (success, error, updated) =
-                await _service.UpdateChargeLineModifiersAsync(encounterId, chargeId, dto, userId);
+                await service.UpdateChargeLineModifiersAsync(encounterId, chargeId, dto, userId);
 
             if (!success)
             {

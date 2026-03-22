@@ -7,37 +7,30 @@ using Telebill.Repositories.MasterData;
 
 namespace Telebill.Services.MasterData
 {
-    public class ProviderService : IProviderService
+    public class ProviderService(IProviderRepository repo) : IProviderService
     {
-        private readonly IProviderRepository _repo;
+        public Task<IEnumerable<Provider>> GetAllProvidersAsync() => repo.GetAllProvidersAsync();
 
-        public ProviderService(IProviderRepository repo)
-        {
-            _repo = repo;
-        }
-
-        public Task<IEnumerable<Provider>> GetAllProvidersAsync() => _repo.GetAllProvidersAsync();
-
-        public Task RegisterProviderAsync(CreateUpdateProviderDTO provider) => _repo.RegisterProviderAsync(provider);
+        public Task RegisterProviderAsync(CreateUpdateProviderDTO provider) => repo.RegisterProviderAsync(provider);
 
         public Task UpdateProviderByIdAsync(int Pid, CreateUpdateProviderDTO dto) =>
-            _repo.UpdateProviderTelehealthAsync(Pid, dto);
+            repo.UpdateProviderTelehealthAsync(Pid, dto);
 
         public Task<IEnumerable<ProviderActiveInfo>> GetActiveProvidersAsync()
         {
-            return _repo.GetActiveProvidersAsync();
+            return repo.GetActiveProvidersAsync();
         }
 
         Task<Provider> IProviderService.GetProviderByNameAsync(string ProviderName)
         {
-            return _repo.GetProviderByNameAsync(ProviderName);
+            return repo.GetProviderByNameAsync(ProviderName);
         }
 
         Task<Provider> IProviderService.GetProviderByNPIAsync(string NpiId)
         {
-            return _repo.GetProviderByNPIAsync(NpiId);
+            return repo.GetProviderByNPIAsync(NpiId);
         }
 
-        public Task DeleteProviderByIdAsync(int Pid) => _repo.DeleteProviderByIdAsync(Pid);
+        public Task DeleteProviderByIdAsync(int Pid) => repo.DeleteProviderByIdAsync(Pid);
     }
 }

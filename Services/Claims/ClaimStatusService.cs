@@ -5,18 +5,11 @@ using Telebill.Repositories.Claims;
 
 namespace Services;
 
-public class ClaimStatusService : IClaimStatusService
+public class ClaimStatusService(IClaimRepository repo) : IClaimStatusService
 {
-    private readonly IClaimRepository _repo;
-
-    public ClaimStatusService(IClaimRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<UpdateClaimStatusResponseDto?> UpdateClaimStatusAsync(int claimID, UpdateClaimStatusRequestDto dto)
     {
-        var claim = await _repo.GetByIdAsync(claimID);
+        var claim = await repo.GetByIdAsync(claimID);
         if (claim == null)
         {
             throw new KeyNotFoundException("Claim not found");
@@ -31,7 +24,7 @@ public class ClaimStatusService : IClaimStatusService
         }
 
         claim.ClaimStatus = newStatus;
-        await _repo.UpdateStatusAsync(claimID, newStatus);
+        await repo.UpdateStatusAsync(claimID, newStatus);
 
         return new UpdateClaimStatusResponseDto
         {

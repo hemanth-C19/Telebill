@@ -10,14 +10,14 @@ public partial class ClaimRepository
 {
     public Task<List<ScrubRule>> GetActiveScrubRulesAsync()
     {
-        return _context.ScrubRules
+        return context.ScrubRules
             .Where(r => r.Status == "Active")
             .ToListAsync();
     }
 
     public Task<List<ScrubRule>> GetScrubRulesFilteredAsync(string? severity, string? status)
     {
-        var query = _context.ScrubRules.AsQueryable();
+        var query = context.ScrubRules.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(severity))
         {
@@ -34,26 +34,26 @@ public partial class ClaimRepository
 
     public Task<ScrubRule?> GetScrubRuleByIdAsync(int ruleID)
     {
-        return _context.ScrubRules.FirstOrDefaultAsync(r => r.RuleId == ruleID);
+        return context.ScrubRules.FirstOrDefaultAsync(r => r.RuleId == ruleID);
     }
 
     public async Task<ScrubRule> CreateScrubRuleAsync(ScrubRule rule)
     {
-        _context.ScrubRules.Add(rule);
-        await _context.SaveChangesAsync();
+        context.ScrubRules.Add(rule);
+        await context.SaveChangesAsync();
         return rule;
     }
 
     public async Task<ScrubRule> UpdateScrubRuleAsync(ScrubRule rule)
     {
-        _context.ScrubRules.Update(rule);
-        await _context.SaveChangesAsync();
+        context.ScrubRules.Update(rule);
+        await context.SaveChangesAsync();
         return rule;
     }
 
     public async Task<List<ScrubIssue>> GetIssuesByClaimIDAsync(int claimID, string statusFilter)
     {
-        var query = _context.ScrubIssues
+        var query = context.ScrubIssues
             .Include(i => i.Rule)
             .Include(i => i.ClaimLine)
             .Where(i => i.ClaimId == claimID);
@@ -68,12 +68,12 @@ public partial class ClaimRepository
 
     public Task<ScrubIssue?> GetIssueByIdAsync(int issueID)
     {
-        return _context.ScrubIssues.FirstOrDefaultAsync(i => i.IssueId == issueID);
+        return context.ScrubIssues.FirstOrDefaultAsync(i => i.IssueId == issueID);
     }
 
     public Task<ScrubIssue?> GetOpenIssueByRuleAsync(int claimID, int ruleID, int? claimLineID)
     {
-        return _context.ScrubIssues.FirstOrDefaultAsync(i =>
+        return context.ScrubIssues.FirstOrDefaultAsync(i =>
             i.ClaimId == claimID &&
             i.RuleId == ruleID &&
             i.Status == "Open" &&
@@ -83,39 +83,39 @@ public partial class ClaimRepository
 
     public async Task<int> CountOpenErrorsAsync(int claimID)
     {
-        return await _context.ScrubIssues
-            .Join(_context.ScrubRules, i => i.RuleId, r => r.RuleId, (i, r) => new { i, r })
+        return await context.ScrubIssues
+            .Join(context.ScrubRules, i => i.RuleId, r => r.RuleId, (i, r) => new { i, r })
             .CountAsync(j => j.i.ClaimId == claimID && j.i.Status == "Open" && j.r.Severity == "Error");
     }
 
     public async Task<int> CountOpenWarningsAsync(int claimID)
     {
-        return await _context.ScrubIssues
-            .Join(_context.ScrubRules, i => i.RuleId, r => r.RuleId, (i, r) => new { i, r })
+        return await context.ScrubIssues
+            .Join(context.ScrubRules, i => i.RuleId, r => r.RuleId, (i, r) => new { i, r })
             .CountAsync(j => j.i.ClaimId == claimID && j.i.Status == "Open" && j.r.Severity == "Warning");
     }
 
     public async Task CreateIssueAsync(ScrubIssue issue)
     {
-        _context.ScrubIssues.Add(issue);
-        await _context.SaveChangesAsync();
+        context.ScrubIssues.Add(issue);
+        await context.SaveChangesAsync();
     }
 
     public async Task ResolveIssueAsync(int issueID)
     {
-        var issue = await _context.ScrubIssues.FindAsync(issueID);
+        var issue = await context.ScrubIssues.FindAsync(issueID);
         if (issue == null)
         {
             return;
         }
 
         issue.Status = "Resolved";
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task ResolveIssueByRuleAsync(int claimID, int ruleID, int? claimLineID)
     {
-        var issues = await _context.ScrubIssues
+        var issues = await context.ScrubIssues
             .Where(i =>
                 i.ClaimId == claimID &&
                 i.RuleId == ruleID &&
@@ -129,7 +129,7 @@ public partial class ClaimRepository
             issue.Status = "Resolved";
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }
 

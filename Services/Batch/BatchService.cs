@@ -9,15 +9,8 @@ using Telebill.Repositories.Batch;
 
 namespace Telebill.Services.Batch;
 
-public class BatchService : IBatchService
+public class BatchService(IBatchRepository repo) : IBatchService
 {
-    private readonly IBatchRepository _repo;
-
-    public BatchService(IBatchRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<BatchSummaryDto> CreateBatchAsync(CreateBatchRequestDto dto, int currentUserID)
     {
         var entity = new SubmissionBatch
@@ -28,9 +21,9 @@ public class BatchService : IBatchService
             Status = "Open"
         };
 
-        entity = await _repo.CreateBatchAsync(entity);
+        entity = await repo.CreateBatchAsync(entity);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "CREATE_BATCH", $"SubmissionBatch:{entity.BatchId}",
+        await repo.WriteAuditLogAsync(currentUserID, "CREATE_BATCH", $"SubmissionBatch:{entity.BatchId}",
             JsonSerializer.Serialize(new { batchDate = dto.BatchDate }));
 
         return MapBatchSummary(entity);
@@ -39,7 +32,7 @@ public class BatchService : IBatchService
     public async Task<BatchListResponseDto> GetBatchesAsync(string? status, DateOnly? dateFrom, DateOnly? dateTo, int page, int pageSize)
     {
         pageSize = Math.Min(pageSize, 100);
-        var (batches, totalCount) = await _repo.GetBatchesPagedAsync(status, dateFrom, dateTo, page, pageSize);
+        var (batches, totalCount) = await repo.GetBatchesPagedAsync(status, dateFrom, dateTo, page, pageSize);
         return new BatchListResponseDto
         {
             TotalCount = totalCount,
@@ -49,15 +42,15 @@ public class BatchService : IBatchService
 
     public async Task<BatchDetailDto> GetBatchDetailAsync(int batchID)
     {
-        var batch = await _repo.GetBatchByIdAsync(batchID);
+        var batch = await repo.GetBatchByIdAsync(batchID);
         if (batch == null)
         {
             throw new KeyNotFoundException("Batch not found");
         }
 
-        var refs = await _repo.GetSubmissionRefsByBatchAsync(batchID);
+        var refs = await repo.GetSubmissionRefsByBatchAsync(batchID);
         var claimIds = refs.Where(r => r.ClaimId != null).Select(r => r.ClaimId!.Value).Distinct().ToList();
-        var claims = claimIds.Count == 0 ? new List<Claim>() : await _repo.GetClaimsByIdsAsync(claimIds);
+        var claims = claimIds.Count == 0 ? new List<Claim>() : await repo.GetClaimsByIdsAsync(claimIds);
 
         var detail = new BatchDetailDto
         {
@@ -72,7 +65,7 @@ public class BatchService : IBatchService
 
         foreach (var claim in claims)
         {
-            var x12 = await _repo.GetX12RefByClaimIdAsync(claim.ClaimId);
+            var x12 = await repo.GetX12RefByClaimIdAsync(claim.ClaimId);
             var claimRefs = refsByClaim.TryGetValue(claim.ClaimId, out var list) ? list : new List<SubmissionRef>();
 
             detail.Claims.Add(new BatchClaimLineDto
@@ -93,7 +86,7 @@ public class BatchService : IBatchService
 
     public async Task<AddClaimsResponseDto> AddClaimsToBatchAsync(int batchID, AddClaimsToBatchRequestDto dto, int currentUserID)
     {
-        var batch = await _repo.GetBatchByIdAsync(batchID);
+        var batch = await repo.GetBatchByIdAsync(batchID);
         if (batch == null)
         {
             throw new KeyNotFoundException("Batch not found");
@@ -113,7 +106,7 @@ public class BatchService : IBatchService
 
         foreach (var claimId in dto.ClaimIDs.Distinct())
         {
-            var claim = await _repo.GetClaimByIdAsync(claimId);
+            var claim = await repo.GetClaimByIdAsync(claimId);
             if (claim == null)
             {
                 failed.Add(claimId);
@@ -128,14 +121,14 @@ public class BatchService : IBatchService
                 continue;
             }
 
-            if (await _repo.ClaimAlreadyBatchedAsync(claimId))
+            if (await repo.ClaimAlreadyBatchedAsync(claimId))
             {
                 failed.Add(claimId);
                 reasons.Add($"Claim #{claimId} already assigned to a batch");
                 continue;
             }
 
-            var x12 = await _repo.GetX12RefByClaimIdAsync(claimId);
+            var x12 = await repo.GetX12RefByClaimIdAsync(claimId);
             if (x12 == null)
             {
                 failed.Add(claimId);
@@ -143,7 +136,7 @@ public class BatchService : IBatchService
                 continue;
             }
 
-            await _repo.UpdateClaimStatusAsync(claimId, "Batched");
+            await repo.UpdateClaimStatusAsync(claimId, "Batched");
 
             newRefs.Add(new SubmissionRef
             {
@@ -164,14 +157,14 @@ public class BatchService : IBatchService
 
         if (newRefs.Count > 0)
         {
-            await _repo.CreateSubmissionRefsAsync(newRefs);
+            await repo.CreateSubmissionRefsAsync(newRefs);
         }
 
         batch.ItemCount = (batch.ItemCount ?? 0) + success;
         batch.TotalCharge = (batch.TotalCharge ?? 0m) + runningTotal;
-        await _repo.UpdateBatchAsync(batch);
+        await repo.UpdateBatchAsync(batch);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "ADD_CLAIMS_TO_BATCH", $"SubmissionBatch:{batchID}",
+        await repo.WriteAuditLogAsync(currentUserID, "ADD_CLAIMS_TO_BATCH", $"SubmissionBatch:{batchID}",
             JsonSerializer.Serialize(new { claimsAdded = success, failedCount = failed.Count }));
 
         return new AddClaimsResponseDto
@@ -187,7 +180,7 @@ public class BatchService : IBatchService
 
     public async Task RemoveClaimFromBatchAsync(int batchID, int claimID, int currentUserID)
     {
-        var batch = await _repo.GetBatchByIdAsync(batchID);
+        var batch = await repo.GetBatchByIdAsync(batchID);
         if (batch == null)
         {
             throw new KeyNotFoundException("Batch not found");
@@ -198,32 +191,32 @@ public class BatchService : IBatchService
             throw new ArgumentException("Claims can only be removed from an Open batch");
         }
 
-        var link = await _repo.GetSubmissionRefByBatchAndClaimAsync(batchID, claimID);
+        var link = await repo.GetSubmissionRefByBatchAndClaimAsync(batchID, claimID);
         if (link == null)
         {
             throw new KeyNotFoundException("Claim is not in this batch");
         }
 
-        var claim = await _repo.GetClaimByIdAsync(claimID);
+        var claim = await repo.GetClaimByIdAsync(claimID);
         if (claim == null)
         {
             throw new KeyNotFoundException("Claim not found");
         }
 
-        await _repo.UpdateClaimStatusAsync(claimID, "Ready");
-        await _repo.DeleteSubmissionRefAsync(batchID, claimID);
+        await repo.UpdateClaimStatusAsync(claimID, "Ready");
+        await repo.DeleteSubmissionRefAsync(batchID, claimID);
 
         batch.ItemCount = Math.Max(0, (batch.ItemCount ?? 0) - 1);
         batch.TotalCharge = (batch.TotalCharge ?? 0m) - (claim.TotalCharge ?? 0m);
-        await _repo.UpdateBatchAsync(batch);
+        await repo.UpdateBatchAsync(batch);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "REMOVE_CLAIM_FROM_BATCH", $"SubmissionBatch:{batchID}",
+        await repo.WriteAuditLogAsync(currentUserID, "REMOVE_CLAIM_FROM_BATCH", $"SubmissionBatch:{batchID}",
             JsonSerializer.Serialize(new { claimID, claimTotalCharge = claim.TotalCharge ?? 0m }));
     }
 
     public async Task<BatchSummaryDto> GenerateBatchAsync(int batchID, int currentUserID)
     {
-        var batch = await _repo.GetBatchByIdAsync(batchID);
+        var batch = await repo.GetBatchByIdAsync(batchID);
         if (batch == null) throw new KeyNotFoundException("Batch not found");
 
         if (!string.Equals(batch.Status, "Open", StringComparison.OrdinalIgnoreCase))
@@ -236,12 +229,12 @@ public class BatchService : IBatchService
             throw new ArgumentException("Cannot generate an empty batch");
         }
 
-        var refs = await _repo.GetSubmissionRefsByBatchAsync(batchID);
+        var refs = await repo.GetSubmissionRefsByBatchAsync(batchID);
         var claimIds = refs.Where(r => r.ClaimId != null).Select(r => r.ClaimId!.Value).Distinct().ToList();
         var missing = new List<int>();
         foreach (var claimId in claimIds)
         {
-            var x12 = await _repo.GetX12RefByClaimIdAsync(claimId);
+            var x12 = await repo.GetX12RefByClaimIdAsync(claimId);
             if (x12 == null)
             {
                 missing.Add(claimId);
@@ -254,15 +247,15 @@ public class BatchService : IBatchService
         }
 
         batch.Status = "Generated";
-        await _repo.UpdateBatchAsync(batch);
+        await repo.UpdateBatchAsync(batch);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "GENERATE_BATCH", $"SubmissionBatch:{batchID}",
+        await repo.WriteAuditLogAsync(currentUserID, "GENERATE_BATCH", $"SubmissionBatch:{batchID}",
             JsonSerializer.Serialize(new { itemCount = batch.ItemCount ?? 0, totalCharge = batch.TotalCharge ?? 0m }));
 
-        var frontDesk = await _repo.GetUsersByRoleAsync("FrontDesk");
+        var frontDesk = await repo.GetUsersByRoleAsync("FrontDesk");
         foreach (var u in frontDesk)
         {
-            await _repo.CreateNotificationAsync(u.UserId,
+            await repo.CreateNotificationAsync(u.UserId,
                 $"Batch #{batchID} is ready for submission. {(batch.ItemCount ?? 0)} claims, ${(batch.TotalCharge ?? 0m)} total.",
                 "Submission");
         }
@@ -272,7 +265,7 @@ public class BatchService : IBatchService
 
     public async Task<MarkSubmittedResponseDto> MarkBatchSubmittedAsync(int batchID, MarkSubmittedRequestDto dto, int currentUserID)
     {
-        var batch = await _repo.GetBatchByIdAsync(batchID);
+        var batch = await repo.GetBatchByIdAsync(batchID);
         if (batch == null) throw new KeyNotFoundException("Batch not found");
 
         if (!string.Equals(batch.Status, "Generated", StringComparison.OrdinalIgnoreCase))
@@ -281,9 +274,9 @@ public class BatchService : IBatchService
         }
 
         batch.Status = "Submitted";
-        await _repo.UpdateBatchAsync(batch);
+        await repo.UpdateBatchAsync(batch);
 
-        var refs = await _repo.GetSubmissionRefsByBatchAsync(batchID);
+        var refs = await repo.GetSubmissionRefsByBatchAsync(batchID);
         var claimIds = refs.Where(r => r.ClaimId != null).Select(r => r.ClaimId!.Value).Distinct().ToList();
 
         // Update existing membership refs (AckType == null) to become the initial "submitted" refs
@@ -295,23 +288,23 @@ public class BatchService : IBatchService
         }
         if (membershipRefs.Count > 0)
         {
-            await _repo.UpdateSubmissionRefsAsync(membershipRefs);
+            await repo.UpdateSubmissionRefsAsync(membershipRefs);
         }
 
-        await _repo.UpdateClaimStatusBulkAsync(claimIds, "Submitted");
+        await repo.UpdateClaimStatusBulkAsync(claimIds, "Submitted");
 
-        await _repo.WriteAuditLogAsync(currentUserID, "MARK_BATCH_SUBMITTED", $"SubmissionBatch:{batchID}",
+        await repo.WriteAuditLogAsync(currentUserID, "MARK_BATCH_SUBMITTED", $"SubmissionBatch:{batchID}",
             JsonSerializer.Serialize(new { clearinghouseID = dto.ClearinghouseID, submitDate = dto.SubmitDate, claimsCount = claimIds.Count }));
 
-        var frontDesk = await _repo.GetUsersByRoleAsync("FrontDesk");
+        var frontDesk = await repo.GetUsersByRoleAsync("FrontDesk");
         foreach (var u in frontDesk)
         {
-            await _repo.CreateNotificationAsync(u.UserId,
+            await repo.CreateNotificationAsync(u.UserId,
                 $"Batch #{batchID} marked as submitted to {dto.ClearinghouseID}. Awaiting 999 acknowledgement.",
                 "Submission");
         }
 
-        var updatedRefs = await _repo.GetSubmissionRefsByBatchAsync(batchID);
+        var updatedRefs = await repo.GetSubmissionRefsByBatchAsync(batchID);
         return new MarkSubmittedResponseDto
         {
             BatchID = batchID,
@@ -323,7 +316,7 @@ public class BatchService : IBatchService
 
     public async Task<Record999AckResponseDto> Record999AckAsync(int batchID, Record999AckRequestDto dto, int currentUserID)
     {
-        var batch = await _repo.GetBatchByIdAsync(batchID);
+        var batch = await repo.GetBatchByIdAsync(batchID);
         if (batch == null) throw new KeyNotFoundException("Batch not found");
 
         if (!string.Equals(batch.Status, "Submitted", StringComparison.OrdinalIgnoreCase))
@@ -331,12 +324,12 @@ public class BatchService : IBatchService
             throw new ArgumentException("999 ACK can only be recorded for Submitted batches");
         }
 
-        if (await _repo.Has999AckForBatchAsync(batchID))
+        if (await repo.Has999AckForBatchAsync(batchID))
         {
             throw new ArgumentException("999 ACK already recorded for this batch");
         }
 
-        var refs = await _repo.GetSubmissionRefsByBatchAsync(batchID);
+        var refs = await repo.GetSubmissionRefsByBatchAsync(batchID);
         var claimIds = refs.Where(r => r.AckType == null && r.ClaimId != null).Select(r => r.ClaimId!.Value).Distinct().ToList();
 
         var created = claimIds.Select(claimId => new SubmissionRef
@@ -352,7 +345,7 @@ public class BatchService : IBatchService
             Notes = dto.Notes
         }).ToList();
 
-        await _repo.CreateSubmissionRefsAsync(created);
+        await repo.CreateSubmissionRefsAsync(created);
 
         if (string.Equals(dto.AckStatus, "Accepted", StringComparison.OrdinalIgnoreCase))
         {
@@ -361,20 +354,20 @@ public class BatchService : IBatchService
         else
         {
             batch.Status = "Failed";
-            await _repo.UpdateClaimStatusBulkAsync(claimIds, "Rejected");
+            await repo.UpdateClaimStatusBulkAsync(claimIds, "Rejected");
         }
-        await _repo.UpdateBatchAsync(batch);
+        await repo.UpdateBatchAsync(batch);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "RECORD_999_ACK", $"SubmissionBatch:{batchID}",
+        await repo.WriteAuditLogAsync(currentUserID, "RECORD_999_ACK", $"SubmissionBatch:{batchID}",
             JsonSerializer.Serialize(new { ackStatus = dto.AckStatus, correlationID = dto.CorrelationID, claimsAffected = claimIds.Count }));
 
-        var frontDesk = await _repo.GetUsersByRoleAsync("FrontDesk");
+        var frontDesk = await repo.GetUsersByRoleAsync("FrontDesk");
         foreach (var u in frontDesk)
         {
             var msg = string.Equals(dto.AckStatus, "Rejected", StringComparison.OrdinalIgnoreCase)
                 ? $"Batch #{batchID} REJECTED by clearinghouse (999 ACK). All {claimIds.Count} claims have been set to Rejected. Reason: {dto.Notes}. Please correct and resubmit."
                 : $"Batch #{batchID} accepted by clearinghouse (999 ACK). Awaiting payer 277CA claim-level acknowledgements.";
-            await _repo.CreateNotificationAsync(u.UserId, msg, "Ack");
+            await repo.CreateNotificationAsync(u.UserId, msg, "Ack");
         }
 
         return new Record999AckResponseDto
@@ -389,7 +382,7 @@ public class BatchService : IBatchService
 
     public async Task<Record277CAAckResponseDto> Record277CAAckAsync(int batchID, int claimID, Record277CAAckRequestDto dto, int currentUserID)
     {
-        var batch = await _repo.GetBatchByIdAsync(batchID);
+        var batch = await repo.GetBatchByIdAsync(batchID);
         if (batch == null) throw new KeyNotFoundException("Batch not found");
 
         if (!string.Equals(batch.Status, "Submitted", StringComparison.OrdinalIgnoreCase) &&
@@ -398,10 +391,10 @@ public class BatchService : IBatchService
             throw new ArgumentException("277CA ACK can only be recorded for Submitted or Acked batches");
         }
 
-        var claim = await _repo.GetClaimByIdAsync(claimID);
+        var claim = await repo.GetClaimByIdAsync(claimID);
         if (claim == null) throw new KeyNotFoundException("Claim not found");
 
-        if (await _repo.Has277CAAckForClaimInBatchAsync(batchID, claimID))
+        if (await repo.Has277CAAckForClaimInBatchAsync(batchID, claimID))
         {
             throw new ArgumentException("277CA ACK already recorded for this claim");
         }
@@ -419,30 +412,30 @@ public class BatchService : IBatchService
             Notes = dto.Notes
         };
 
-        created = await _repo.CreateSubmissionRefAsync(created);
+        created = await repo.CreateSubmissionRefAsync(created);
 
         var newClaimStatus = string.Equals(dto.AckStatus, "Accepted", StringComparison.OrdinalIgnoreCase) ? "Accepted" : "Rejected";
-        await _repo.UpdateClaimStatusAsync(claimID, newClaimStatus);
+        await repo.UpdateClaimStatusAsync(claimID, newClaimStatus);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "RECORD_277CA_ACK", $"Claim:{claimID}",
+        await repo.WriteAuditLogAsync(currentUserID, "RECORD_277CA_ACK", $"Claim:{claimID}",
             JsonSerializer.Serialize(new { batchID, ackStatus = dto.AckStatus, correlationID = dto.CorrelationID, notes = dto.Notes }));
 
         if (string.Equals(dto.AckStatus, "Accepted", StringComparison.OrdinalIgnoreCase))
         {
-            var arUsers = await _repo.GetUsersByRoleAsync("AR");
+            var arUsers = await repo.GetUsersByRoleAsync("AR");
             foreach (var u in arUsers)
             {
-                await _repo.CreateNotificationAsync(u.UserId,
+                await repo.CreateNotificationAsync(u.UserId,
                     $"Claim #{claimID} accepted by payer (277CA). Awaiting ERA/payment posting.",
                     "Ack");
             }
         }
         else
         {
-            var frontDesk = await _repo.GetUsersByRoleAsync("FrontDesk");
+            var frontDesk = await repo.GetUsersByRoleAsync("FrontDesk");
             foreach (var u in frontDesk)
             {
-                await _repo.CreateNotificationAsync(u.UserId,
+                await repo.CreateNotificationAsync(u.UserId,
                     $"Claim #{claimID} REJECTED by payer (277CA). Reason: {dto.Notes}. Please correct and resubmit.",
                     "Ack");
             }
@@ -459,19 +452,19 @@ public class BatchService : IBatchService
 
     public async Task<List<SubmissionRefDto>> GetSubmissionRefsForBatchAsync(int batchID)
     {
-        var batch = await _repo.GetBatchByIdAsync(batchID);
+        var batch = await repo.GetBatchByIdAsync(batchID);
         if (batch == null) throw new KeyNotFoundException("Batch not found");
-        var refs = await _repo.GetSubmissionRefsByBatchAsync(batchID);
+        var refs = await repo.GetSubmissionRefsByBatchAsync(batchID);
         return refs.Select(MapSubmissionRef).ToList();
     }
 
     public async Task<List<SubmissionRefDto>> GetSubmissionRefsByClaimAsync(int claimID)
     {
-        if (!await _repo.ClaimExistsAsync(claimID))
+        if (!await repo.ClaimExistsAsync(claimID))
         {
             throw new KeyNotFoundException("Claim not found");
         }
-        var refs = await _repo.GetSubmissionRefsByClaimAsync(claimID);
+        var refs = await repo.GetSubmissionRefsByClaimAsync(claimID);
         return refs.Select(MapSubmissionRef).ToList();
     }
 

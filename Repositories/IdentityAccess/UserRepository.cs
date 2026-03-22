@@ -7,15 +7,8 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.IdentityAccess
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository(TeleBillContext context) : IUserRepository
     {
-        private readonly TeleBillContext _context;
-
-        public UserRepository(TeleBillContext teleBillContext)
-        {
-            _context = teleBillContext;
-        }
-
         // Matches: Task addUser(UserDTO user);
         public async Task AddUserAsync(UserDTO user)
         {
@@ -32,8 +25,8 @@ namespace Telebill.Repositories.IdentityAccess
                 Status = user.Status
             };
 
-            await _context.Users.AddAsync(entity);
-            await _context.SaveChangesAsync();
+            await context.Users.AddAsync(entity);
+            await context.SaveChangesAsync();
 
             // If you want to flow back the generated key into DTO (optional):
             // user.UserId = entity.UserId;
@@ -44,7 +37,7 @@ namespace Telebill.Repositories.IdentityAccess
         {
             if (user is null) return;
 
-            var existing = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            var existing = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
             if (existing is null) return;
 
             // Do NOT modify primary key
@@ -54,24 +47,24 @@ namespace Telebill.Repositories.IdentityAccess
             existing.Phone = user.Phone;
             existing.Status = user.Status;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         // Matches: Task deleteUser(int id);
         public async Task DeleteUserAsync(int id)
         {
-            var existing = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+            var existing = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
             if (existing is null) return;
 
-            _context.Users.Remove(existing);
-            await _context.SaveChangesAsync();
+            context.Users.Remove(existing);
+            await context.SaveChangesAsync();
         }
 
         // Matches: Task<IEnumerable<User>> getAll();
         
         public async Task<IEnumerable<UserDTO>> GetAllAsync()
         {
-            return await _context.Users
+            return await context.Users
                 .AsNoTracking() // read-only; better performance
                 .Select(u => new UserDTO
                 {
@@ -87,7 +80,7 @@ namespace Telebill.Repositories.IdentityAccess
 
         public async Task<IEnumerable<UserDTO?>> GetuserbyroleAsync(string role)
         {
-            return await _context.Users
+            return await context.Users
                 .AsNoTracking() // read-only; better performance
                 .Where(u=>u.Role.ToLower()==role.Trim().ToLower())
                 .Select(u => new UserDTO

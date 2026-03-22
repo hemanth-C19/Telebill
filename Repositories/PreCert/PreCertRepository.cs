@@ -8,18 +8,11 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.PreCert;
 
-public class PreCertRepository : IPreCertRepository
+public class PreCertRepository(TeleBillContext context) : IPreCertRepository
 {
-    private readonly TeleBillContext _context;
-
-    public PreCertRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
-
     public Task<PriorAuth?> GetPriorAuthByIdAsync(int paid)
     {
-        return _context.PriorAuths
+        return context.PriorAuths
             .Include(p => p.Plan)
             .ThenInclude(pl => pl.Payer)
             .FirstOrDefaultAsync(p => p.Paid == paid);
@@ -27,7 +20,7 @@ public class PreCertRepository : IPreCertRepository
 
     public async Task<List<PriorAuth>> GetPriorAuthsAsync(int? claimID, int? planID, string? status, bool? expiringSoon)
     {
-        var query = _context.PriorAuths
+        var query = context.PriorAuths
             .Include(p => p.Plan)
             .ThenInclude(pl => pl.Payer)
             .AsQueryable();
@@ -63,7 +56,7 @@ public class PreCertRepository : IPreCertRepository
 
     public Task<List<PriorAuth>> GetPriorAuthsByClaimAsync(int claimID)
     {
-        return _context.PriorAuths
+        return context.PriorAuths
             .Include(p => p.Plan)
             .ThenInclude(pl => pl.Payer)
             .Where(p => p.ClaimId == claimID)
@@ -73,14 +66,14 @@ public class PreCertRepository : IPreCertRepository
 
     public Task<bool> ActivePriorAuthExistsForClaimAsync(int claimID)
     {
-        return _context.PriorAuths.AnyAsync(p =>
+        return context.PriorAuths.AnyAsync(p =>
             p.ClaimId == claimID &&
             (p.Status == "Requested" || p.Status == "Approved"));
     }
 
     public Task<bool> HasApprovedPriorAuthAsync(int claimID, DateOnly encounterDate)
     {
-        return _context.PriorAuths.AnyAsync(p =>
+        return context.PriorAuths.AnyAsync(p =>
             p.ClaimId == claimID &&
             p.Status == "Approved" &&
             p.ApprovedFrom != null &&
@@ -91,21 +84,21 @@ public class PreCertRepository : IPreCertRepository
 
     public async Task<PriorAuth> CreatePriorAuthAsync(PriorAuth entity)
     {
-        _context.PriorAuths.Add(entity);
-        await _context.SaveChangesAsync();
+        context.PriorAuths.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task UpdatePriorAuthAsync(PriorAuth entity)
     {
-        _context.PriorAuths.Update(entity);
-        await _context.SaveChangesAsync();
+        context.PriorAuths.Update(entity);
+        await context.SaveChangesAsync();
     }
 
     public Task<List<PriorAuth>> GetExpiredPriorAuthsAsync()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        return _context.PriorAuths
+        return context.PriorAuths
             .Where(p => p.Status == "Approved" && p.ApprovedTo != null && p.ApprovedTo < today)
             .ToListAsync();
     }
@@ -114,7 +107,7 @@ public class PreCertRepository : IPreCertRepository
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var cutoff = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(daysAhead));
-        return _context.PriorAuths
+        return context.PriorAuths
             .Where(p =>
                 p.Status == "Approved" &&
                 p.ApprovedTo != null &&
@@ -125,14 +118,14 @@ public class PreCertRepository : IPreCertRepository
 
     public Task<AttachmentRef?> GetAttachmentByIdAsync(int attachId)
     {
-        return _context.AttachmentRefs
+        return context.AttachmentRefs
             .Include(a => a.UploadedByNavigation)
             .FirstOrDefaultAsync(a => a.AttachId == attachId);
     }
 
     public async Task<List<AttachmentRef>> GetAttachmentsByClaimAsync(int claimID, string status)
     {
-        var query = _context.AttachmentRefs
+        var query = context.AttachmentRefs
             .Include(a => a.UploadedByNavigation)
             .Where(a => a.ClaimId == claimID);
 
@@ -146,49 +139,49 @@ public class PreCertRepository : IPreCertRepository
 
     public async Task<AttachmentRef> CreateAttachmentAsync(AttachmentRef entity)
     {
-        _context.AttachmentRefs.Add(entity);
-        await _context.SaveChangesAsync();
+        context.AttachmentRefs.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task UpdateAttachmentAsync(AttachmentRef entity)
     {
-        _context.AttachmentRefs.Update(entity);
-        await _context.SaveChangesAsync();
+        context.AttachmentRefs.Update(entity);
+        await context.SaveChangesAsync();
     }
 
     public Task<bool> ClaimExistsAsync(int claimID)
     {
-        return _context.Claims.AnyAsync(c => c.ClaimId == claimID);
+        return context.Claims.AnyAsync(c => c.ClaimId == claimID);
     }
 
     public Task<bool> PayerPlanExistsAsync(int planID)
     {
-        return _context.PayerPlans.AnyAsync(p => p.PlanId == planID);
+        return context.PayerPlans.AnyAsync(p => p.PlanId == planID);
     }
 
     public Task<PayerPlan?> GetPayerPlanWithPayerAsync(int planID)
     {
-        return _context.PayerPlans
+        return context.PayerPlans
             .Include(p => p.Payer)
             .FirstOrDefaultAsync(p => p.PlanId == planID);
     }
 
     public Task<User?> GetUserByIdAsync(int userID)
     {
-        return _context.Users.FirstOrDefaultAsync(u => u.UserId == userID);
+        return context.Users.FirstOrDefaultAsync(u => u.UserId == userID);
     }
 
     public Task<List<User>> GetUsersByRoleAsync(string role)
     {
-        return _context.Users
+        return context.Users
             .Where(u => u.Role == role && u.Status == "Active")
             .ToListAsync();
     }
 
     public async Task WriteAuditLogAsync(int userID, string action, string resource, string? metadata)
     {
-        _context.AuditLogs.Add(new AuditLog
+        context.AuditLogs.Add(new AuditLog
         {
             UserId = userID,
             Action = action,
@@ -197,12 +190,12 @@ public class PreCertRepository : IPreCertRepository
             Metadata = metadata
         });
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task CreateNotificationAsync(int userID, string message, string category)
     {
-        _context.Notifications.Add(new Notification
+        context.Notifications.Add(new Notification
         {
             UserId = userID,
             Message = message,
@@ -211,7 +204,7 @@ public class PreCertRepository : IPreCertRepository
             CreatedDate = DateTime.UtcNow
         });
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }
 

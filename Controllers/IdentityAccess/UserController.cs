@@ -9,15 +9,8 @@ namespace Telebill.Controllers
     [ApiController]
     // Base URL: /MyProject/User
     [Route("MyProject/[controller]")]
-    public class UserController : ControllerBase
+    public class UserController(IUserService userService) : ControllerBase
     {
-        private readonly IUserService userService;
-
-        public UserController(IUserService _userService)
-        {
-            userService = _userService;
-        }
-
         // POST: /MyProject/User/AddUser
         [HttpPost]
         [Route("AddUser")]

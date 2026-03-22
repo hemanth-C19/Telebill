@@ -9,36 +9,27 @@ using Telebill.Repositories.Coding;
 
 namespace Telebill.Services.Coding
 {
-    public class CoderWorklistService : ICoderWorklistService
+    public class CoderWorklistService(
+        ICodingEncounterRepository encounterRepo,
+        IDiagnosisRepository diagnosisRepo) : ICoderWorklistService
     {
-        private readonly ICodingEncounterRepository _encounterRepo;
-        private readonly IDiagnosisRepository _diagnosisRepo;
-
-        public CoderWorklistService(
-            ICodingEncounterRepository encounterRepo,
-            IDiagnosisRepository diagnosisRepo)
-        {
-            _encounterRepo = encounterRepo;
-            _diagnosisRepo = diagnosisRepo;
-        }
-
         public async Task<List<CodingWorklistItemDto>> GetCodingWorklistAsync(int? providerId, int? planId)
         {
-            var encounters = await _encounterRepo.GetReadyForCodingEncountersAsync(providerId, planId);
+            var encounters = await encounterRepo.GetReadyForCodingEncountersAsync(providerId, planId);
             var list = new List<CodingWorklistItemDto>();
 
             foreach (var enc in encounters)
             {
                 var patient = enc.PatientId.HasValue
-                    ? await _encounterRepo.GetPatientByIdAsync(enc.PatientId.Value)
+                    ? await encounterRepo.GetPatientByIdAsync(enc.PatientId.Value)
                     : null;
 
                 var provider = enc.ProviderId.HasValue
-                    ? await _encounterRepo.GetProviderByIdAsync(enc.ProviderId.Value)
+                    ? await encounterRepo.GetProviderByIdAsync(enc.ProviderId.Value)
                     : null;
 
-                var chargeLines = await _encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
-                var diagnoses = await _diagnosisRepo.GetActiveDiagnosesByEncounterAsync(enc.EncounterId);
+                var chargeLines = await encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
+                var diagnoses = await diagnosisRepo.GetActiveDiagnosesByEncounterAsync(enc.EncounterId);
 
                 var dto = new CodingWorklistItemDto
                 {
@@ -62,36 +53,36 @@ namespace Telebill.Services.Coding
 
         public async Task<CodingEncounterCardDto?> GetCodingEncounterCardAsync(int encounterId)
         {
-            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
             }
 
             var provider = enc.ProviderId.HasValue
-                ? await _encounterRepo.GetProviderByIdAsync(enc.ProviderId.Value)
+                ? await encounterRepo.GetProviderByIdAsync(enc.ProviderId.Value)
                 : null;
 
-            var attestation = await _encounterRepo.GetAttestedAttestationAsync(enc.EncounterId);
+            var attestation = await encounterRepo.GetAttestedAttestationAsync(enc.EncounterId);
             var patient = enc.PatientId.HasValue
-                ? await _encounterRepo.GetPatientByIdAsync(enc.PatientId.Value)
+                ? await encounterRepo.GetPatientByIdAsync(enc.PatientId.Value)
                 : null;
 
-            var allChargeLines = await _encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
+            var allChargeLines = await encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
             var finalizedLines = allChargeLines.Where(c => c.Status == "Finalized").ToList();
 
             var coverage = enc.PatientId.HasValue
-                ? await _encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
+                ? await encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
                 : null;
 
             PayerPlan? plan = null;
             if (coverage != null && coverage.PlanId.HasValue)
             {
-                plan = await _encounterRepo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
+                plan = await encounterRepo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
             }
 
-            var diagnoses = await _diagnosisRepo.GetActiveDiagnosesByEncounterAsync(enc.EncounterId);
-            var activeLock = await _encounterRepo.GetActiveCoverageForEncounterAsync(0, DateTime.UtcNow); // placeholder to avoid unused warnings
+            var diagnoses = await diagnosisRepo.GetActiveDiagnosesByEncounterAsync(enc.EncounterId);
+            var activeLock = await encounterRepo.GetActiveCoverageForEncounterAsync(0, DateTime.UtcNow); // placeholder to avoid unused warnings
 
             var acceptedModifiers = new List<string>();
             var requiredModifiers = new List<string>();
@@ -226,7 +217,7 @@ namespace Telebill.Services.Coding
 
         public async Task<(bool success, string error)> UpdateEncounterPosAsync(int encounterId, UpdateEncounterPosDto dto, int userId)
         {
-            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
@@ -237,7 +228,7 @@ namespace Telebill.Services.Coding
                 throw new ArgumentException("Invalid POS. Must be 02 or 10.");
             }
 
-            await _encounterRepo.UpdateEncounterPosAsync(encounterId, dto.Pos);
+            await encounterRepo.UpdateEncounterPosAsync(encounterId, dto.Pos);
             return (true, string.Empty);
         }
 
@@ -247,7 +238,7 @@ namespace Telebill.Services.Coding
             UpdateChargeLineModifiersDto dto,
             int userId)
         {
-            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
@@ -258,7 +249,7 @@ namespace Telebill.Services.Coding
                 throw new InvalidOperationException("Encounter is not ReadyForCoding");
             }
 
-            var chargeLine = await _encounterRepo.GetChargeLineByIdAsync(chargeId);
+            var chargeLine = await encounterRepo.GetChargeLineByIdAsync(chargeId);
             if (chargeLine == null)
             {
                 throw new KeyNotFoundException("Charge line not found");
@@ -275,14 +266,14 @@ namespace Telebill.Services.Coding
             }
 
             var coverage = enc.PatientId.HasValue
-                ? await _encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
+                ? await encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
                 : null;
 
             var acceptedModifiers = new List<string>();
 
             if (coverage != null && coverage.PlanId.HasValue)
             {
-                var plan = await _encounterRepo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
+                var plan = await encounterRepo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
                 if (plan?.TelehealthModifiersJson != null)
                 {
                     try
@@ -313,9 +304,9 @@ namespace Telebill.Services.Coding
             }
 
             var modJson = JsonSerializer.Serialize(dto.Modifiers);
-            await _encounterRepo.UpdateChargeLineModifiersAsync(chargeId, modJson);
+            await encounterRepo.UpdateChargeLineModifiersAsync(chargeId, modJson);
 
-            var updated = await _encounterRepo.GetChargeLineByIdAsync(chargeId);
+            var updated = await encounterRepo.GetChargeLineByIdAsync(chargeId);
             if (updated == null)
             {
                 throw new KeyNotFoundException("Charge line not found");
@@ -343,7 +334,7 @@ namespace Telebill.Services.Coding
 
         public async Task<(bool success, string error, DiagnosisResultDto? result)> AddDiagnosisAsync(AddDiagnosisDto dto, int userId)
         {
-            var enc = await _encounterRepo.GetEncounterByIdAsync(dto.EncounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(dto.EncounterId);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
@@ -356,13 +347,13 @@ namespace Telebill.Services.Coding
 
             var upperCode = dto.ICD10Code.Trim().ToUpperInvariant();
 
-            var exists = await _diagnosisRepo.DiagnosisCodeExistsActiveAsync(dto.EncounterId, upperCode);
+            var exists = await diagnosisRepo.DiagnosisCodeExistsActiveAsync(dto.EncounterId, upperCode);
             if (exists)
             {
                 throw new InvalidOperationException($"Diagnosis {upperCode} already exists for this encounter");
             }
 
-            var count = await _diagnosisRepo.GetActiveDiagnosisCountAsync(dto.EncounterId);
+            var count = await diagnosisRepo.GetActiveDiagnosisCountAsync(dto.EncounterId);
             if (count >= 12)
             {
                 throw new InvalidOperationException("Maximum 12 diagnoses reached");
@@ -376,7 +367,7 @@ namespace Telebill.Services.Coding
                     throw new ArgumentException("Sequence must be between 1 and 12");
                 }
 
-                var taken = await _diagnosisRepo.SequenceTakenAsync(dto.EncounterId, dto.Sequence.Value);
+                var taken = await diagnosisRepo.SequenceTakenAsync(dto.EncounterId, dto.Sequence.Value);
                 if (taken)
                 {
                     throw new InvalidOperationException($"Sequence {dto.Sequence} is already taken");
@@ -386,7 +377,7 @@ namespace Telebill.Services.Coding
             }
             else
             {
-                var maxSeq = await _diagnosisRepo.GetMaxDiagnosisSequenceAsync(dto.EncounterId);
+                var maxSeq = await diagnosisRepo.GetMaxDiagnosisSequenceAsync(dto.EncounterId);
                 sequence = maxSeq + 1;
                 if (sequence > 12)
                 {
@@ -403,7 +394,7 @@ namespace Telebill.Services.Coding
                 Status = "Active"
             };
 
-            dx = await _diagnosisRepo.AddDiagnosisAsync(dx);
+            dx = await diagnosisRepo.AddDiagnosisAsync(dx);
 
             var result = new DiagnosisResultDto
             {
@@ -420,7 +411,7 @@ namespace Telebill.Services.Coding
 
         public async Task<List<DiagnosisResultDto>> GetDiagnosesByEncounterAsync(int encounterId)
         {
-            var list = await _diagnosisRepo.GetDiagnosesByEncounterAsync(encounterId);
+            var list = await diagnosisRepo.GetDiagnosesByEncounterAsync(encounterId);
 
             return list
                 .Select(d => new DiagnosisResultDto
@@ -440,7 +431,7 @@ namespace Telebill.Services.Coding
             UpdateDiagnosisDto dto,
             int userId)
         {
-            var dx = await _diagnosisRepo.GetDiagnosisByIdAsync(dxId);
+            var dx = await diagnosisRepo.GetDiagnosisByIdAsync(dxId);
             if (dx == null)
             {
                 throw new KeyNotFoundException("Diagnosis not found");
@@ -451,7 +442,7 @@ namespace Telebill.Services.Coding
                 throw new InvalidOperationException("Diagnosis is not linked to an encounter");
             }
 
-            var enc = await _encounterRepo.GetEncounterByIdAsync(dx.EncounterId.Value);
+            var enc = await encounterRepo.GetEncounterByIdAsync(dx.EncounterId.Value);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
@@ -466,7 +457,7 @@ namespace Telebill.Services.Coding
             {
                 var upper = dto.ICD10Code.Trim().ToUpperInvariant();
 
-                var exists = await _diagnosisRepo.DiagnosisCodeExistsActiveAsync(dx.EncounterId.Value, upper);
+                var exists = await diagnosisRepo.DiagnosisCodeExistsActiveAsync(dx.EncounterId.Value, upper);
                 if (exists && !string.Equals(upper, dx.Icd10code, StringComparison.OrdinalIgnoreCase))
                 {
                     throw new InvalidOperationException($"Diagnosis {upper} already exists for this encounter");
@@ -487,7 +478,7 @@ namespace Telebill.Services.Coding
                     throw new ArgumentException("Sequence must be between 1 and 12");
                 }
 
-                var taken = await _diagnosisRepo.SequenceTakenAsync(dx.EncounterId.Value, dto.Sequence.Value, dxId);
+                var taken = await diagnosisRepo.SequenceTakenAsync(dx.EncounterId.Value, dto.Sequence.Value, dxId);
                 if (taken)
                 {
                     throw new InvalidOperationException($"Sequence {dto.Sequence} is already taken");
@@ -496,7 +487,7 @@ namespace Telebill.Services.Coding
                 dx.Sequence = dto.Sequence.Value;
             }
 
-            await _diagnosisRepo.UpdateDiagnosisAsync(dx);
+            await diagnosisRepo.UpdateDiagnosisAsync(dx);
 
             var result = new DiagnosisResultDto
             {
@@ -513,14 +504,14 @@ namespace Telebill.Services.Coding
 
         public async Task<(bool success, string error)> RemoveDiagnosisAsync(int dxId, int userId)
         {
-            var dx = await _diagnosisRepo.GetDiagnosisByIdAsync(dxId);
+            var dx = await diagnosisRepo.GetDiagnosisByIdAsync(dxId);
             if (dx == null)
             {
                 throw new KeyNotFoundException("Diagnosis not found");
             }
 
             dx.Status = "Inactive";
-            await _diagnosisRepo.UpdateDiagnosisAsync(dx);
+            await diagnosisRepo.UpdateDiagnosisAsync(dx);
 
             return (true, string.Empty);
         }

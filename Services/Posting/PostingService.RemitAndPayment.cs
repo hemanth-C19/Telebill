@@ -12,12 +12,12 @@ public partial class PostingService
 {
     public async Task<RemitRefDto> CreateRemitRefAsync(CreateRemitRefRequestDto dto, int currentUserID)
     {
-        if (!await _repo.PayerExistsAsync(dto.PayerID))
+        if (!await repo.PayerExistsAsync(dto.PayerID))
         {
             throw new ArgumentException("PayerID does not exist");
         }
 
-        if (dto.BatchID.HasValue && !await _repo.BatchExistsAsync(dto.BatchID.Value))
+        if (dto.BatchID.HasValue && !await repo.BatchExistsAsync(dto.BatchID.Value))
         {
             throw new ArgumentException("BatchID does not exist");
         }
@@ -36,12 +36,12 @@ public partial class PostingService
             Status = "Loaded"
         };
 
-        entity = await _repo.CreateRemitRefAsync(entity);
+        entity = await repo.CreateRemitRefAsync(entity);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "CREATE_REMIT_REF", $"RemitRef:{entity.RemitId}",
+        await repo.WriteAuditLogAsync(currentUserID, "CREATE_REMIT_REF", $"RemitRef:{entity.RemitId}",
             JsonSerializer.Serialize(new { payerID = dto.PayerID, batchID = dto.BatchID, receivedDate = dto.ReceivedDate }));
 
-        var payer = await _repo.GetPayerByIdAsync(dto.PayerID);
+        var payer = await repo.GetPayerByIdAsync(dto.PayerID);
 
         return new RemitRefDto
         {
@@ -58,7 +58,7 @@ public partial class PostingService
     public async Task<RemitRefListResponseDto> GetRemitRefsAsync(int? payerID, string? status, DateOnly? dateFrom, DateOnly? dateTo, int page, int pageSize)
     {
         pageSize = Math.Min(pageSize, 100);
-        var (items, total) = await _repo.GetRemitRefsPagedAsync(payerID, status, dateFrom, dateTo, page, pageSize);
+        var (items, total) = await repo.GetRemitRefsPagedAsync(payerID, status, dateFrom, dateTo, page, pageSize);
         return new RemitRefListResponseDto
         {
             TotalCount = total,
@@ -77,7 +77,7 @@ public partial class PostingService
 
     public async Task<RemitRefDto> GetRemitRefByIdAsync(int remitID)
     {
-        var r = await _repo.GetRemitRefByIdAsync(remitID);
+        var r = await repo.GetRemitRefByIdAsync(remitID);
         if (r == null) throw new KeyNotFoundException("Remit not found");
 
         return new RemitRefDto
@@ -94,7 +94,7 @@ public partial class PostingService
 
     public async Task<RemitRefDto> UpdateRemitRefStatusAsync(int remitID, UpdateRemitRefStatusRequestDto dto, int currentUserID)
     {
-        var r = await _repo.GetRemitRefByIdAsync(remitID);
+        var r = await repo.GetRemitRefByIdAsync(remitID);
         if (r == null) throw new KeyNotFoundException("Remit not found");
 
         if (!IsValidRemitStatus(dto.Status))
@@ -103,9 +103,9 @@ public partial class PostingService
         }
 
         r.Status = dto.Status;
-        await _repo.UpdateRemitRefAsync(r);
+        await repo.UpdateRemitRefAsync(r);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "UPDATE_REMIT_STATUS", $"RemitRef:{remitID}",
+        await repo.WriteAuditLogAsync(currentUserID, "UPDATE_REMIT_STATUS", $"RemitRef:{remitID}",
             JsonSerializer.Serialize(new { newStatus = dto.Status }));
 
         return await GetRemitRefByIdAsync(remitID);
@@ -113,7 +113,7 @@ public partial class PostingService
 
     public async Task<PostingResultDto> CreatePaymentPostAsync(CreatePaymentPostRequestDto dto, int currentUserID)
     {
-        var claim = await _repo.GetClaimByIdAsync(dto.ClaimID);
+        var claim = await repo.GetClaimByIdAsync(dto.ClaimID);
         if (claim == null) throw new KeyNotFoundException("Claim not found");
 
         var oldStatus = claim.ClaimStatus ?? string.Empty;
@@ -129,7 +129,7 @@ public partial class PostingService
         ClaimLine? claimLine = null;
         if (dto.ClaimLineID.HasValue)
         {
-            claimLine = await _repo.GetClaimLineByIdAsync(dto.ClaimLineID.Value);
+            claimLine = await repo.GetClaimLineByIdAsync(dto.ClaimLineID.Value);
             if (claimLine == null) throw new KeyNotFoundException("Claim line not found");
             if (claimLine.ClaimId != dto.ClaimID) throw new ArgumentException("ClaimLine does not belong to this claim");
             referenceAmount = claimLine.ChargeAmount ?? 0m;
@@ -146,7 +146,7 @@ public partial class PostingService
             throw new ArgumentException($"Financial equation does not balance. ChargeAmount ({referenceAmount}) must equal AmountPaid ({dto.AmountPaid}) + Adjustments ({totalAdjustments}). Difference: {difference}");
         }
 
-        if (await _repo.ActivePostExistsForLineAsync(dto.ClaimID, dto.ClaimLineID))
+        if (await repo.ActivePostExistsForLineAsync(dto.ClaimID, dto.ClaimLineID))
         {
             throw new InvalidOperationException("An active payment post already exists for this claim line. Void it before reposting.");
         }
@@ -163,12 +163,12 @@ public partial class PostingService
             Status = "Active"
         };
 
-        post = await _repo.CreatePaymentPostAsync(post);
+        post = await repo.CreatePaymentPostAsync(post);
 
         var (newClaimStatus, totalPaid, totalCharge, denialCreated) = await RecalculateClaimStatusAsync(dto.ClaimID);
         var balance = await RecalculatePatientBalanceAsync(dto.ClaimID);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "POST_PAYMENT", $"PaymentPost:{post.PaymentId}",
+        await repo.WriteAuditLogAsync(currentUserID, "POST_PAYMENT", $"PaymentPost:{post.PaymentId}",
             JsonSerializer.Serialize(new { claimID = dto.ClaimID, claimLineID = dto.ClaimLineID, amountPaid = dto.AmountPaid, totalAdjustments }));
 
         var createdPostDto = await MapPaymentPostDto(post);
@@ -189,10 +189,10 @@ public partial class PostingService
 
     public async Task<ClaimPaymentSummaryDto> GetPaymentPostsByClaimAsync(int claimID)
     {
-        var claim = await _repo.GetClaimByIdAsync(claimID);
+        var claim = await repo.GetClaimByIdAsync(claimID);
         if (claim == null) throw new KeyNotFoundException("claim not found");
 
-        var posts = await _repo.GetPaymentPostsByClaimAsync(claimID);
+        var posts = await repo.GetPaymentPostsByClaimAsync(claimID);
         var mapped = new List<PaymentPostDto>();
 
         decimal totalPaid = 0m;
@@ -226,14 +226,14 @@ public partial class PostingService
 
     public async Task<PaymentPostDto> GetPaymentPostByIdAsync(int paymentID)
     {
-        var post = await _repo.GetPaymentPostByIdAsync(paymentID);
+        var post = await repo.GetPaymentPostByIdAsync(paymentID);
         if (post == null) throw new KeyNotFoundException("payment not found");
         return await MapPaymentPostDto(post);
     }
 
     public async Task<PostingResultDto> VoidPaymentPostAsync(int paymentID, VoidPaymentPostRequestDto dto, int currentUserID)
     {
-        var post = await _repo.GetPaymentPostByIdAsync(paymentID);
+        var post = await repo.GetPaymentPostByIdAsync(paymentID);
         if (post == null) throw new KeyNotFoundException("payment not found");
 
         if (string.Equals(post.Status, "Voided", StringComparison.OrdinalIgnoreCase))
@@ -242,15 +242,15 @@ public partial class PostingService
         }
 
         post.Status = "Voided";
-        await _repo.UpdatePaymentPostAsync(post);
+        await repo.UpdatePaymentPostAsync(post);
 
-        var claim = await _repo.GetClaimByIdAsync(post.ClaimId ?? 0);
+        var claim = await repo.GetClaimByIdAsync(post.ClaimId ?? 0);
         var oldStatus = claim?.ClaimStatus ?? string.Empty;
 
         var (newClaimStatus, totalPaid, totalCharge, denialCreated) = await RecalculateClaimStatusAsync(post.ClaimId ?? 0);
         var balance = await RecalculatePatientBalanceAsync(post.ClaimId ?? 0);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "VOID_PAYMENT", $"PaymentPost:{paymentID}",
+        await repo.WriteAuditLogAsync(currentUserID, "VOID_PAYMENT", $"PaymentPost:{paymentID}",
             JsonSerializer.Serialize(new { claimID = post.ClaimId, claimLineID = post.ClaimLineId, amountPaid = post.AmountPaid ?? 0m, reason = dto.Reason }));
 
         return new PostingResultDto
@@ -269,11 +269,11 @@ public partial class PostingService
 
     private async Task<(string newStatus, decimal totalPaid, decimal totalCharge, bool denialCreated)> RecalculateClaimStatusAsync(int claimID)
     {
-        var claim = await _repo.GetClaimByIdAsync(claimID);
+        var claim = await repo.GetClaimByIdAsync(claimID);
         if (claim == null) throw new KeyNotFoundException("Claim not found");
 
-        var lines = await _repo.GetActiveClaimLinesByClaimAsync(claimID);
-        var posts = (await _repo.GetPaymentPostsByClaimAsync(claimID)).Where(p => p.Status == "Active").ToList();
+        var lines = await repo.GetActiveClaimLinesByClaimAsync(claimID);
+        var posts = (await repo.GetPaymentPostsByClaimAsync(claimID)).Where(p => p.Status == "Active").ToList();
 
         var totalPaid = posts.Sum(p => p.AmountPaid ?? 0m);
         var totalCharge = lines.Sum(l => l.ChargeAmount ?? 0m);
@@ -286,7 +286,7 @@ public partial class PostingService
             totalPaid >= totalCharge && totalPaid > 0m ? "Paid" :
             totalPaid > 0m ? "PartiallyPaid" : "PartiallyPaid";
 
-        await _repo.UpdateClaimStatusAsync(claimID, newStatus);
+        await repo.UpdateClaimStatusAsync(claimID, newStatus);
 
         bool denialCreated = false;
         if (isDenial)
@@ -299,10 +299,10 @@ public partial class PostingService
 
     private async Task<PatientBalanceDto> RecalculatePatientBalanceAsync(int claimID)
     {
-        var claim = await _repo.GetClaimByIdAsync(claimID);
+        var claim = await repo.GetClaimByIdAsync(claimID);
         if (claim == null) throw new KeyNotFoundException("Claim not found");
 
-        var posts = (await _repo.GetPaymentPostsByClaimAsync(claimID)).Where(p => p.Status == "Active").ToList();
+        var posts = (await repo.GetPaymentPostsByClaimAsync(claimID)).Where(p => p.Status == "Active").ToList();
         decimal totalPr = 0m;
         foreach (var p in posts)
         {
@@ -310,12 +310,12 @@ public partial class PostingService
             totalPr += adjustments.Where(a => a.Group.Equals("PR", StringComparison.OrdinalIgnoreCase)).Sum(a => a.Amount);
         }
 
-        var balance = await _repo.GetPatientBalanceByClaimAsync(claimID);
+        var balance = await repo.GetPatientBalanceByClaimAsync(claimID);
         if (balance != null)
         {
             balance.AmountDue = totalPr;
             balance.Status = totalPr == 0m ? "Paid" : "Open";
-            await _repo.UpdatePatientBalanceAsync(balance);
+            await repo.UpdatePatientBalanceAsync(balance);
         }
         else if (totalPr > 0m)
         {
@@ -328,7 +328,7 @@ public partial class PostingService
                 LastStatementDate = null,
                 Status = "Open"
             };
-            balance = await _repo.CreatePatientBalanceAsync(balance);
+            balance = await repo.CreatePatientBalanceAsync(balance);
         }
         else
         {
@@ -342,7 +342,7 @@ public partial class PostingService
             };
         }
 
-        var patient = claim.PatientId.HasValue ? await _repo.GetPatientByIdAsync(claim.PatientId.Value) : null;
+        var patient = claim.PatientId.HasValue ? await repo.GetPatientByIdAsync(claim.PatientId.Value) : null;
         balance.Patient = patient;
 
         return MapBalance(balance);
@@ -350,7 +350,7 @@ public partial class PostingService
 
     private async Task<bool> CreateDenialRecordsAsync(int claimID, List<ClaimLine> lines, List<PaymentPost> posts)
     {
-        var claim = await _repo.GetClaimByIdAsync(claimID);
+        var claim = await repo.GetClaimByIdAsync(claimID);
         if (claim == null) throw new KeyNotFoundException("Claim not found");
 
         var reasonCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -372,7 +372,7 @@ public partial class PostingService
                     amountDenied = claim.TotalCharge ?? 0m;
                 }
 
-                await _repo.CreateDenialAsync(new Denial
+                await repo.CreateDenialAsync(new Denial
                 {
                     ClaimId = claimID,
                     ClaimLineId = post.ClaimLineId,
@@ -390,15 +390,15 @@ public partial class PostingService
 
         if (denialCount > 0)
         {
-            var arUsers = await _repo.GetUsersByRoleAsync("AR");
+            var arUsers = await repo.GetUsersByRoleAsync("AR");
             foreach (var u in arUsers)
             {
-                await _repo.CreateNotificationAsync(u.UserId,
+                await repo.CreateNotificationAsync(u.UserId,
                     $"Claim #{claimID} has been denied (CARC {string.Join(",", reasonCodes)}). Please review and file an appeal if applicable.",
                     "Denial");
             }
 
-            await _repo.WriteAuditLogAsync(0, "CREATE_DENIAL_FROM_POSTING", $"Claim:{claimID}",
+            await repo.WriteAuditLogAsync(0, "CREATE_DENIAL_FROM_POSTING", $"Claim:{claimID}",
                 JsonSerializer.Serialize(new { denialCount, reasonCodes = reasonCodes.ToList() }));
         }
 
@@ -434,18 +434,18 @@ public partial class PostingService
         decimal chargeAmt = 0m;
         if (post.ClaimLineId.HasValue)
         {
-            var line = await _repo.GetClaimLineByIdAsync(post.ClaimLineId.Value);
+            var line = await repo.GetClaimLineByIdAsync(post.ClaimLineId.Value);
             lineNo = line?.LineNo;
             cpt = line?.CptHcpcs;
             chargeAmt = line?.ChargeAmount ?? 0m;
         }
         else
         {
-            var claim = await _repo.GetClaimByIdAsync(post.ClaimId ?? 0);
+            var claim = await repo.GetClaimByIdAsync(post.ClaimId ?? 0);
             chargeAmt = claim?.TotalCharge ?? 0m;
         }
 
-        var user = post.PostedBy.HasValue ? (await _repo.GetUsersByRoleAsync("AR")).FirstOrDefault(u => u.UserId == post.PostedBy.Value) : null;
+        var user = post.PostedBy.HasValue ? (await repo.GetUsersByRoleAsync("AR")).FirstOrDefault(u => u.UserId == post.PostedBy.Value) : null;
 
         return new PaymentPostDto
         {

@@ -7,28 +7,21 @@ using Telebill.Repositories.Coding;
 
 namespace Telebill.Services.Coding
 {
-    public class ProviderCodingService : IProviderCodingService
+    public class ProviderCodingService(ICodingEncounterRepository encounterRepo) : IProviderCodingService
     {
-        private readonly ICodingEncounterRepository _encounterRepo;
-
-        public ProviderCodingService(ICodingEncounterRepository encounterRepo)
-        {
-            _encounterRepo = encounterRepo;
-        }
-
         public async Task<List<ProviderEncounterSummaryDto>> GetProviderEncountersAsync(int providerId, string? status)
         {
-            var encounters = await _encounterRepo.GetEncountersByProviderAsync(providerId, status);
+            var encounters = await encounterRepo.GetEncountersByProviderAsync(providerId, status);
             var result = new List<ProviderEncounterSummaryDto>();
 
             foreach (var enc in encounters)
             {
                 var patient = enc.PatientId.HasValue
-                    ? await _encounterRepo.GetPatientByIdAsync(enc.PatientId.Value)
+                    ? await encounterRepo.GetPatientByIdAsync(enc.PatientId.Value)
                     : null;
 
-                var chargeLines = await _encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
-                var attestation = await _encounterRepo.GetAttestedAttestationAsync(enc.EncounterId);
+                var chargeLines = await encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
+                var attestation = await encounterRepo.GetAttestedAttestationAsync(enc.EncounterId);
 
                 var allChargesFinalized = chargeLines.All(c => c.Status == "Finalized");
                 var totalCharge = chargeLines.Sum(c => c.ChargeAmount ?? 0m);
@@ -59,7 +52,7 @@ namespace Telebill.Services.Coding
 
         public async Task<ProviderEncounterSummaryDto?> GetProviderEncounterDetailAsync(int encounterId, int providerId)
         {
-            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
@@ -77,7 +70,7 @@ namespace Telebill.Services.Coding
 
         public async Task<ProviderEncounterSummaryDto?> SetDocumentationUriAsync(int encounterId, SetDocumentationUriDto dto, int providerId)
         {
-            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
@@ -89,14 +82,14 @@ namespace Telebill.Services.Coding
             }
 
             var uri = dto.DocumentationUri?.Trim() ?? string.Empty;
-            await _encounterRepo.UpdateEncounterDocumentationUriAsync(encounterId, uri);
+            await encounterRepo.UpdateEncounterDocumentationUriAsync(encounterId, uri);
 
             return await GetProviderEncounterDetailAsync(encounterId, providerId);
         }
 
         public async Task<(bool success, string error)> MarkReadyForCodingAsync(int encounterId, int providerId)
         {
-            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
@@ -112,20 +105,20 @@ namespace Telebill.Services.Coding
                 throw new InvalidOperationException("Only Open encounters can be marked as ReadyForCoding");
             }
 
-            var attestation = await _encounterRepo.GetAttestedAttestationAsync(encounterId);
+            var attestation = await encounterRepo.GetAttestedAttestationAsync(encounterId);
             if (attestation == null)
             {
                 throw new InvalidOperationException("No attested attestation found. Complete attestation first.");
             }
 
-            var chargeLines = await _encounterRepo.GetChargeLinesByEncounterAsync(encounterId);
+            var chargeLines = await encounterRepo.GetChargeLinesByEncounterAsync(encounterId);
             var draftCount = chargeLines.Count(c => c.Status != "Finalized");
             if (draftCount > 0)
             {
                 throw new InvalidOperationException($"{draftCount} charge line(s) are still in Draft. Finalize all charges first.");
             }
 
-            await _encounterRepo.UpdateEncounterStatusAsync(encounterId, "ReadyForCoding");
+            await encounterRepo.UpdateEncounterStatusAsync(encounterId, "ReadyForCoding");
 
             return (true, string.Empty);
         }

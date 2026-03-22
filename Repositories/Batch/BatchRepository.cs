@@ -8,24 +8,17 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.Batch;
 
-public class BatchRepository : IBatchRepository
+public class BatchRepository(TeleBillContext context) : IBatchRepository
 {
-    private readonly TeleBillContext _context;
-
-    public BatchRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
-
     public Task<SubmissionBatch?> GetBatchByIdAsync(int batchID)
     {
-        return _context.SubmissionBatches.FirstOrDefaultAsync(b => b.BatchId == batchID);
+        return context.SubmissionBatches.FirstOrDefaultAsync(b => b.BatchId == batchID);
     }
 
     public async Task<(List<SubmissionBatch> batches, int totalCount)> GetBatchesPagedAsync(
         string? status, DateOnly? dateFrom, DateOnly? dateTo, int page, int pageSize)
     {
-        var query = _context.SubmissionBatches.AsQueryable();
+        var query = context.SubmissionBatches.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(status))
         {
@@ -56,25 +49,25 @@ public class BatchRepository : IBatchRepository
 
     public async Task<SubmissionBatch> CreateBatchAsync(SubmissionBatch entity)
     {
-        _context.SubmissionBatches.Add(entity);
-        await _context.SaveChangesAsync();
+        context.SubmissionBatches.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task UpdateBatchAsync(SubmissionBatch entity)
     {
-        _context.SubmissionBatches.Update(entity);
-        await _context.SaveChangesAsync();
+        context.SubmissionBatches.Update(entity);
+        await context.SaveChangesAsync();
     }
 
     public Task<SubmissionRef?> GetSubmissionRefByIdAsync(int submitID)
     {
-        return _context.SubmissionRefs.FirstOrDefaultAsync(r => r.SubmitId == submitID);
+        return context.SubmissionRefs.FirstOrDefaultAsync(r => r.SubmitId == submitID);
     }
 
     public Task<List<SubmissionRef>> GetSubmissionRefsByBatchAsync(int batchID)
     {
-        return _context.SubmissionRefs
+        return context.SubmissionRefs
             .Where(r => r.BatchId == batchID)
             .OrderBy(r => r.SubmitId)
             .ToListAsync();
@@ -82,7 +75,7 @@ public class BatchRepository : IBatchRepository
 
     public Task<List<SubmissionRef>> GetSubmissionRefsByClaimAsync(int claimID)
     {
-        return _context.SubmissionRefs
+        return context.SubmissionRefs
             .Where(r => r.ClaimId == claimID)
             .OrderByDescending(r => r.SubmitId)
             .ToListAsync();
@@ -90,22 +83,22 @@ public class BatchRepository : IBatchRepository
 
     public Task<SubmissionRef?> GetSubmissionRefByBatchAndClaimAsync(int batchID, int claimID)
     {
-        return _context.SubmissionRefs.FirstOrDefaultAsync(r => r.BatchId == batchID && r.ClaimId == claimID);
+        return context.SubmissionRefs.FirstOrDefaultAsync(r => r.BatchId == batchID && r.ClaimId == claimID);
     }
 
     public Task<bool> Has999AckForBatchAsync(int batchID)
     {
-        return _context.SubmissionRefs.AnyAsync(r => r.BatchId == batchID && r.AckType == "999");
+        return context.SubmissionRefs.AnyAsync(r => r.BatchId == batchID && r.AckType == "999");
     }
 
     public Task<bool> Has277CAAckForClaimInBatchAsync(int batchID, int claimID)
     {
-        return _context.SubmissionRefs.AnyAsync(r => r.BatchId == batchID && r.ClaimId == claimID && r.AckType == "277CA");
+        return context.SubmissionRefs.AnyAsync(r => r.BatchId == batchID && r.ClaimId == claimID && r.AckType == "277CA");
     }
 
     public Task<bool> ClaimAlreadyBatchedAsync(int claimID)
     {
-        return _context.SubmissionRefs.AnyAsync(sr =>
+        return context.SubmissionRefs.AnyAsync(sr =>
             sr.ClaimId == claimID &&
             sr.Batch != null &&
             sr.Batch.Status != "Failed");
@@ -113,38 +106,38 @@ public class BatchRepository : IBatchRepository
 
     public async Task<SubmissionRef> CreateSubmissionRefAsync(SubmissionRef entity)
     {
-        _context.SubmissionRefs.Add(entity);
-        await _context.SaveChangesAsync();
+        context.SubmissionRefs.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task CreateSubmissionRefsAsync(List<SubmissionRef> entities)
     {
-        await _context.SubmissionRefs.AddRangeAsync(entities);
-        await _context.SaveChangesAsync();
+        await context.SubmissionRefs.AddRangeAsync(entities);
+        await context.SaveChangesAsync();
     }
 
     public async Task UpdateSubmissionRefsAsync(List<SubmissionRef> entities)
     {
-        _context.SubmissionRefs.UpdateRange(entities);
-        await _context.SaveChangesAsync();
+        context.SubmissionRefs.UpdateRange(entities);
+        await context.SaveChangesAsync();
     }
 
     public async Task DeleteSubmissionRefAsync(int batchID, int claimID)
     {
-        var entity = await _context.SubmissionRefs.FirstOrDefaultAsync(r =>
+        var entity = await context.SubmissionRefs.FirstOrDefaultAsync(r =>
             r.BatchId == batchID && r.ClaimId == claimID && r.AckType == null);
 
         if (entity != null)
         {
-            _context.SubmissionRefs.Remove(entity);
-            await _context.SaveChangesAsync();
+            context.SubmissionRefs.Remove(entity);
+            await context.SaveChangesAsync();
         }
     }
 
     public Task<Claim?> GetClaimByIdAsync(int claimID)
     {
-        return _context.Claims
+        return context.Claims
             .Include(c => c.Patient)
             .Include(c => c.Plan)
             .ThenInclude(p => p.Payer)
@@ -153,7 +146,7 @@ public class BatchRepository : IBatchRepository
 
     public Task<List<Claim>> GetClaimsByIdsAsync(List<int> claimIDs)
     {
-        return _context.Claims
+        return context.Claims
             .Include(c => c.Patient)
             .Include(c => c.Plan)
             .ThenInclude(p => p.Payer)
@@ -163,40 +156,40 @@ public class BatchRepository : IBatchRepository
 
     public async Task UpdateClaimStatusAsync(int claimID, string newStatus)
     {
-        var claim = await _context.Claims.FirstOrDefaultAsync(c => c.ClaimId == claimID);
+        var claim = await context.Claims.FirstOrDefaultAsync(c => c.ClaimId == claimID);
         if (claim == null) return;
         claim.ClaimStatus = newStatus;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task UpdateClaimStatusBulkAsync(List<int> claimIDs, string newStatus)
     {
-        var claims = await _context.Claims.Where(c => claimIDs.Contains(c.ClaimId)).ToListAsync();
+        var claims = await context.Claims.Where(c => claimIDs.Contains(c.ClaimId)).ToListAsync();
         foreach (var c in claims)
         {
             c.ClaimStatus = newStatus;
         }
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public Task<bool> ClaimExistsAsync(int claimID)
     {
-        return _context.Claims.AnyAsync(c => c.ClaimId == claimID);
+        return context.Claims.AnyAsync(c => c.ClaimId == claimID);
     }
 
     public Task<X12837pRef?> GetX12RefByClaimIdAsync(int claimID)
     {
-        return _context.X12837pRefs.FirstOrDefaultAsync(x => x.ClaimId == claimID && x.Status == "Generated");
+        return context.X12837pRefs.FirstOrDefaultAsync(x => x.ClaimId == claimID && x.Status == "Generated");
     }
 
     public Task<List<User>> GetUsersByRoleAsync(string role)
     {
-        return _context.Users.Where(u => u.Role == role && u.Status == "Active").ToListAsync();
+        return context.Users.Where(u => u.Role == role && u.Status == "Active").ToListAsync();
     }
 
     public async Task WriteAuditLogAsync(int userID, string action, string resource, string? metadata)
     {
-        _context.AuditLogs.Add(new AuditLog
+        context.AuditLogs.Add(new AuditLog
         {
             UserId = userID,
             Action = action,
@@ -204,12 +197,12 @@ public class BatchRepository : IBatchRepository
             Timestamp = DateTime.UtcNow,
             Metadata = metadata
         });
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task CreateNotificationAsync(int userID, string message, string category)
     {
-        _context.Notifications.Add(new Notification
+        context.Notifications.Add(new Notification
         {
             UserId = userID,
             Message = message,
@@ -217,7 +210,7 @@ public class BatchRepository : IBatchRepository
             Status = "Unread",
             CreatedDate = DateTime.UtcNow
         });
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }
 

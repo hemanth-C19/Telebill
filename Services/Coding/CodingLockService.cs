@@ -8,28 +8,17 @@ using Telebill.Repositories.Coding;
 
 namespace Telebill.Services.Coding
 {
-    public class CodingLockService : ICodingLockService
+    public class CodingLockService(
+        ICodingEncounterRepository encounterRepo,
+        IDiagnosisRepository diagnosisRepo,
+        ICodingLockRepository lockRepo) : ICodingLockService
     {
-        private readonly ICodingEncounterRepository _encounterRepo;
-        private readonly IDiagnosisRepository _diagnosisRepo;
-        private readonly ICodingLockRepository _lockRepo;
-
-        public CodingLockService(
-            ICodingEncounterRepository encounterRepo,
-            IDiagnosisRepository diagnosisRepo,
-            ICodingLockRepository lockRepo)
-        {
-            _encounterRepo = encounterRepo;
-            _diagnosisRepo = diagnosisRepo;
-            _lockRepo = lockRepo;
-        }
-
         public async Task<CodingValidationResultDto> ValidateCodingLockAsync(int encounterId)
         {
             var errors = new List<string>();
             var warnings = new List<string>();
 
-            var enc = await _encounterRepo.GetEncounterByIdAsync(encounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(encounterId);
             if (enc == null)
             {
                 errors.Add("Encounter not found");
@@ -41,13 +30,13 @@ namespace Telebill.Services.Coding
                     errors.Add("Encounter is not in ReadyForCoding status");
                 }
 
-                var existingLock = await _lockRepo.GetActiveCodingLockAsync(encounterId);
+                var existingLock = await lockRepo.GetActiveCodingLockAsync(encounterId);
                 if (existingLock != null)
                 {
                     errors.Add("Encounter is already locked");
                 }
 
-                var activeDx = await _diagnosisRepo.GetActiveDiagnosesByEncounterAsync(encounterId);
+                var activeDx = await diagnosisRepo.GetActiveDiagnosesByEncounterAsync(encounterId);
 
                 if (!activeDx.Any(d => d.Sequence == 1))
                 {
@@ -80,13 +69,13 @@ namespace Telebill.Services.Coding
                     errors.Add($"Invalid POS '{enc.Pos}'. Must be 02 or 10.");
                 }
 
-                var attest = await _encounterRepo.GetAttestedAttestationAsync(encounterId);
+                var attest = await encounterRepo.GetAttestedAttestationAsync(encounterId);
                 if (attest == null)
                 {
                     errors.Add("No attested attestation found");
                 }
 
-                var chargeLines = await _encounterRepo.GetChargeLinesByEncounterAsync(encounterId);
+                var chargeLines = await encounterRepo.GetChargeLinesByEncounterAsync(encounterId);
                 var draftCount = chargeLines.Count(c => c.Status == "Draft");
                 if (draftCount > 0)
                 {
@@ -94,7 +83,7 @@ namespace Telebill.Services.Coding
                 }
 
                 var coverage = enc.PatientId.HasValue
-                    ? await _encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
+                    ? await encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
                     : null;
 
                 if (coverage == null)
@@ -139,8 +128,8 @@ namespace Telebill.Services.Coding
                 Status = "Locked"
             };
 
-            lockEntity = await _lockRepo.AddCodingLockAsync(lockEntity);
-            await _encounterRepo.UpdateEncounterStatusAsync(dto.EncounterId, "Finalized");
+            lockEntity = await lockRepo.AddCodingLockAsync(lockEntity);
+            await encounterRepo.UpdateEncounterStatusAsync(dto.EncounterId, "Finalized");
 
             // TODO: trigger claim build in Module 6
             var claimBuildTriggered = false;
@@ -169,19 +158,19 @@ namespace Telebill.Services.Coding
             UnlockCodingDto dto,
             int userId)
         {
-            var enc = await _encounterRepo.GetEncounterByIdAsync(dto.EncounterId);
+            var enc = await encounterRepo.GetEncounterByIdAsync(dto.EncounterId);
             if (enc == null)
             {
                 throw new KeyNotFoundException("Encounter not found");
             }
 
-            var activeLock = await _lockRepo.GetActiveCodingLockAsync(dto.EncounterId);
+            var activeLock = await lockRepo.GetActiveCodingLockAsync(dto.EncounterId);
             if (activeLock == null)
             {
                 throw new InvalidOperationException("Encounter is not currently locked");
             }
 
-            var claimStatus = await _lockRepo.GetClaimStatusForEncounterAsync(dto.EncounterId);
+            var claimStatus = await lockRepo.GetClaimStatusForEncounterAsync(dto.EncounterId);
             if (!string.IsNullOrEmpty(claimStatus) &&
                 !string.Equals(claimStatus, "Draft", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(claimStatus, "ScrubError", StringComparison.OrdinalIgnoreCase))
@@ -190,8 +179,8 @@ namespace Telebill.Services.Coding
             }
 
             activeLock.Status = "Unlocked";
-            await _lockRepo.UpdateCodingLockAsync(activeLock);
-            await _encounterRepo.UpdateEncounterStatusAsync(dto.EncounterId, "ReadyForCoding");
+            await lockRepo.UpdateCodingLockAsync(activeLock);
+            await encounterRepo.UpdateEncounterStatusAsync(dto.EncounterId, "ReadyForCoding");
 
             var result = new UnlockCodingResponseDto
             {
@@ -205,7 +194,7 @@ namespace Telebill.Services.Coding
 
         public async Task<List<CodingLockResultDto>> GetCodingLockHistoryAsync(int encounterId)
         {
-            var list = await _lockRepo.GetCodingLockHistoryAsync(encounterId);
+            var list = await lockRepo.GetCodingLockHistoryAsync(encounterId);
 
             return list
                 .Select(cl => new CodingLockResultDto

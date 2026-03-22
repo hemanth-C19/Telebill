@@ -12,17 +12,8 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuditController : ControllerBase
+    public class AuditController(IAuditService auditService, TeleBillContext tb) : ControllerBase
     {
-        private readonly IAuditService auditService;
-        private readonly TeleBillContext tb;
-
-        public AuditController(IAuditService _auditservice, TeleBillContext _tb)
-        {
-            auditService = _auditservice;
-            tb = _tb;
-        }
-
         // IMPLEMENTED: GET /api/audit
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AuditLogDTO>>> GetAll()

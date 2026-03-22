@@ -10,17 +10,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Telebill.Services.Attestations
 {
-    public class AttestationService : IAttestationService
+    public class AttestationService(IAttestationRepository repo, TeleBillContext context) : IAttestationService
     {
-
-        private readonly IAttestationRepository _repo;
-        private readonly TeleBillContext _context; // for cross-entity validations
-
-        public AttestationService(IAttestationRepository repo, TeleBillContext context)
-        {
-            _repo = repo ?? throw new ArgumentNullException(nameof(repo));
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
+        private readonly IAttestationRepository _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+        private readonly TeleBillContext _context = context ?? throw new ArgumentNullException(nameof(context)); // for cross-entity validations
 
         public Task<AttestationDTO?> GetByEncounterId(int encounterId)
         {

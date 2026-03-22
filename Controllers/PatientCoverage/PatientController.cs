@@ -9,23 +9,21 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/Patient")] // One base route for the whole module
-    public class PatientController : ControllerBase
+    public class PatientController(IPatientService service) : ControllerBase
     {
-        private readonly IPatientService _service;
-        public PatientController(IPatientService service) => _service = service;
 
         // --- PATIENT ACTIONS ---
 
         [HttpGet("GetAllPatients")]
-        public async Task<IActionResult> GetAllPatients() => Ok(await _service.ListAllPatients());
+        public async Task<IActionResult> GetAllPatients() => Ok(await service.ListAllPatients());
 
         [HttpPost("RegisterPatient")]
-        public async Task<IActionResult> CreatePatient([FromBody] PatientDto dto) => Ok(await _service.RegisterPatient(dto));
+        public async Task<IActionResult> CreatePatient([FromBody] PatientDto dto) => Ok(await service.RegisterPatient(dto));
 
         [HttpGet("GetPatientById/{PatientId}")]
         public async Task<IActionResult> GetPatient(int patientid)
         {
-            var patient = await _service.GetPatientById(patientid);
+            var patient = await service.GetPatientById(patientid);
 
             if (patient == null)
             {
@@ -41,7 +39,7 @@ namespace Telebill.Controllers
             if (patientId <= 0) return BadRequest("Invalid Patient ID");
 
             // Call the service to actually save changes to the DB
-            await _service.UpdatePatient(patientId, dto);
+            await service.UpdatePatient(patientId, dto);
 
             return Ok(new { message = $"Patient with ID {patientId} updated successfully" });
         }
@@ -51,7 +49,7 @@ namespace Telebill.Controllers
 [HttpDelete("DeletePatientByID/{PatientId}")]
 public async Task<IActionResult> DeletePatient(int patientId)
 {
-    var success = await _service.RemovePatient(patientId);
+    var success = await service.RemovePatient(patientId);
     if (!success) return NotFound();
     return Ok(new { message = $"Patient {patientId} and all associated data deleted." });
 }

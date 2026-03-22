@@ -1,39 +1,29 @@
-using System;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Telebill.Dto.Auth;
 using Telebill.Services.Auth;
-using Telebill.Data;
 
+namespace Telebill.Controllers;
 
-
-namespace Telebill.Controllers
+[ApiController]
+[AllowAnonymous]
+[Route("api/[controller]-Module")]
+public class AuthController(IAuthService authService) : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]-Module")]
-    public class AuthController : ControllerBase
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
-        IAuthService authService;
+        var result = await authService.LoginAsync(loginDto);
+        if (result == null)
+            return Unauthorized();
 
-        public AuthController(IAuthService _authService)
-        {
-            this.authService = _authService;
-        }
+        return Ok(result);
+    }
 
-        [HttpPost]
-        [Route("login")]
-        public async Task<IActionResult> Login(string email)
-        {
-            bool loginSuccess = await authService.Login(email);
-            if (loginSuccess)
-                return Ok(new { message = "Login successful" });
-            else
-                return NotFound(new { message = "Account does not exist" });
-        }
-
-        [HttpPost("logout")]
-        public IActionResult Logout()
-        {
-            authService.Logout();
-            return Ok(new { message = "Logout successful" });
-        }
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        authService.Logout();
+        return Ok(new { message = "Logout successful" });
     }
 }

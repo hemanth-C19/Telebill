@@ -9,27 +9,18 @@ using Telebill.Repositories.Claims;
 
 namespace Services;
 
-public class ClaimScrubService : IClaimScrubService
+public class ClaimScrubService(IClaimRepository repo, IClaimX12Service x12Service) : IClaimScrubService
 {
-    private readonly IClaimRepository _repo;
-    private readonly IClaimX12Service _x12Service;
-
-    public ClaimScrubService(IClaimRepository repo, IClaimX12Service x12Service)
-    {
-        _repo = repo;
-        _x12Service = x12Service;
-    }
-
     public async Task<ScrubResultDto?> ScrubClaimAsync(int claimID)
     {
-        var claim = await _repo.GetByIdWithLinesAsync(claimID);
+        var claim = await repo.GetByIdWithLinesAsync(claimID);
         if (claim == null)
         {
             throw new KeyNotFoundException("Claim not found");
         }
 
-        var rules = await _repo.GetActiveScrubRulesAsync();
-        var encounter = await _repo.GetEncounterByIdAsync(claim.EncounterId ?? 0);
+        var rules = await repo.GetActiveScrubRulesAsync();
+        var encounter = await repo.GetEncounterByIdAsync(claim.EncounterId ?? 0);
         Coverage? coverage = null;
         PayerPlan? plan = null;
         Provider? provider = null;
@@ -39,25 +30,25 @@ public class ClaimScrubService : IClaimScrubService
         {
             if (encounter.PatientId.HasValue)
             {
-                coverage = await _repo.GetActiveCoverageForEncounterAsync(
+                coverage = await repo.GetActiveCoverageForEncounterAsync(
                     encounter.PatientId.Value,
                     encounter.EncounterDateTime);
 
                 if (coverage?.PlanId != null)
                 {
-                    plan = await _repo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
+                    plan = await repo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
                 }
             }
 
             if (encounter.ProviderId.HasValue)
             {
-                provider = await _repo.GetProviderByIdAsync(encounter.ProviderId.Value);
+                provider = await repo.GetProviderByIdAsync(encounter.ProviderId.Value);
             }
 
-            diagnoses = await _repo.GetActiveDiagnosesByEncounterAsync(encounter.EncounterId);
+            diagnoses = await repo.GetActiveDiagnosesByEncounterAsync(encounter.EncounterId);
         }
 
-        var existingIssues = await _repo.GetIssuesByClaimIDAsync(claimID, "Open");
+        var existingIssues = await repo.GetIssuesByClaimIDAsync(claimID, "Open");
 
         int totalRulesEvaluated = 0;
         int newIssues = 0;
@@ -100,22 +91,22 @@ public class ClaimScrubService : IClaimScrubService
             }
         }
 
-        var openErrors = await _repo.CountOpenErrorsAsync(claimID);
-        var openWarnings = await _repo.CountOpenWarningsAsync(claimID);
+        var openErrors = await repo.CountOpenErrorsAsync(claimID);
+        var openWarnings = await repo.CountOpenWarningsAsync(claimID);
 
         if (openErrors == 0)
         {
-            await _repo.UpdateStatusAsync(claimID, "Ready");
-            await _x12Service.Generate837PAsync(claimID);
+            await repo.UpdateStatusAsync(claimID, "Ready");
+            await x12Service.Generate837PAsync(claimID);
             claim.ClaimStatus = "Ready";
         }
         else
         {
-            await _repo.UpdateStatusAsync(claimID, "ScrubError");
+            await repo.UpdateStatusAsync(claimID, "ScrubError");
             claim.ClaimStatus = "ScrubError";
         }
 
-        var allIssues = await _repo.GetIssuesByClaimIDAsync(claimID, "all");
+        var allIssues = await repo.GetIssuesByClaimIDAsync(claimID, "all");
 
         return new ScrubResultDto
         {
@@ -145,7 +136,7 @@ public class ClaimScrubService : IClaimScrubService
 
     public async Task<List<ScrubIssueDto>> GetScrubIssuesAsync(int claimID, string statusFilter)
     {
-        var issues = await _repo.GetIssuesByClaimIDAsync(claimID, statusFilter);
+        var issues = await repo.GetIssuesByClaimIDAsync(claimID, statusFilter);
         return issues.Select(i => new ScrubIssueDto
         {
             IssueID = i.IssueId,
@@ -162,7 +153,7 @@ public class ClaimScrubService : IClaimScrubService
 
     public async Task<ResolveIssueResponseDto?> ResolveIssueAsync(int claimID, int issueID, ResolveIssueRequestDto dto)
     {
-        var issue = await _repo.GetIssueByIdAsync(issueID);
+        var issue = await repo.GetIssueByIdAsync(issueID);
         if (issue == null || issue.ClaimId != claimID)
         {
             throw new KeyNotFoundException("Scrub issue not found");
@@ -173,7 +164,7 @@ public class ClaimScrubService : IClaimScrubService
             throw new ArgumentException("Issue already resolved");
         }
 
-        await _repo.ResolveIssueAsync(issueID);
+        await repo.ResolveIssueAsync(issueID);
 
         var scrubResult = await ScrubClaimAsync(claimID);
 
@@ -191,7 +182,7 @@ public class ClaimScrubService : IClaimScrubService
     public async Task<ScrubBatchResultDto> RunScrubBatchAsync()
     {
         var started = DateTime.UtcNow;
-        var allDraftOrError = (await _repo.GetClaimsPagedAsync(new ClaimFilterParams
+        var allDraftOrError = (await repo.GetClaimsPagedAsync(new ClaimFilterParams
         {
             Page = 1,
             PageSize = int.MaxValue
@@ -455,7 +446,7 @@ public class ClaimScrubService : IClaimScrubService
 
         foreach (var line in claimLines)
         {
-            var found = await _repo.GetFeeScheduleAsync(
+            var found = await repo.GetFeeScheduleAsync(
                 plan.PlanId,
                 line.CptHcpcs ?? string.Empty,
                 line.Modifiers,
@@ -512,7 +503,7 @@ public class ClaimScrubService : IClaimScrubService
                     DetectedDate = DateTime.UtcNow,
                     Status = "Open"
                 };
-                await _repo.CreateIssueAsync(issue);
+                await repo.CreateIssueAsync(issue);
                 newIssues++;
             }
         }
@@ -520,7 +511,7 @@ public class ClaimScrubService : IClaimScrubService
         {
             if (existingIssue != null && existingIssue.Status == "Open")
             {
-                await _repo.ResolveIssueByRuleAsync(claimID, rule.RuleId, claimLineID);
+                await repo.ResolveIssueByRuleAsync(claimID, rule.RuleId, claimLineID);
                 autoResolved++;
             }
         }

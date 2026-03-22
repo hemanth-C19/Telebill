@@ -9,21 +9,14 @@ namespace Telebill.Controllers.PreCert;
 
 [ApiController]
 [Route("api/v1/precert/prior-auth")]
-public class PriorAuthController : ControllerBase
+public class PriorAuthController(IPreCertService service) : ControllerBase
 {
-    private readonly IPreCertService _service;
-
-    public PriorAuthController(IPreCertService service)
-    {
-        _service = service;
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePriorAuthRequestDto dto)
     {
         try
         {
-            var result = await _service.CreatePriorAuthAsync(dto, GetCurrentUserId());
+            var result = await service.CreatePriorAuthAsync(dto, GetCurrentUserId());
             return StatusCode(201, result);
         }
         catch (KeyNotFoundException ex)
@@ -43,7 +36,7 @@ public class PriorAuthController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int? claimID, [FromQuery] int? planID, [FromQuery] string? status, [FromQuery] bool? expiringSoon)
     {
-        var result = await _service.GetPriorAuthsAsync(claimID, planID, status, expiringSoon);
+        var result = await service.GetPriorAuthsAsync(claimID, planID, status, expiringSoon);
         return Ok(result);
     }
 
@@ -52,7 +45,7 @@ public class PriorAuthController : ControllerBase
     {
         try
         {
-            var result = await _service.GetPriorAuthByIdAsync(paid);
+            var result = await service.GetPriorAuthByIdAsync(paid);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -66,7 +59,7 @@ public class PriorAuthController : ControllerBase
     {
         try
         {
-            var result = await _service.GetPriorAuthsByClaimAsync(claimID);
+            var result = await service.GetPriorAuthsByClaimAsync(claimID);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -80,7 +73,7 @@ public class PriorAuthController : ControllerBase
     {
         try
         {
-            var result = await _service.UpdatePriorAuthAsync(paid, dto, GetCurrentUserId());
+            var result = await service.UpdatePriorAuthAsync(paid, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -98,7 +91,7 @@ public class PriorAuthController : ControllerBase
     {
         try
         {
-            await _service.SoftDeletePriorAuthAsync(paid, GetCurrentUserId());
+            await service.SoftDeletePriorAuthAsync(paid, GetCurrentUserId());
             return NoContent();
         }
         catch (KeyNotFoundException ex)

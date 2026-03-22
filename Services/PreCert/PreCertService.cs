@@ -9,29 +9,22 @@ using Telebill.Repositories.PreCert;
 
 namespace Telebill.Services.PreCert;
 
-public class PreCertService : IPreCertService
+public class PreCertService(IPreCertRepository repo) : IPreCertService
 {
-    private readonly IPreCertRepository _repo;
-
-    public PreCertService(IPreCertRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<PriorAuthDto> CreatePriorAuthAsync(CreatePriorAuthRequestDto dto, int currentUserID)
     {
-        if (!await _repo.ClaimExistsAsync(dto.ClaimID))
+        if (!await repo.ClaimExistsAsync(dto.ClaimID))
         {
             throw new KeyNotFoundException("Claim not found");
         }
 
-        var plan = await _repo.GetPayerPlanWithPayerAsync(dto.PlanID);
+        var plan = await repo.GetPayerPlanWithPayerAsync(dto.PlanID);
         if (plan == null)
         {
             throw new KeyNotFoundException("Payer plan not found");
         }
 
-        if (await _repo.ActivePriorAuthExistsForClaimAsync(dto.ClaimID))
+        if (await repo.ActivePriorAuthExistsForClaimAsync(dto.ClaimID))
         {
             throw new InvalidOperationException("An active PA request already exists for this claim");
         }
@@ -47,9 +40,9 @@ public class PreCertService : IPreCertService
             Status = "Requested"
         };
 
-        entity = await _repo.CreatePriorAuthAsync(entity);
+        entity = await repo.CreatePriorAuthAsync(entity);
 
-        await _repo.WriteAuditLogAsync(
+        await repo.WriteAuditLogAsync(
             currentUserID,
             "CREATE_PRIOR_AUTH",
             $"PriorAuth:{entity.Paid}",
@@ -65,7 +58,7 @@ public class PreCertService : IPreCertService
 
     public async Task<PriorAuthListResponseDto> GetPriorAuthsAsync(int? claimID, int? planID, string? status, bool? expiringSoon)
     {
-        var items = await _repo.GetPriorAuthsAsync(claimID, planID, status, expiringSoon);
+        var items = await repo.GetPriorAuthsAsync(claimID, planID, status, expiringSoon);
         var mapped = items.Select(pa => MapPriorAuth(pa, pa.Plan)).ToList();
         return new PriorAuthListResponseDto
         {
@@ -76,7 +69,7 @@ public class PreCertService : IPreCertService
 
     public async Task<PriorAuthDto> GetPriorAuthByIdAsync(int paid)
     {
-        var entity = await _repo.GetPriorAuthByIdAsync(paid);
+        var entity = await repo.GetPriorAuthByIdAsync(paid);
         if (entity == null)
         {
             throw new KeyNotFoundException("PA not found");
@@ -87,18 +80,18 @@ public class PreCertService : IPreCertService
 
     public async Task<List<PriorAuthDto>> GetPriorAuthsByClaimAsync(int claimID)
     {
-        if (!await _repo.ClaimExistsAsync(claimID))
+        if (!await repo.ClaimExistsAsync(claimID))
         {
             throw new KeyNotFoundException("Claim not found");
         }
 
-        var items = await _repo.GetPriorAuthsByClaimAsync(claimID);
+        var items = await repo.GetPriorAuthsByClaimAsync(claimID);
         return items.Select(pa => MapPriorAuth(pa, pa.Plan)).ToList();
     }
 
     public async Task<PriorAuthDto> UpdatePriorAuthAsync(int paid, UpdatePriorAuthRequestDto dto, int currentUserID)
     {
-        var entity = await _repo.GetPriorAuthByIdAsync(paid);
+        var entity = await repo.GetPriorAuthByIdAsync(paid);
         if (entity == null)
         {
             throw new KeyNotFoundException("PA not found");
@@ -140,9 +133,9 @@ public class PreCertService : IPreCertService
         if (dto.ApprovedTo != null) entity.ApprovedTo = dto.ApprovedTo;
         if (dto.Status != null) entity.Status = dto.Status;
 
-        await _repo.UpdatePriorAuthAsync(entity);
+        await repo.UpdatePriorAuthAsync(entity);
 
-        await _repo.WriteAuditLogAsync(
+        await repo.WriteAuditLogAsync(
             currentUserID,
             "UPDATE_PRIOR_AUTH",
             $"PriorAuth:{paid}",
@@ -158,7 +151,7 @@ public class PreCertService : IPreCertService
 
     public async Task SoftDeletePriorAuthAsync(int paid, int currentUserID)
     {
-        var entity = await _repo.GetPriorAuthByIdAsync(paid);
+        var entity = await repo.GetPriorAuthByIdAsync(paid);
         if (entity == null)
         {
             throw new KeyNotFoundException("PA not found");
@@ -166,9 +159,9 @@ public class PreCertService : IPreCertService
 
         var previousStatus = entity.Status;
         entity.Status = "Expired";
-        await _repo.UpdatePriorAuthAsync(entity);
+        await repo.UpdatePriorAuthAsync(entity);
 
-        await _repo.WriteAuditLogAsync(
+        await repo.WriteAuditLogAsync(
             currentUserID,
             "SOFT_DELETE_PRIOR_AUTH",
             $"PriorAuth:{paid}",
@@ -180,21 +173,21 @@ public class PreCertService : IPreCertService
         var systemUserId = 0;
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var overdue = await _repo.GetExpiredPriorAuthsAsync();
+        var overdue = await repo.GetExpiredPriorAuthsAsync();
         foreach (var pa in overdue)
         {
             pa.Status = "Expired";
-            await _repo.UpdatePriorAuthAsync(pa);
-            await _repo.WriteAuditLogAsync(systemUserId, "AUTO_EXPIRE_PRIOR_AUTH", $"PriorAuth:{pa.Paid}", null);
+            await repo.UpdatePriorAuthAsync(pa);
+            await repo.WriteAuditLogAsync(systemUserId, "AUTO_EXPIRE_PRIOR_AUTH", $"PriorAuth:{pa.Paid}", null);
         }
 
-        var expiringSoon = await _repo.GetExpiringSoonPriorAuthsAsync(7);
+        var expiringSoon = await repo.GetExpiringSoonPriorAuthsAsync(7);
         if (expiringSoon.Count == 0)
         {
             return;
         }
 
-        var frontDeskUsers = await _repo.GetUsersByRoleAsync("FrontDesk");
+        var frontDeskUsers = await repo.GetUsersByRoleAsync("FrontDesk");
         foreach (var pa in expiringSoon)
         {
             var msg =
@@ -202,19 +195,19 @@ public class PreCertService : IPreCertService
 
             foreach (var user in frontDeskUsers)
             {
-                await _repo.CreateNotificationAsync(user.UserId, msg, "Scrub");
+                await repo.CreateNotificationAsync(user.UserId, msg, "Scrub");
             }
         }
     }
 
     public Task<bool> HasApprovedPriorAuthAsync(int claimID, DateOnly encounterDate)
     {
-        return _repo.HasApprovedPriorAuthAsync(claimID, encounterDate);
+        return repo.HasApprovedPriorAuthAsync(claimID, encounterDate);
     }
 
     public async Task<AttachmentDto> CreateAttachmentAsync(CreateAttachmentRequestDto dto, int currentUserID)
     {
-        if (!await _repo.ClaimExistsAsync(dto.ClaimID))
+        if (!await repo.ClaimExistsAsync(dto.ClaimID))
         {
             throw new KeyNotFoundException("Claim not found");
         }
@@ -240,28 +233,28 @@ public class PreCertService : IPreCertService
             Status = "Active"
         };
 
-        entity = await _repo.CreateAttachmentAsync(entity);
+        entity = await repo.CreateAttachmentAsync(entity);
 
-        await _repo.WriteAuditLogAsync(
+        await repo.WriteAuditLogAsync(
             currentUserID,
             "CREATE_ATTACHMENT",
             $"AttachmentRef:{entity.AttachId}",
             JsonSerializer.Serialize(new { claimID = dto.ClaimID, fileType = dto.FileType, notes = dto.Notes }));
 
-        var user = await _repo.GetUserByIdAsync(currentUserID);
+        var user = await repo.GetUserByIdAsync(currentUserID);
 
         return MapAttachment(entity, user);
     }
 
     public async Task<AttachmentListResponseDto> GetAttachmentsByClaimAsync(int claimID, string status)
     {
-        if (!await _repo.ClaimExistsAsync(claimID))
+        if (!await repo.ClaimExistsAsync(claimID))
         {
             throw new KeyNotFoundException("Claim not found");
         }
 
         var effectiveStatus = string.IsNullOrWhiteSpace(status) ? "Active" : status;
-        var items = await _repo.GetAttachmentsByClaimAsync(claimID, effectiveStatus);
+        var items = await repo.GetAttachmentsByClaimAsync(claimID, effectiveStatus);
 
         var mapped = items.Select(a => MapAttachment(a, a.UploadedByNavigation)).ToList();
         return new AttachmentListResponseDto
@@ -273,7 +266,7 @@ public class PreCertService : IPreCertService
 
     public async Task<AttachmentDto> GetAttachmentByIdAsync(int attachId)
     {
-        var entity = await _repo.GetAttachmentByIdAsync(attachId);
+        var entity = await repo.GetAttachmentByIdAsync(attachId);
         if (entity == null)
         {
             throw new KeyNotFoundException("Attachment not found");
@@ -284,7 +277,7 @@ public class PreCertService : IPreCertService
 
     public async Task<AttachmentDto> UpdateAttachmentStatusAsync(int attachId, UpdateAttachmentStatusRequestDto dto, int currentUserID)
     {
-        var entity = await _repo.GetAttachmentByIdAsync(attachId);
+        var entity = await repo.GetAttachmentByIdAsync(attachId);
         if (entity == null)
         {
             throw new KeyNotFoundException("Attachment not found");
@@ -297,9 +290,9 @@ public class PreCertService : IPreCertService
 
         var previousStatus = entity.Status;
         entity.Status = dto.Status;
-        await _repo.UpdateAttachmentAsync(entity);
+        await repo.UpdateAttachmentAsync(entity);
 
-        await _repo.WriteAuditLogAsync(
+        await repo.WriteAuditLogAsync(
             currentUserID,
             "UPDATE_ATTACHMENT_STATUS",
             $"AttachmentRef:{attachId}",

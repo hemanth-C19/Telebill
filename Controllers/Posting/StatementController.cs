@@ -9,21 +9,14 @@ namespace Telebill.Controllers.Posting;
 
 [ApiController]
 [Route("api/v1/posting/statements")]
-public class StatementController : ControllerBase
+public class StatementController(IPostingService service) : ControllerBase
 {
-    private readonly IPostingService _service;
-
-    public StatementController(IPostingService service)
-    {
-        _service = service;
-    }
-
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromBody] GenerateStatementRequestDto dto)
     {
         try
         {
-            var result = await _service.GenerateStatementAsync(dto, GetCurrentUserId());
+            var result = await service.GenerateStatementAsync(dto, GetCurrentUserId());
             return StatusCode(201, result);
         }
         catch (ArgumentException ex)
@@ -45,7 +38,7 @@ public class StatementController : ControllerBase
     {
         try
         {
-            var result = await _service.GenerateStatementBatchAsync(dto);
+            var result = await service.GenerateStatementBatchAsync(dto);
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -63,7 +56,7 @@ public class StatementController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25)
     {
-        var result = await _service.GetStatementsAsync(patientID, status, dateFrom, dateTo, page, pageSize);
+        var result = await service.GetStatementsAsync(patientID, status, dateFrom, dateTo, page, pageSize);
         return Ok(result);
     }
 
@@ -72,7 +65,7 @@ public class StatementController : ControllerBase
     {
         try
         {
-            var result = await _service.GetStatementByIdAsync(statementID);
+            var result = await service.GetStatementByIdAsync(statementID);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -86,7 +79,7 @@ public class StatementController : ControllerBase
     {
         try
         {
-            var result = await _service.UpdateStatementStatusAsync(statementID, dto, GetCurrentUserId());
+            var result = await service.UpdateStatementStatusAsync(statementID, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException)

@@ -9,19 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Telebill.Repositories.Attestations
 {
-    public class AttestationRepository : IAttestationRepository
+    public class AttestationRepository(TeleBillContext context) : IAttestationRepository
     {
-
-        private readonly TeleBillContext _context;
-
-        public AttestationRepository(TeleBillContext context)
-        {
-            _context = context;
-        }
-
         public async Task<AttestationDTO?> GetByEncounterId(int encounterId)
         {
-            return await _context.Attestations
+            return await context.Attestations
                 .Where(a => a.EncounterId == encounterId)
                 .OrderByDescending(a => a.AttestDate) // latest if multiple (rare)
                 .Select(a => new AttestationDTO
@@ -38,7 +30,7 @@ namespace Telebill.Repositories.Attestations
 
         public async Task<AttestationDTO?> GetById(int attestId)
         {
-            return await _context.Attestations
+            return await context.Attestations
                 .Where(a => a.AttestId == attestId)
                 .Select(a => new AttestationDTO
                 {
@@ -63,8 +55,8 @@ namespace Telebill.Repositories.Attestations
                 Status = "Draft"
             };
 
-            _context.Attestations.Add(entity);
-            await _context.SaveChangesAsync();
+            context.Attestations.Add(entity);
+            await context.SaveChangesAsync();
 
             return new AttestationDTO
             {
@@ -79,7 +71,7 @@ namespace Telebill.Repositories.Attestations
 
         public async Task<AttestationDTO?> Update(int attestId, AttestationUpdateDto dto)
         {
-            var entity = await _context.Attestations.FirstOrDefaultAsync(a => a.AttestId == attestId);
+            var entity = await context.Attestations.FirstOrDefaultAsync(a => a.AttestId == attestId);
             if (entity == null) return null;
 
             if (!string.IsNullOrWhiteSpace(dto.AttestText))
@@ -88,7 +80,7 @@ namespace Telebill.Repositories.Attestations
             if (!string.IsNullOrWhiteSpace(dto.Status))
                 entity.Status = dto.Status;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return new AttestationDTO
             {
@@ -103,22 +95,22 @@ namespace Telebill.Repositories.Attestations
 
         public async Task<bool> Delete(int attestId)
         {
-            var entity = await _context.Attestations.FindAsync(attestId);
+            var entity = await context.Attestations.FindAsync(attestId);
             if (entity == null) return false;
 
-            _context.Attestations.Remove(entity);
-            await _context.SaveChangesAsync();
+            context.Attestations.Remove(entity);
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> Finalize(int attestId, DateTime signedDate, string? status = "Signed")
         {
-            var entity = await _context.Attestations.FindAsync(attestId);
+            var entity = await context.Attestations.FindAsync(attestId);
             if (entity == null) return false;
 
             entity.AttestDate = signedDate;
             entity.Status = status ?? "Signed";
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 

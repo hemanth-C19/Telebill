@@ -9,20 +9,13 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.AR;
 
-public class ArRepository : IArRepository
+public class ArRepository(TeleBillContext context) : IArRepository
 {
-    private readonly TeleBillContext _context;
-
-    public ArRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
-
     // ── DENIAL ───────────────────────────────────────────────────
 
     public async Task<List<Denial>> GetDenialsAsync(ArWorklistFilterParams filters)
     {
-        var query = _context.Denials.AsQueryable();
+        var query = context.Denials.AsQueryable();
 
         if (!string.IsNullOrEmpty(filters.DenialStatus))
         {
@@ -48,12 +41,12 @@ public class ArRepository : IArRepository
 
         if (filters.PayerId.HasValue)
         {
-            var planIds = await _context.PayerPlans
+            var planIds = await context.PayerPlans
                 .Where(pp => pp.PayerId == filters.PayerId.Value)
                 .Select(pp => pp.PlanId)
                 .ToListAsync();
 
-            var claimIds = await _context.Claims
+            var claimIds = await context.Claims
                 .Where(c => c.PlanId.HasValue && planIds.Contains(c.PlanId.Value))
                 .Select(c => c.ClaimId)
                 .ToListAsync();
@@ -88,13 +81,13 @@ public class ArRepository : IArRepository
 
     public Task<Denial?> GetDenialByIdAsync(int denialId)
     {
-        return _context.Denials
+        return context.Denials
             .FirstOrDefaultAsync(d => d.DenialId == denialId);
     }
 
     public Task<List<Denial>> GetDenialsByClaimIdAsync(int claimId)
     {
-        return _context.Denials
+        return context.Denials
             .Where(d => d.ClaimId == claimId)
             .OrderByDescending(d => d.DenialDate)
             .ToListAsync();
@@ -102,14 +95,14 @@ public class ArRepository : IArRepository
 
     public async Task UpdateDenialAsync(Denial denial)
     {
-        _context.Denials.Update(denial);
-        await _context.SaveChangesAsync();
+        context.Denials.Update(denial);
+        await context.SaveChangesAsync();
     }
 
     public async Task<Denial> AddDenialAsync(Denial denial)
     {
-        await _context.Denials.AddAsync(denial);
-        await _context.SaveChangesAsync();
+        await context.Denials.AddAsync(denial);
+        await context.SaveChangesAsync();
         return denial;
     }
 
@@ -117,13 +110,13 @@ public class ArRepository : IArRepository
 
     public Task<Claim?> GetClaimByIdAsync(int claimId)
     {
-        return _context.Claims
+        return context.Claims
             .FirstOrDefaultAsync(c => c.ClaimId == claimId);
     }
 
     public Task<List<ClaimLine>> GetClaimLinesByClaimIdAsync(int claimId)
     {
-        return _context.ClaimLines
+        return context.ClaimLines
             .Where(cl => cl.ClaimId == claimId)
             .OrderBy(cl => cl.LineNo)
             .ToListAsync();
@@ -131,11 +124,11 @@ public class ArRepository : IArRepository
 
     public async Task UpdateClaimStatusAsync(int claimId, string newStatus)
     {
-        var claim = await _context.Claims.FindAsync(claimId);
+        var claim = await context.Claims.FindAsync(claimId);
         if (claim != null)
         {
             claim.ClaimStatus = newStatus;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
     }
 
@@ -143,7 +136,7 @@ public class ArRepository : IArRepository
 
     public Task<List<PaymentPost>> GetPaymentPostsByClaimIdAsync(int claimId)
     {
-        return _context.PaymentPosts
+        return context.PaymentPosts
             .Where(pp => pp.ClaimId == claimId && pp.Status == "Active")
             .OrderBy(pp => pp.PostedDate)
             .ToListAsync();
@@ -153,7 +146,7 @@ public class ArRepository : IArRepository
 
     public Task<List<SubmissionRef>> GetSubmissionRefsByClaimIdAsync(int claimId)
     {
-        return _context.SubmissionRefs
+        return context.SubmissionRefs
             .Where(sr => sr.ClaimId == claimId)
             .OrderByDescending(sr => sr.SubmitDate)
             .ToListAsync();
@@ -163,7 +156,7 @@ public class ArRepository : IArRepository
 
     public Task<List<AttachmentRef>> GetAttachmentsByClaimIdAsync(int claimId)
     {
-        return _context.AttachmentRefs
+        return context.AttachmentRefs
             .Where(a => a.ClaimId == claimId && a.Status != "Deleted")
             .OrderByDescending(a => a.UploadedDate)
             .ToListAsync();
@@ -171,8 +164,8 @@ public class ArRepository : IArRepository
 
     public async Task<AttachmentRef> AddAttachmentAsync(AttachmentRef attachment)
     {
-        await _context.AttachmentRefs.AddAsync(attachment);
-        await _context.SaveChangesAsync();
+        await context.AttachmentRefs.AddAsync(attachment);
+        await context.SaveChangesAsync();
         return attachment;
     }
 
@@ -181,7 +174,7 @@ public class ArRepository : IArRepository
     public Task<FeeSchedule?> GetFeeScheduleAsync(int planId, string cptHcpcs,
                                                   string? modifierCombo, DateOnly serviceDate)
     {
-        var query = _context.FeeSchedules
+        var query = context.FeeSchedules
             .Where(f =>
                 f.PlanId == planId &&
                 f.CptHcpcs == cptHcpcs &&
@@ -201,39 +194,39 @@ public class ArRepository : IArRepository
 
     public async Task<Encounter?> GetEncounterByClaimIdAsync(int claimId)
     {
-        var claim = await _context.Claims
+        var claim = await context.Claims
             .FirstOrDefaultAsync(c => c.ClaimId == claimId);
         if (claim == null || !claim.EncounterId.HasValue) return null;
 
-        return await _context.Encounters
+        return await context.Encounters
             .FirstOrDefaultAsync(e => e.EncounterId == claim.EncounterId.Value);
     }
 
     public Task<Patient?> GetPatientByIdAsync(int patientId)
     {
-        return _context.Patients
+        return context.Patients
             .FirstOrDefaultAsync(p => p.PatientId == patientId);
     }
 
     public async Task<Payer?> GetPayerByPlanIdAsync(int planId)
     {
-        var plan = await _context.PayerPlans
+        var plan = await context.PayerPlans
             .FirstOrDefaultAsync(pp => pp.PlanId == planId);
         if (plan == null || !plan.PayerId.HasValue) return null;
 
-        return await _context.Payers
+        return await context.Payers
             .FirstOrDefaultAsync(p => p.PayerId == plan.PayerId.Value);
     }
 
     public Task<PayerPlan?> GetPayerPlanByIdAsync(int planId)
     {
-        return _context.PayerPlans
+        return context.PayerPlans
             .FirstOrDefaultAsync(pp => pp.PlanId == planId);
     }
 
     public Task<List<Claim>> GetPartiallyPaidClaimsAsync()
     {
-        return _context.Claims
+        return context.Claims
             .Where(c => c.ClaimStatus == "PartiallyPaid")
             .ToListAsync();
     }
@@ -242,19 +235,19 @@ public class ArRepository : IArRepository
 
     public Task<List<Denial>> GetAllOpenDenialsAsync()
     {
-        return _context.Denials
+        return context.Denials
             .Where(d => d.Status == "Open" || d.Status == "Appealed")
             .ToListAsync();
     }
 
     public async Task<int> GetTotalClaimsSubmittedByPayerAsync(int payerId)
     {
-        var planIds = await _context.PayerPlans
+        var planIds = await context.PayerPlans
             .Where(pp => pp.PayerId == payerId)
             .Select(pp => pp.PlanId)
             .ToListAsync();
 
-        return await _context.Claims
+        return await context.Claims
             .Where(c => c.PlanId.HasValue && planIds.Contains(c.PlanId.Value))
             .CountAsync();
     }
@@ -263,6 +256,6 @@ public class ArRepository : IArRepository
 
     public Task SaveChangesAsync()
     {
-        return _context.SaveChangesAsync();
+        return context.SaveChangesAsync();
     }
 }

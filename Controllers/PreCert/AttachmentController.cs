@@ -9,21 +9,14 @@ namespace Telebill.Controllers.PreCert;
 
 [ApiController]
 [Route("api/v1/precert/attachments")]
-public class AttachmentController : ControllerBase
+public class AttachmentController(IPreCertService service) : ControllerBase
 {
-    private readonly IPreCertService _service;
-
-    public AttachmentController(IPreCertService service)
-    {
-        _service = service;
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateAttachmentRequestDto dto)
     {
         try
         {
-            var result = await _service.CreateAttachmentAsync(dto, GetCurrentUserId());
+            var result = await service.CreateAttachmentAsync(dto, GetCurrentUserId());
             return StatusCode(201, result);
         }
         catch (KeyNotFoundException ex)
@@ -41,7 +34,7 @@ public class AttachmentController : ControllerBase
     {
         try
         {
-            var result = await _service.GetAttachmentsByClaimAsync(claimID, status);
+            var result = await service.GetAttachmentsByClaimAsync(claimID, status);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -55,7 +48,7 @@ public class AttachmentController : ControllerBase
     {
         try
         {
-            var result = await _service.GetAttachmentByIdAsync(attachId);
+            var result = await service.GetAttachmentByIdAsync(attachId);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -69,7 +62,7 @@ public class AttachmentController : ControllerBase
     {
         try
         {
-            var result = await _service.UpdateAttachmentStatusAsync(attachId, dto, GetCurrentUserId());
+            var result = await service.UpdateAttachmentStatusAsync(attachId, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
