@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Telebill.Controllers.MasterData
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/MasterData/[controller]")]
     public class PayerController(IPayerService payerService) : ControllerBase
     {
         [HttpGet("GetAllPayers")]

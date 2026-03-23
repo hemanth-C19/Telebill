@@ -8,7 +8,7 @@ namespace Telebill.Controllers
 {
     [ApiController]
     // Base URL: /MyProject/User
-    [Route("MyProject/[controller]")]
+    [Route("api/v1/IdentityAccess/[controller]")]
     public class UserController(IUserService userService) : ControllerBase
     {
         // POST: /MyProject/User/AddUser

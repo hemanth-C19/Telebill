@@ -8,7 +8,7 @@ using Telebill.DTOs;
 namespace Telebill.Controllers.PatientCoverage
 {
     [ApiController]
-    [Route("api/Coverage")]
+    [Route("api/v1/PatientCoverage/[controller]")]
     public class CoverageController(IPatientService service) : ControllerBase
     {
 

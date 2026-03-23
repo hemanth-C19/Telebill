@@ -10,7 +10,7 @@ namespace Telebill.Controllers
 {
     [ApiController]
     // [Route("api/[controller]")]
-    [Route("EncounterModule/[controller]")]
+    [Route("api/v1/Encounter/[controller]")]
 
     public class EncounterController(IEncounterService service) : ControllerBase
     {

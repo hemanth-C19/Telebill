@@ -9,7 +9,7 @@ using Telebill.Services.ChargeLines;
 namespace Telebill.Controllers
 {
     [ApiController]
-    [Route("EncounterModule/[controller]")]
+    [Route("api/v1/Encounter/[controller]")]
     public class ChargeLineController(IChargeLineService service) : ControllerBase
     {
         // GET: EncounterModule/ChargeLine/ByEncounter/123

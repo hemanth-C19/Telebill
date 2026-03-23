@@ -9,11 +9,11 @@ using Telebill.Services.Attestations;
 namespace Telebill.Controllers
 {
     [ApiController]
-    [Route("EncounterModule/[controller]")]
+    [Route("api/v1/Encounter/[controller]")]
     public class AttestationController(IAttestationService service) : ControllerBase
     {
         // GET: EncounterModule/Attestation/ByEncounter/123
-        [HttpGet("ByEncounter/get-by-encounterId")]
+        [HttpGet("get-by-encounterId")]
         public async Task<IActionResult> GetByEncounterId([FromRoute] int encounterId, CancellationToken ct)
         {
             try

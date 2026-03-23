@@ -11,10 +11,9 @@ using Telebill.Services.IdentityAccess;
 namespace Telebill.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/IdentityAccess/[controller]")]
     public class AuditController(IAuditService auditService, TeleBillContext tb) : ControllerBase
     {
-        // IMPLEMENTED: GET /api/audit
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AuditLogDTO>>> GetAll()
         {
