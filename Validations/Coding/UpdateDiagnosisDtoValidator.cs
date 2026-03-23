@@ -13,12 +13,12 @@ public class UpdateDiagnosisDtoValidator : AbstractValidator<UpdateDiagnosisDto>
     public UpdateDiagnosisDtoValidator()
     {
         RuleFor(x => x.ICD10Code)
-            .MaximumLength(12)
+            .MaximumLength(15)
             .Must(code => string.IsNullOrWhiteSpace(code) || Icd10Pattern.IsMatch(code.Trim()))
             .WithMessage("ICD10Code must look like a valid ICD-10 code (e.g. E11.9, Z00.00).");
 
         RuleFor(x => x.Description)
-            .MaximumLength(500)
+            .MaximumLength(255)
             .When(x => x.Description != null);
 
         RuleFor(x => x.Sequence)

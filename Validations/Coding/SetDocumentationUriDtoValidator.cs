@@ -9,7 +9,7 @@ public class SetDocumentationUriDtoValidator : AbstractValidator<SetDocumentatio
     public SetDocumentationUriDtoValidator()
     {
         RuleFor(x => x.DocumentationUri)
-            .MaximumLength(2000)
+            .MaximumLength(2048)
             .Must(BeUriOrRelativeOrEmpty)
             .WithMessage("DocumentationUri must be empty or a valid absolute http(s) URI, or a relative path.")
             .When(x => !string.IsNullOrWhiteSpace(x.DocumentationUri));

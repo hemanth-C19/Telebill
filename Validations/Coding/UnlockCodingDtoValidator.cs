@@ -12,6 +12,6 @@ public class UnlockCodingDtoValidator : AbstractValidator<UnlockCodingDto>
 
         RuleFor(x => x.Reason)
             .NotEmpty()
-            .MaximumLength(2000);
+            .MaximumLength(20);
     }
 }
