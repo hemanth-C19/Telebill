@@ -10,7 +10,7 @@ public class PayerDtoValidator : AbstractValidator<PayerDTO>
     {
         RuleFor(x => x.Name)
             .NotEmpty()
-            .MaximumLength(200);
+            .MaximumLength(255);
 
         RuleFor(x => x.PayerCode)
             .MaximumLength(50)
@@ -21,7 +21,7 @@ public class PayerDtoValidator : AbstractValidator<PayerDTO>
             .When(x => x.ClearinghouseCode != null);
 
         RuleFor(x => x.ContactInfo)
-            .MaximumLength(500)
+            .MaximumLength(100)
             .When(x => x.ContactInfo != null);
 
         RuleFor(x => x.Status)

@@ -14,7 +14,7 @@ public class FeeDtoValidator : AbstractValidator<FeeDTO>
 
         RuleFor(x => x.CptHcpcs)
             .NotEmpty()
-            .MaximumLength(20);
+            .MaximumLength(10);
 
         RuleFor(x => x.ModifierCombo)
             .MaximumLength(50)

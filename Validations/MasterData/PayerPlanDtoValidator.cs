@@ -10,7 +10,7 @@ public class PayerPlanDtoValidator : AbstractValidator<PayerPlanDTO>
     {
         RuleFor(x => x.PlanName)
             .NotEmpty()
-            .MaximumLength(200);
+            .MaximumLength(255);
 
         RuleFor(x => x.PayerId)
             .Must(id => id.HasValue && id.Value > 0)
@@ -29,7 +29,7 @@ public class PayerPlanDtoValidator : AbstractValidator<PayerPlanDTO>
             .When(x => x.Posdefault != null);
 
         RuleFor(x => x.TelehealthModifiersJson)
-            .MaximumLength(4000)
+            .MaximumLength(400)
             .When(x => x.TelehealthModifiersJson != null);
 
         RuleFor(x => x.Status)

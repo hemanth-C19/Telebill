@@ -13,7 +13,7 @@ public class CreateUpdateProviderDtoValidator : AbstractValidator<CreateUpdatePr
     {
         RuleFor(x => x.ProviderName)
             .NotEmpty()
-            .MaximumLength(200);
+            .MaximumLength(255);
 
         RuleFor(x => x.ProviderNpi)
             .NotEmpty()
@@ -21,11 +21,11 @@ public class CreateUpdateProviderDtoValidator : AbstractValidator<CreateUpdatePr
             .WithMessage("Provider NPI must be exactly 10 digits.");
 
         RuleFor(x => x.ProviderTaxonomy)
-            .MaximumLength(50)
+            .MaximumLength(100)
             .When(x => x.ProviderTaxonomy != null);
 
         RuleFor(x => x.ProviderContact)
-            .MaximumLength(500)
+            .MaximumLength(100)
             .When(x => x.ProviderContact != null);
 
         RuleFor(x => x.ProviderStatus)
