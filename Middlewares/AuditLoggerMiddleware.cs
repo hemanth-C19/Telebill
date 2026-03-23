@@ -6,22 +6,16 @@ using Telebill.Services.IdentityAccess;
 
 namespace Telebill.Middlewares;
 
-/// <summary>
-/// Writes an <see cref="Models.AuditLog"/> row for authenticated API requests using <c>ClaimTypes.NameIdentifier</c> from the JWT.
-/// Login is audited in <see cref="Services.Auth.AuthService"/> because the user is not authenticated in the pipeline yet.
-/// </summary>
 public class AuditLoggerMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly IServiceScopeFactory _scopeFactory;
 
-    public AuditLoggerMiddleware(RequestDelegate next, IServiceScopeFactory scopeFactory)
+    public AuditLoggerMiddleware(RequestDelegate next)
     {
         _next = next;
-        _scopeFactory = scopeFactory;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context, IAuditService auditService)
     {
         try
         {
@@ -31,16 +25,16 @@ public class AuditLoggerMiddleware
         {
             try
             {
-                await TryWriteAuditAsync(context);
+                await TryWriteAuditAsync(context, auditService);
             }
             catch
             {
-                // Never fail the response because audit persistence failed.
+                Console.WriteLine("AuditLog failed");
             }
         }
     }
 
-    private async Task TryWriteAuditAsync(HttpContext context)
+    private async Task TryWriteAuditAsync(HttpContext context, IAuditService auditService)
     {
         if (!ShouldAudit(context))
             return;
@@ -62,9 +56,6 @@ public class AuditLoggerMiddleware
             path
         });
 
-        using var scope = _scopeFactory.CreateScope();
-        var auditService = scope.ServiceProvider.GetRequiredService<IAuditService>();
-
         await auditService.AddAsync(new AuditLogDTO
         {
             UserId = userId,
@@ -80,13 +71,11 @@ public class AuditLoggerMiddleware
         if (context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase))
             return false;
 
-        // Only API traffic (adjust if you serve non-API paths from the same host)
         return true;
     }
 
     private static bool IsLoginPath(string path)
     {
-        // Login is recorded in AuthService; pipeline has no JWT identity on that request.
         return path.EndsWith("/login", StringComparison.OrdinalIgnoreCase);
     }
 }

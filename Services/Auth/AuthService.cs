@@ -60,7 +60,7 @@ public class AuthService(
         }
         catch
         {
-            // Do not block login if audit write fails.
+            Console.WriteLine("Issue in AuthService");
         }
 
         return new LoginResponseDto
