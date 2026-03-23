@@ -6,10 +6,8 @@ using Telebill.Models;
 
 namespace Telebill.Dto.IdentityAccess
 {
-    public class UserDTO
+    public class UserAddDTO
     {
-        public int UserId { get; set; }
-
     public string Name { get; set; } = null!;
 
     public string Role { get; set; } = null!;
@@ -20,5 +18,10 @@ namespace Telebill.Dto.IdentityAccess
 
     public string? Status { get; set; }
 
+    }
+
+    public class GetUserByRoleDto
+    {
+        public string role { get; set; } = null!;
     }
 }

@@ -12,7 +12,7 @@ namespace Telebill.Services.IdentityAccess
 {
     public class UserService(IUserRepository userRepository) : IUserService
     {
-        public Task AddAsync(UserDTO user)
+        public Task AddUserAsync(UserAddDTO user)
         {
             return userRepository.AddUserAsync(user);
         }
@@ -22,17 +22,17 @@ namespace Telebill.Services.IdentityAccess
             return userRepository.DeleteUserAsync(id);
         }
 
-        public Task<IEnumerable<UserDTO>> GetAllAsync()
+        public Task<IEnumerable<User>> GetAllAsync()
         {
             return userRepository.GetAllAsync();
         }
 
-        public Task<IEnumerable<UserDTO?>> Getuserbyrole(string role)
+        public Task<IEnumerable<User?>> Getuserbyrole(string role)
         {
             return userRepository.GetuserbyroleAsync(role);
         }
 
-        public Task UpdateAsync(UserDTO user, int id)
+        public Task UpdateAsync(UserAddDTO user, int id)
         {
             return userRepository.UpdateUserAsync(user, id);
         }

@@ -10,7 +10,7 @@ namespace Telebill.Repositories.IdentityAccess
     public class UserRepository(TeleBillContext context) : IUserRepository
     {
         // Matches: Task addUser(UserDTO user);
-        public async Task AddUserAsync(UserDTO user)
+        public async Task AddUserAsync(UserAddDTO user)
         {
             if (user is null) return;
 
@@ -33,20 +33,20 @@ namespace Telebill.Repositories.IdentityAccess
         }
 
         // Matches: Task updateUser(UserDTO user, int id);
-        public async Task UpdateUserAsync(UserDTO user, int id)
+        public async Task UpdateUserAsync(UserAddDTO user, int id)
         {
             if (user is null) return;
 
             var existing = await context.Users.FirstOrDefaultAsync(u => u.UserId == id);
             if (existing is null) return;
 
-            // Do NOT modify primary key
             existing.Name = user.Name;
             existing.Role = user.Role;
             existing.Email = user.Email;
             existing.Phone = user.Phone;
             existing.Status = user.Status;
 
+            context.Users.Update(existing);
             await context.SaveChangesAsync();
         }
 
@@ -62,11 +62,11 @@ namespace Telebill.Repositories.IdentityAccess
 
         // Matches: Task<IEnumerable<User>> getAll();
         
-        public async Task<IEnumerable<UserDTO>> GetAllAsync()
+        public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await context.Users
                 .AsNoTracking() // read-only; better performance
-                .Select(u => new UserDTO
+                .Select(u => new User
                 {
                     UserId = u.UserId,
                     Name   = u.Name,
@@ -78,12 +78,12 @@ namespace Telebill.Repositories.IdentityAccess
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<UserDTO?>> GetuserbyroleAsync(string role)
+        public async Task<IEnumerable<User?>> GetuserbyroleAsync(string role)
         {
             return await context.Users
                 .AsNoTracking() // read-only; better performance
                 .Where(u=>u.Role.ToLower()==role.Trim().ToLower())
-                .Select(u => new UserDTO
+                .Select(u => new User
                 {
                     UserId = u.UserId,
                     Name   = u.Name,

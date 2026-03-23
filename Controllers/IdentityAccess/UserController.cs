@@ -14,7 +14,7 @@ namespace Telebill.Controllers
         // POST: /MyProject/User/AddUser
         [HttpPost]
         [Route("AddUser")]
-        public async Task<IActionResult> AddUser(UserDTO user)
+        public async Task<IActionResult> AddUser(UserAddDTO user)
         {
             if (user is null)
                 return BadRequest("Request body is required.");
@@ -22,7 +22,7 @@ namespace Telebill.Controllers
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
 
-            await userService.AddAsync(user);
+            await userService.AddUserAsync(user);
             // Keeping your original response style
             return StatusCode(201, "user added");
         }
@@ -31,7 +31,7 @@ namespace Telebill.Controllers
         // (kept signature style similar to your previous code)
         [HttpPut]
         [Route("UpdateUser")]
-        public async Task<IActionResult> UpdateUser(UserDTO userDTO, int id)
+        public async Task<IActionResult> UpdateUser(UserAddDTO userDTO, [FromQuery] int id)
         {
             if (userDTO is null)
                 return BadRequest("Request body is required.");
@@ -63,9 +63,9 @@ namespace Telebill.Controllers
         }
         [HttpGet]
         [Route("GetUserByrole")]
-        public async Task<IActionResult> getUsersbyRole(string role)
+        public async Task<IActionResult> GetUsersbyRole(GetUserByRoleDto dto)
         {
-            var user=await userService.Getuserbyrole(role);
+            var user=await userService.Getuserbyrole(dto.role);
             return Ok(user);
         }
     }
