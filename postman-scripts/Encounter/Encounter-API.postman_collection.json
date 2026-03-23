@@ -1,0 +1,426 @@
+{
+  "info": {
+    "name": "Encounter APIs",
+    "description": "Patient Encounter management endpoints for Telebill",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Encounters",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/encounters",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Encounter by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/encounters/{{encounterId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "{{encounterId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has id property', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('id');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Encounter",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"providerId\": \"{{providerId}}\",\n  \"facilityId\": \"{{facilityId}}\",\n  \"encounterType\": \"outpatient\",\n  \"encounterDate\": \"2024-01-15\",\n  \"encounterTime\": \"09:30:00\",\n  \"reason\": \"Regular checkup and consultation\",\n  \"chiefComplaint\": \"General health checkup\",\n  \"diagnosis\": \"Routine examination\",\n  \"status\": \"completed\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/encounters",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('encounterId', jsonData.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Encounter",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Updated checkup reason\",\n  \"diagnosis\": \"Updated diagnosis\",\n  \"status\": \"completed\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/encounters/{{encounterId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "{{encounterId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Patient Encounters",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/encounters/patient/{{patientId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "patient", "{{patientId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Provider Encounters",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/encounters/provider/{{providerId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "provider", "{{providerId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Encounters by Date Range",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/encounters/date-range?startDate=2024-01-01&endDate=2024-12-31",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "date-range"],
+          "query": [
+            {
+              "key": "startDate",
+              "value": "2024-01-01"
+            },
+            {
+              "key": "endDate",
+              "value": "2024-12-31"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Add Vitals to Encounter",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"encounterId\": \"{{encounterId}}\",\n  \"temperature\": 98.6,\n  \"bloodPressure\": \"120/80\",\n  \"heartRate\": 72,\n  \"respiratoryRate\": 16,\n  \"weight\": 75,\n  \"height\": 175,\n  \"bmi\": 24.5,\n  \"oxygenSaturation\": 98\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/encounters/{{encounterId}}/vitals",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "{{encounterId}}", "vitals"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Add Medications to Encounter",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"encounterId\": \"{{encounterId}}\",\n  \"medications\": [\n    {\n      \"medicationName\": \"Aspirin\",\n      \"dosage\": \"100mg\",\n      \"frequency\": \"Once daily\",\n      \"duration\": \"30 days\",\n      \"instructions\": \"Take with food\"\n    },\n    {\n      \"medicationName\": \"Lisinopril\",\n      \"dosage\": \"10mg\",\n      \"frequency\": \"Once daily\",\n      \"duration\": \"Ongoing\",\n      \"instructions\": \"Take in the morning\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/encounters/{{encounterId}}/medications",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "{{encounterId}}", "medications"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Close Encounter",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"closed\",\n  \"notes\": \"Encounter completed successfully\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/encounters/{{encounterId}}/close",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "{{encounterId}}", "close"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Encounter",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/encounters/{{encounterId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "encounters", "{{encounterId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 204 or 200', function () {",
+              "  pm.response.to.have.status([200, 204]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "encounterId",
+      "value": ""
+    },
+    {
+      "key": "patientId",
+      "value": ""
+    },
+    {
+      "key": "providerId",
+      "value": ""
+    },
+    {
+      "key": "facilityId",
+      "value": ""
+    }
+  ]
+}

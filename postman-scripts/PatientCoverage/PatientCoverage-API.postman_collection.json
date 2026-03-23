@@ -1,0 +1,393 @@
+{
+  "info": {
+    "name": "PatientCoverage APIs",
+    "description": "Patient Coverage management endpoints for Telebill",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Coverage Plans",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/plans",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "plans"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Coverage Plan by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/plans/{{coveragePlanId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "plans", "{{coveragePlanId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has planId property', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('id');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Coverage Plan",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"planName\": \"Premium Health Coverage\",\n  \"planCode\": \"PHC001\",\n  \"description\": \"Comprehensive health coverage plan\",\n  \"coverageType\": \"health\",\n  \"maxCoverageAmount\": 500000,\n  \"copay\": 500,\n  \"deductible\": 1000,\n  \"coveredServices\": [\n    \"outpatient\",\n    \"inpatient\",\n    \"prescription\"\n  ],\n  \"status\": \"active\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/plans",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "plans"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('coveragePlanId', jsonData.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Coverage Plan",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"planName\": \"Updated Premium Health Coverage\",\n  \"maxCoverageAmount\": 750000,\n  \"copay\": 600,\n  \"status\": \"active\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/plans/{{coveragePlanId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "plans", "{{coveragePlanId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assign Coverage to Patient",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"planId\": \"{{coveragePlanId}}\",\n  \"effectiveDate\": \"2024-01-01\",\n  \"expiryDate\": \"2025-01-01\",\n  \"policyNumber\": \"POL-2024-001\",\n  \"remainingBenefits\": 500000\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/assign",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "assign"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('coverageAssignmentId', jsonData.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Patient Coverage",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/patient/{{patientId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "patient", "{{patientId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Check Coverage Eligibility",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/check-eligibility/{{patientId}}?service=outpatient&amount=5000",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "check-eligibility", "{{patientId}}"],
+          "query": [
+            {
+              "key": "service",
+              "value": "outpatient"
+            },
+            {
+              "key": "amount",
+              "value": "5000"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has eligible property', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('eligible');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Coverage Claims",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/claims/{{coverageAssignmentId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "claims", "{{coverageAssignmentId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Submit Claim",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"coverageAssignmentId\": \"{{coverageAssignmentId}}\",\n  \"claimAmount\": 5000,\n  \"serviceDate\": \"2024-01-15\",\n  \"serviceType\": \"outpatient\",\n  \"description\": \"Medical consultation and lab tests\",\n  \"invoiceNumber\": \"INV-2024-001\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/claims/submit",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "claims", "submit"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('claimId', jsonData.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Coverage Plan",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/patient-coverage/plans/{{coveragePlanId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "patient-coverage", "plans", "{{coveragePlanId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 204 or 200', function () {",
+              "  pm.response.to.have.status([200, 204]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "coveragePlanId",
+      "value": ""
+    },
+    {
+      "key": "patientId",
+      "value": ""
+    },
+    {
+      "key": "coverageAssignmentId",
+      "value": ""
+    },
+    {
+      "key": "claimId",
+      "value": ""
+    }
+  ]
+}

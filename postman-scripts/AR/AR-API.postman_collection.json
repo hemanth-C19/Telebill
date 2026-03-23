@@ -1,0 +1,676 @@
+{
+  "info": {
+    "name": "Accounts Receivable APIs",
+    "description": "Accounts Receivable management endpoints for Telebill",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All AR Accounts",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/accounts",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "accounts"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get AR Account by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/accounts/{{arAccountId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "accounts", "{{arAccountId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has id property', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('id');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get AR Account by Patient",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/patient/{{patientId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "patient", "{{patientId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has balance information', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('totalBalance');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get AR Aging Report",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/aging-report?asOfDate=2024-01-31",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "aging-report"],
+          "query": [
+            {
+              "key": "asOfDate",
+              "value": "2024-01-31"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has aging buckets', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('current');",
+              "  pm.expect(jsonData).to.have.property('over30');",
+              "  pm.expect(jsonData).to.have.property('over60');",
+              "  pm.expect(jsonData).to.have.property('over90');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get AR by Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/status/{{arStatus}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "status", "{{arStatus}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Record Patient Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"paymentAmount\": 500,\n  \"paymentDate\": \"2024-01-15\",\n  \"paymentMethod\": \"credit_card\",\n  \"referenceNumber\": \"PAY-2024-001\",\n  \"description\": \"Patient payment for account\",\n  \"applyClaim\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/ar/payment/patient",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "payment", "patient"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('paymentId', jsonData.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Record Insurance Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"insuranceId\": \"{{insuranceId}}\",\n  \"paymentAmount\": 4500,\n  \"paymentDate\": \"2024-01-15\",\n  \"checkNumber\": \"CHK-12345\",\n  \"eraNumber\": \"ERA-2024-001\",\n  \"description\": \"Insurance payment for claims\",\n  \"claimIds\": []\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/ar/payment/insurance",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "payment", "insurance"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('insurancePaymentId', jsonData.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Allocate Payment to Claims",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"paymentId\": \"{{paymentId}}\",\n  \"allocations\": [\n    {\n      \"claimId\": \"CLAIM-001\",\n      \"amount\": 500\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/ar/payment/allocate",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "payment", "allocate"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Record Write-off",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"arAccountId\": \"{{arAccountId}}\",\n  \"writeOffAmount\": 100,\n  \"writeOffDate\": \"2024-01-15\",\n  \"writeOffReason\": \"Bad debt\",\n  \"approvedBy\": \"{{approverUserId}}\",\n  \"notes\": \"Write-off for uncollectible balance\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/ar/write-off",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "write-off"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('writeOffId', jsonData.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Payment History",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/payment-history/{{patientId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "payment-history", "{{patientId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get AR Summary Report",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/summary-report?startDate=2024-01-01&endDate=2024-01-31",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "summary-report"],
+          "query": [
+            {
+              "key": "startDate",
+              "value": "2024-01-01"
+            },
+            {
+              "key": "endDate",
+              "value": "2024-01-31"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has summary data', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('totalAR');",
+              "  pm.expect(jsonData).to.have.property('totalPayments');",
+              "  pm.expect(jsonData).to.have.property('totalWriteOffs');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Collections Report",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/collections-report?startDate=2024-01-01&endDate=2024-01-31",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "collections-report"],
+          "query": [
+            {
+              "key": "startDate",
+              "value": "2024-01-01"
+            },
+            {
+              "key": "endDate",
+              "value": "2024-01-31"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has collections data', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('collectionsAmount');",
+              "  pm.expect(jsonData).to.have.property('outstandingAmount');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Send Payment Reminder",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientId\": \"{{patientId}}\",\n  \"reminderType\": \"email\",\n  \"message\": \"Payment reminder for outstanding balance\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/ar/payment-reminder",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "payment-reminder"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Payment Terms",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/payment-terms",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "payment-terms"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Apply Credit to Account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"arAccountId\": \"{{arAccountId}}\",\n  \"creditAmount\": 250,\n  \"creditDate\": \"2024-01-15\",\n  \"creditReason\": \"Adjustment\",\n  \"description\": \"Credit applied to account\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/ar/apply-credit",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "apply-credit"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get AR Audit Trail",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/audit-trail/{{arAccountId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "audit-trail", "{{arAccountId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response is array', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Account Balance",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/ar/balance/{{arAccountId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "ar", "balance", "{{arAccountId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response has balance information', function () {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData).to.have.property('totalBalance');",
+              "  pm.expect(jsonData).to.have.property('paidAmount');",
+              "  pm.expect(jsonData).to.have.property('outstandingAmount');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "arAccountId",
+      "value": ""
+    },
+    {
+      "key": "patientId",
+      "value": ""
+    },
+    {
+      "key": "insuranceId",
+      "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": ""
+    },
+    {
+      "key": "insurancePaymentId",
+      "value": ""
+    },
+    {
+      "key": "writeOffId",
+      "value": ""
+    },
+    {
+      "key": "approverUserId",
+      "value": ""
+    },
+    {
+      "key": "arStatus",
+      "value": "open"
+    }
+  ]
+}
