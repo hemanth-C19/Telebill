@@ -28,7 +28,7 @@ namespace Telebill.Controllers.MasterData
         }
 
         [HttpGet("GetProviderByName")]
-        public async Task<IActionResult> GetProviderByName(string ProviderName)
+        public async Task<IActionResult> GetProviderByName([FromBody] string ProviderName)
         {
             var result = await service.GetProviderByNameAsync(ProviderName);
             return Ok(result);
@@ -41,21 +41,21 @@ namespace Telebill.Controllers.MasterData
         }
 
         [HttpPost("CreateProvider")]
-        public async Task<IActionResult> RegisterProvider(CreateUpdateProviderDTO obj)
+        public async Task<IActionResult> RegisterProvider([FromBody] CreateUpdateProviderDTO obj)
         {
             await service.RegisterProviderAsync(obj);
             return StatusCode(201, "Created Provider");
         }
 
         [HttpPut("UpdateProviderById")]
-        public async Task<IActionResult> UpdateProviderById(int Pid, CreateUpdateProviderDTO dto)
+        public async Task<IActionResult> UpdateProviderById([FromQuery] int Pid, CreateUpdateProviderDTO dto)
         {
             await service.UpdateProviderByIdAsync(Pid, dto);
             return StatusCode(200, "Updated Provider");
         }
 
         [HttpDelete("DeleteProviderById")]
-        public async Task<IActionResult> DeleteProviderById(int Pid)
+        public async Task<IActionResult> DeleteProviderById([FromQuery] int Pid)
         {
             await service.DeleteProviderByIdAsync(Pid);
             return StatusCode(200, "Provider Deletion Successfull");
