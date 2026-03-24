@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Telebill.Dto.IdentityAccess;
+using Telebill.Models;
 using Telebill.Services.IdentityAccess;
 
 namespace Telebill.Middlewares;
@@ -43,17 +44,19 @@ public class AuditLoggerMiddleware
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
             return;
 
+        var userEmail = context.User.FindFirstValue(ClaimTypes.Name);
+        var userRole = context.User.FindFirstValue(ClaimTypes.Role);
+
         var path = context.Request.Path.Value ?? string.Empty;
         if (IsLoginPath(path))
             return;
 
         var method = context.Request.Method;
-        var action = $"{method} {path}";
+        var action = method;
         var metadata = JsonSerializer.Serialize(new
         {
-            statusCode = context.Response.StatusCode,
-            method,
-            path
+            Email = userEmail,
+            Role = userRole
         });
 
         await auditService.AddAsync(new AuditLogDTO

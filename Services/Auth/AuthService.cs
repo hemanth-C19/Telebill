@@ -18,7 +18,7 @@ public class AuthService(
 {
     public async Task<LoginResponseDto?> LoginAsync(LoginDto loginDto)
     {
-        var user = await authRepository.LoginAsync(loginDto.Email.ToLower(), loginDto.Password);
+        var user = await authRepository.LoginAsync(loginDto.Email.ToLower(), loginDto.Password, loginDto.Role);
         if (user == null)
             return null;
 
@@ -55,7 +55,7 @@ public class AuthService(
                 Action = "LOGIN",
                 Resource = "POST /api/AuthController-Module/login",
                 Timestamp = DateTime.UtcNow,
-                Metadata = JsonSerializer.Serialize(new { email = user.Email })
+                Metadata = JsonSerializer.Serialize(new { Email = user.Email, Role = user.Role })
             });
         }
         catch
