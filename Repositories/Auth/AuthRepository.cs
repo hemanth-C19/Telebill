@@ -19,11 +19,19 @@ namespace Telebill.Repositories.Auth
             if (role == "Provider")
             {
                 var provider = await context.Providers.SingleOrDefaultAsync(p => p.ContactInfo.ToLower() == email);
+                if(provider == null)
+                {
+                    throw new KeyNotFoundException("Provider Not Found");
+                }
                 return new User{UserId= provider.ProviderId, Email = provider.ContactInfo, Role = "Provider", Name = provider.Name};
             }
             else
             {
                 var user = await context.Users.SingleOrDefaultAsync(u => u.Email.ToLower() == email);
+                if(user == null)
+                {
+                    throw new KeyNotFoundException($"{role} Not Found");
+                }
                 return user;
             }
         }
