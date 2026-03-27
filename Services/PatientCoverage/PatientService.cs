@@ -11,7 +11,7 @@ public class PatientService(IPatientRepository repo) : IPatientService {
     public async Task<Patient> RegisterPatient(PatientDto dto) {
         var patient = new Patient {
             Name = dto.Name,
-            Dob = DateOnly.FromDateTime(dto.DOB),
+            Dob = dto.DOB,
             Gender = dto.Gender,
             ContactInfo = dto.ContactInfo,
             Mrn = "PT-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),

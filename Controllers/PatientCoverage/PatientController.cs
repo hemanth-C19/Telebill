@@ -46,17 +46,14 @@ namespace Telebill.Controllers
 
 
         // DELETE: api/patient-management/patients/3
-[HttpDelete("DeletePatientByID/{PatientId}")]
-public async Task<IActionResult> DeletePatient(int patientId)
-{
-    var success = await service.RemovePatient(patientId);
-    if (!success) return NotFound();
-    return Ok(new { message = $"Patient {patientId} and all associated data deleted." });
-}
-
-
-
-}
+        [HttpDelete("DeletePatientByID/{PatientId}")]
+        public async Task<IActionResult> DeletePatient(int patientId)
+        {
+            var success = await service.RemovePatient(patientId);
+            if (!success) return NotFound();
+            return Ok(new { message = $"Patient {patientId} and all associated data deleted." });
+        }
+    }
 }
 
 

@@ -42,7 +42,7 @@ if (string.IsNullOrWhiteSpace(tokenKey))
     throw new InvalidOperationException("Token must be a non-empty secret in appsettings.json.");
 
 builder.Services.AddAuthentication(options =>
-    {
+    {  
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     })
