@@ -1,165 +1,133 @@
-using System;
-using Telebill.Dto.MasterData;
 using Telebill.Models;
 using Microsoft.EntityFrameworkCore;
 using Telebill.Data;
 
 namespace Telebill.Repositories.MasterData
 {
-    public class PayerRepository(TeleBillContext context) : IPayerRepository
+    public class PayerRepository : IPayerRepository, IPayerPlanRepository, IFeeScheduleRepository
     {
-        public async Task<IEnumerable<Payer>> GetAllPayersAsync()
+        private readonly TeleBillContext _context;
+
+        public PayerRepository(TeleBillContext context)
         {
-            return await context.Payers.ToListAsync();
+            _context = context;
         }
 
-        public async Task<IEnumerable<PayerNamesDTO>> GetAllPayersNames()
+        // ── PAYER ─────────────────────────────────────────────────
+
+        public Task<List<Payer>> GetAllAsync()
         {
-            return await context.Payers.Select(p => new PayerNamesDTO
-            {
-                PayerId = p.PayerId,
-                PayerName = p.Name,
-                PayerCode = p.PayerCode
-            }).ToListAsync();
+            return _context.Payers.ToListAsync();
         }
 
-        public async Task<IEnumerable<PayerPlan>> GetPlansByPayerIdAsync(int payerId)
+        public Task<Payer?> GetPayerByIdAsync(int payerId)
         {
-            return await context.PayerPlans
-                .Where(pp => pp.PayerId == payerId)
+            return _context.Payers.FirstOrDefaultAsync(p => p.PayerId == payerId);
+        }
+
+        public Task<bool> ExistsAsync(int payerId)
+        {
+            return _context.Payers.AnyAsync(p => p.PayerId == payerId);
+        }
+
+        public async Task AddAsync(Payer payer)
+        {
+            _context.Payers.Add(payer);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Payer payer)
+        {
+            _context.Payers.Update(payer);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(Payer payer)
+        {
+            _context.Payers.Remove(payer);
+            await _context.SaveChangesAsync();
+        }
+
+        // ── PLAN ──────────────────────────────────────────────────
+
+        public Task<List<PayerPlan>> GetByPayerIdAsync(int payerId)
+        {
+            return _context.PayerPlans.Where(pp => pp.PayerId == payerId).ToListAsync();
+        }
+
+        public Task<List<PayerPlan>> GetActiveByPayerIdAsync(int payerId)
+        {
+            return _context.PayerPlans
+                .Where(pp => pp.PayerId == payerId && pp.Status == "Active")
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<PlanNamesDTO>> GetPlanNamesByPayerIdAsync(int payerId)
+        public Task<PayerPlan?> GetPayerPlanByIdAsync(int planId)
         {
-            return await context.PayerPlans.Where(pp => pp.PayerId == payerId && pp.Status == "Active").Select(pp => new PlanNamesDTO
-            {
-                PlanId = pp.PlanId,
-                PlanName = pp.PlanName
-            }).ToListAsync();
+            return _context.PayerPlans.FirstOrDefaultAsync(pp => pp.PlanId == planId);
         }
 
-        public async Task AddPayerAsync(PayerDTO payer)
+        Task<bool> IPayerPlanRepository.ExistsAsync(int planId)
         {
-            var newPayer = new Payer{
-                Name = payer.Name,
-                PayerCode = payer.PayerCode,
-                ClearinghouseCode = payer.ClearinghouseCode,
-                ContactInfo = payer.ContactInfo,
-                Status = payer.Status
-            };
-
-            await context.Payers.AddAsync(newPayer);
-            await context.SaveChangesAsync();
+            return _context.PayerPlans.AnyAsync(pp => pp.PlanId == planId);
         }
 
-        public async Task UpdatePayerAsync(PayerDTO payer)
+        public async Task AddAsync(PayerPlan plan)
         {
-            var newPayer = new Payer{
-                Name = payer.Name,
-                PayerCode = payer.PayerCode,
-                ClearinghouseCode = payer.ClearinghouseCode,
-                ContactInfo = payer.ContactInfo,
-                Status = payer.Status
-            };
-
-            context.Payers.Update(newPayer);
-            await context.SaveChangesAsync();
+            _context.PayerPlans.Add(plan);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task DeletePayerAsync(int payerId)
+        public async Task UpdateAsync(PayerPlan plan)
         {
-            var payer = await context.Payers.FindAsync(payerId);
-            if (payer != null)
-            {
-                context.Payers.Remove(payer);
-                await context.SaveChangesAsync();
-            }
+            _context.PayerPlans.Update(plan);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task AddPlanAsync(PayerPlanDTO plan)
+        public async Task DeleteAsync(PayerPlan plan)
         {
-            var newPlan = new PayerPlan{
-                PayerId = plan.PayerId,
-                PlanName = plan.PlanName,
-                NetworkType = plan.NetworkType,
-                Posdefault = plan.Posdefault,
-                TelehealthModifiersJson = plan.TelehealthModifiersJson,
-                Status = plan.Status
-            };
-            await context.PayerPlans.AddAsync(newPlan);
-            await context.SaveChangesAsync();
+            _context.PayerPlans.Remove(plan);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task UpdatePlanAsync(PayerPlanDTO plan)
+        // ── FEE SCHEDULE ──────────────────────────────────────────
+
+        public Task<List<FeeSchedule>> GetByPlanIdAsync(int planId)
         {
-            var newPlan = new PayerPlan{
-                PayerId = plan.PayerId,
-                PlanName = plan.PlanName,
-                NetworkType = plan.NetworkType,
-                Posdefault = plan.Posdefault,
-                TelehealthModifiersJson = plan.TelehealthModifiersJson,
-                Status = plan.Status
-            };
-            context.PayerPlans.Update(newPlan);
-            await context.SaveChangesAsync();
+            return _context.FeeSchedules.Where(f => f.PlanId == planId).ToListAsync();
         }
 
-        public async Task DeletePlanAsync(int planId)
+        public Task<FeeSchedule?> GetFeeByIdAsync(int feeId)
         {
-            var plan = await context.PayerPlans.FindAsync(planId);
-            if (plan != null)
-            {
-                context.PayerPlans.Remove(plan);
-                await context.SaveChangesAsync();
-            }
+            return _context.FeeSchedules.FirstOrDefaultAsync(f => f.FeeId == feeId);
         }
 
-        public async Task AddFeeAsync(FeeDTO fee)
+        Task<bool> IFeeScheduleRepository.ExistsAsync(int feeId)
         {
-            var newFee = new FeeSchedule{
-                PlanId = fee.PlanId,
-                CptHcpcs = fee.CptHcpcs,
-                ModifierCombo = fee.ModifierCombo,
-                AllowedAmount = fee.AllowedAmount,
-                EffectiveFrom = fee.EffectiveFrom,
-                EffectiveTo = fee.EffectiveTo,
-                Status = fee.Status
-            };
-            await context.FeeSchedules.AddAsync(newFee);
-            await context.SaveChangesAsync();
+            return _context.FeeSchedules.AnyAsync(f => f.FeeId == feeId);
         }
 
-        public async Task UpdateFeeAsync(FeeDTO fee)
+        public Task<bool> PlanExistsAsync(int planId)
         {
-            var newFee = new FeeSchedule{
-                PlanId = fee.PlanId,
-                CptHcpcs = fee.CptHcpcs,
-                ModifierCombo = fee.ModifierCombo,
-                AllowedAmount = fee.AllowedAmount,
-                EffectiveFrom = fee.EffectiveFrom,
-                EffectiveTo = fee.EffectiveTo,
-                Status = fee.Status
-            };
-            context.FeeSchedules.Update(newFee);
-            await context.SaveChangesAsync();
+            return _context.PayerPlans.AnyAsync(p => p.PlanId == planId);
         }
 
-        public async Task DeleteFeeAsync(int feeId)
+        public async Task AddAsync(FeeSchedule fee)
         {
-            var fee = await context.FeeSchedules.FindAsync(feeId);
-            if (fee != null)
-            {
-                context.FeeSchedules.Remove(fee);
-                await context.SaveChangesAsync();
-            }
+            _context.FeeSchedules.Add(fee);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<FeeSchedule>> GetFeesByPlanIdAsync(int planId)
+        public async Task UpdateAsync(FeeSchedule fee)
         {
-            return await context.FeeSchedules
-                .Where(f => f.PlanId == planId)
-                .ToListAsync();
+            _context.FeeSchedules.Update(fee);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(FeeSchedule fee)
+        {
+            _context.FeeSchedules.Remove(fee);
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -4,6 +4,7 @@ namespace Telebill.Dto.MasterData
 {
     public class PayerDTO
     {
+        public int? PayerId { get; set; }
         public string Name { get; set; } = null!;
         public string? PayerCode { get; set; }
         public string? ClearinghouseCode { get; set; }
@@ -13,6 +14,7 @@ namespace Telebill.Dto.MasterData
 
     public class PayerPlanDTO
     {
+        public int? PlanId { get; set; }
         public int? PayerId { get; set; }
 
         public string PlanName { get; set; } = null!;
@@ -28,6 +30,7 @@ namespace Telebill.Dto.MasterData
 
     public class FeeDTO
     {
+        public int? FeeId { get; set; }
         public int? PlanId { get; set; }
 
         public string CptHcpcs { get; set; } = null!;

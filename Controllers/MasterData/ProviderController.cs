@@ -10,55 +10,89 @@ using Telebill.Dto.MasterData;
 namespace Telebill.Controllers.MasterData
 {
     [ApiController]
-    [Route("api/v1/MasterData/[controller]")]
-    public class ProviderController(IProviderService service) : ControllerBase
+    [Route("api/[Controller]")]
+    public class ProviderController : ControllerBase
     {
+        private readonly IProviderService _service;
+
+        public ProviderController(IProviderService service)
+        {
+            _service = service;
+        }
+
         [HttpGet("GetAllProviders")]
         public async Task<IActionResult> GetProviders()
         {
-            var result = await service.GetAllProvidersAsync();
+            var result = await _service.GetAllProvidersAsync();
             return Ok(result);
         }
 
         [HttpGet("GetProviderByNPI")]
         public async Task<IActionResult> GetProviderByNPI(string NpiId)
         {
-            var result = await service.GetProviderByNPIAsync(NpiId);
+            var result = await _service.GetProviderByNPIAsync(NpiId);
+            if (result == null) return NotFound("Provider not found");
             return Ok(result);
         }
 
         [HttpGet("GetProviderByName")]
-        public async Task<IActionResult> GetProviderByName([FromBody] string ProviderName)
+        public async Task<IActionResult> GetProviderByName(string ProviderName)
         {
-            var result = await service.GetProviderByNameAsync(ProviderName);
+            var result = await _service.GetProviderByNameAsync(ProviderName);
+            if (result == null) return NotFound("Provider not found");
             return Ok(result);
         }
 
         [HttpGet("GetActiveProviders")]
         public async Task<IActionResult> GetActiveProviders(){
-            var result = await service.GetActiveProvidersAsync();
+            var result = await _service.GetActiveProvidersAsync();
             return Ok(result);
         }
 
         [HttpPost("CreateProvider")]
-        public async Task<IActionResult> RegisterProvider([FromBody] CreateUpdateProviderDTO obj)
+        public async Task<IActionResult> RegisterProvider(CreateUpdateProviderDTO obj)
         {
-            await service.RegisterProviderAsync(obj);
-            return StatusCode(201, "Created Provider");
+            try
+            {
+                await _service.RegisterProviderAsync(obj);
+                return StatusCode(201, "Created Provider");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("UpdateProviderById")]
-        public async Task<IActionResult> UpdateProviderById([FromQuery] int Pid, CreateUpdateProviderDTO dto)
+        public async Task<IActionResult> UpdateProviderById(int Pid, CreateUpdateProviderDTO dto)
         {
-            await service.UpdateProviderByIdAsync(Pid, dto);
-            return StatusCode(200, "Updated Provider");
+            try
+            {
+                await _service.UpdateProviderByIdAsync(Pid, dto);
+                return StatusCode(200, "Updated Provider");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpDelete("DeleteProviderById")]
-        public async Task<IActionResult> DeleteProviderById([FromQuery] int Pid)
+        public async Task<IActionResult> DeleteProviderById(int Pid)
         {
-            await service.DeleteProviderByIdAsync(Pid);
-            return StatusCode(200, "Provider Deletion Successfull");
+            try
+            {
+                await _service.DeleteProviderByIdAsync(Pid);
+                return StatusCode(200, "Provider Deletion Successfull");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
     }
 }

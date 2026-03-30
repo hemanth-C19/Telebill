@@ -10,12 +10,12 @@ namespace Telebill.Services.MasterData
     public interface IProviderService
     {
         Task<IEnumerable<Provider>> GetAllProvidersAsync();
-        Task<Provider> GetProviderByNPIAsync(string NpiId);
-        Task<Provider> GetProviderByNameAsync(string ProviderName);
+        Task<Provider?> GetProviderByNPIAsync(string npiId);
+        Task<Provider?> GetProviderByNameAsync(string providerName);
         Task<IEnumerable<ProviderActiveInfo>> GetActiveProvidersAsync();
 
         Task RegisterProviderAsync(CreateUpdateProviderDTO provider);
-        Task UpdateProviderByIdAsync(int Pid, CreateUpdateProviderDTO dto);
-        Task DeleteProviderByIdAsync(int Pid);
+        Task UpdateProviderByIdAsync(int providerId, CreateUpdateProviderDTO dto);
+        Task DeleteProviderByIdAsync(int providerId);
     }
 }

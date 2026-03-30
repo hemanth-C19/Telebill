@@ -1,79 +1,91 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Telebill.Dto.MasterData;
 using Telebill.Models;
 using Telebill.Repositories.MasterData;
 
 namespace Telebill.Services.MasterData
 {
-    public class PayerService(IPayerRepository payerRepository) : IPayerService
+    public class PayerService : IPayerService
     {
-        public async Task<IEnumerable<Payer>> GetAllPayersAsync()
+        private readonly IPayerRepository _payerRepository;
+
+        public PayerService(IPayerRepository payerRepository)
         {
-            return await payerRepository.GetAllPayersAsync();
+            _payerRepository = payerRepository;
+        }
+
+        public async Task<IEnumerable<PayerDTO>> GetAllPayersAsync()
+        {
+            var payers = await _payerRepository.GetAllAsync();
+            return payers.Select(p => new PayerDTO
+            {
+                PayerId = p.PayerId,
+                Name = p.Name,
+                PayerCode = p.PayerCode,
+                ClearinghouseCode = p.ClearinghouseCode,
+                ContactInfo = p.ContactInfo,
+                Status = p.Status
+            });
         }
 
         public async Task<IEnumerable<PayerNamesDTO>> GetAllPayersNames()
         {
-            return await payerRepository.GetAllPayersNames();
-        }
-
-        public async Task<IEnumerable<PayerPlan>> GetPlansByPayerIdAsync(int payerId)
-        {
-            return await payerRepository.GetPlansByPayerIdAsync(payerId);
-        }
-
-        public async Task<IEnumerable<PlanNamesDTO>> GetPlanNamesByPayerIdAsync(int payerId){
-            return await payerRepository.GetPlanNamesByPayerIdAsync(payerId);
-        }
-
-        public async Task<IEnumerable<FeeSchedule>> GetFeesByPlanIdAsync(int planId)
-        {
-            return await payerRepository.GetFeesByPlanIdAsync(planId);
+            var payers = await _payerRepository.GetAllAsync();
+            return payers.Select(p => new PayerNamesDTO
+            {
+                PayerId = p.PayerId,
+                PayerName = p.Name,
+                PayerCode = p.PayerCode ?? string.Empty
+            });
         }
 
         public async Task AddPayerAsync(PayerDTO payerDto)
         {
-            await payerRepository.AddPayerAsync(payerDto);
+            if (string.IsNullOrWhiteSpace(payerDto.Name))
+                throw new ArgumentException("Payer name is required.");
+
+            var entity = new Payer
+            {
+                Name = payerDto.Name,
+                PayerCode = payerDto.PayerCode,
+                ClearinghouseCode = payerDto.ClearinghouseCode,
+                ContactInfo = payerDto.ContactInfo,
+                Status = payerDto.Status
+            };
+
+            await _payerRepository.AddAsync(entity);
         }
 
         public async Task UpdatePayerAsync(PayerDTO payerDto)
         {
-            await payerRepository.UpdatePayerAsync(payerDto);
+            if (!payerDto.PayerId.HasValue)
+                throw new ArgumentException("PayerId is required for update.");
+
+            var existing = await _payerRepository.GetPayerByIdAsync(payerDto.PayerId.Value);
+            if (existing == null)
+                throw new KeyNotFoundException($"Payer {payerDto.PayerId.Value} not found.");
+
+            if (string.IsNullOrWhiteSpace(payerDto.Name))
+                throw new ArgumentException("Payer name is required.");
+
+            existing.Name = payerDto.Name;
+            existing.PayerCode = payerDto.PayerCode;
+            existing.ClearinghouseCode = payerDto.ClearinghouseCode;
+            existing.ContactInfo = payerDto.ContactInfo;
+            existing.Status = payerDto.Status;
+
+            await _payerRepository.UpdateAsync(existing);
         }
 
         public async Task DeletePayerAsync(int payerId)
         {
-            await payerRepository.DeletePayerAsync(payerId);
-        }
+            var existing = await _payerRepository.GetPayerByIdAsync(payerId);
+            if (existing == null)
+                throw new KeyNotFoundException($"Payer {payerId} not found.");
 
-        public async Task AddPlanAsync(PayerPlanDTO plan)
-        {
-            await payerRepository.AddPlanAsync(plan);
-        }
-
-        public async Task UpdatePlanAsync(PayerPlanDTO plan)
-        {
-            await payerRepository.UpdatePlanAsync(plan);
-        }
-
-        public async Task DeletePlanAsync(int planId)
-        {
-            await payerRepository.DeletePlanAsync(planId);
-        }
-
-        public async Task AddFeeAsync(FeeDTO fee)
-        {
-            await payerRepository.AddFeeAsync(fee);
-        }
-
-        public async Task UpdateFeeAsync(FeeDTO fee)
-        {
-            await payerRepository.UpdateFeeAsync(fee);
-        }
-
-        public async Task DeleteFeeAsync(int feeId)
-        {
-            await payerRepository.DeleteFeeAsync(feeId);
+            await _payerRepository.DeleteAsync(existing);
         }
     }
 }

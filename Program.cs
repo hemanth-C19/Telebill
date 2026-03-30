@@ -84,6 +84,10 @@ builder.Services.AddTransient<IProviderService, ProviderService>();
 builder.Services.AddTransient<IProviderRepository, ProviderRepository>();
 builder.Services.AddTransient<IPayerService, PayerService>();
 builder.Services.AddTransient<IPayerRepository, PayerRepository>();
+builder.Services.AddTransient<IPayerPlanService, PayerPlanService>();
+builder.Services.AddTransient<IPayerPlanRepository, PayerRepository>();
+builder.Services.AddTransient<IFeeScheduleService, FeeScheduleService>();
+builder.Services.AddTransient<IFeeScheduleRepository, PayerRepository>();
 
 builder.Services.AddTransient<IEncounterRepository, EncounterRepository>();
 builder.Services.AddTransient<IChargeLineRepository, ChargeLineRepository>();

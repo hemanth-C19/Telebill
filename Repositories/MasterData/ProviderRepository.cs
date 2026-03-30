@@ -4,83 +4,62 @@ using System.Linq;
 using System.Threading.Tasks;
 using Telebill.Models;
 using Microsoft.EntityFrameworkCore;
-using Telebill.Dto.MasterData;
 using Telebill.Data;
 
 namespace Telebill.Repositories.MasterData
 {
-    public class ProviderRepository(TeleBillContext context) : IProviderRepository
+    public class ProviderRepository: IProviderRepository
     {
+        private readonly TeleBillContext _context;
+
+        public ProviderRepository(TeleBillContext context)
+        {
+            _context = context;
+        }
+
         public async Task<IEnumerable<Provider>> GetAllProvidersAsync()
         {
-            return await context.Providers.ToListAsync();
+            return await _context.Providers.ToListAsync();
         }
 
-        public async Task RegisterProviderAsync(CreateUpdateProviderDTO obj)
+        public Task<Provider?> GetProviderByIdAsync(int providerId)
         {
-            var newProvider = new Provider{
-                Name = obj.ProviderName,
-                Npi = obj.ProviderNpi,
-                Taxonomy = obj.ProviderTaxonomy,
-                TelehealthEnrolled = obj.ProviderEnrolled,
-                ContactInfo = obj.ProviderContact,
-                Status = obj.ProviderStatus
-            };
-            context.Providers.Add(newProvider);
-            await context.SaveChangesAsync();
+            return _context.Providers.FirstOrDefaultAsync(p => p.ProviderId == providerId);
         }
 
-        public async Task UpdateProviderTelehealthAsync(int Pid, CreateUpdateProviderDTO dto)
+        public Task<Provider?> GetProviderByNameAsync(string providerName)
         {
-
-            var existingProvider = await context.Providers.FirstOrDefaultAsync(p => p.ProviderId == Pid);
-            
-            existingProvider.Name = dto.ProviderName;
-            existingProvider.Npi = dto.ProviderNpi;
-            existingProvider.Taxonomy = dto.ProviderTaxonomy;
-            existingProvider.TelehealthEnrolled = dto.ProviderEnrolled;
-            existingProvider.ContactInfo = dto.ProviderContact;
-            existingProvider.Status = dto.ProviderStatus;
-
-            context.Providers.Update(existingProvider);
-            await context.SaveChangesAsync();
+            return _context.Providers.FirstOrDefaultAsync(p => p.Name == providerName);
         }
 
-        public async Task<IEnumerable<ProviderActiveInfo>> GetActiveProvidersAsync()
+        public Task<Provider?> GetProviderByNPIAsync(string npiId)
         {
-            var Providers = await context.Providers
+            return _context.Providers.FirstOrDefaultAsync(p => p.Npi == npiId);
+        }
+
+        public Task<List<Provider>> GetActiveProvidersAsync()
+        {
+            return _context.Providers
                 .Where(p => p.Status == "Active" && p.TelehealthEnrolled == true)
-                .Select(p => new ProviderActiveInfo{
-                    ProviderId = p.ProviderId,
-                    ProviderName = p.Name
-                })
                 .ToListAsync();
-            return Providers;
         }
 
-        public async Task<Provider> GetProviderByNameAsync(string ProviderName)
+        public async Task AddProviderAsync(Provider provider)
         {
-            var prd = await context.Providers.FirstOrDefaultAsync(p => p.Name == ProviderName);
-            if(prd == null){
-                return null;
-            }
-            return prd;
+            _context.Providers.Add(provider);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task<Provider> GetProviderByNPIAsync(string NpiId)
+        public async Task UpdateProviderAsync(Provider provider)
         {
-            var prd = await context.Providers.FirstOrDefaultAsync(p => p.Npi == NpiId);
-            if(prd == null){
-                return null;
-            }
-            return prd;
+            _context.Providers.Update(provider);
+            await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteProviderByIdAsync(int Pid)
+        public async Task DeleteProviderAsync(Provider provider)
         {
-            var prd = await context.Providers.FirstOrDefaultAsync(p=> p.ProviderId == Pid);
-            context.Providers.Remove(prd);
-            await context.SaveChangesAsync();
+            _context.Providers.Remove(provider);
+            await _context.SaveChangesAsync();
         }
     }
 }

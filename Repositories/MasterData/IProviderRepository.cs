@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Telebill.Dto.MasterData;
 using Telebill.Models;
 
 namespace Telebill.Repositories.MasterData
@@ -9,12 +8,14 @@ namespace Telebill.Repositories.MasterData
     public interface IProviderRepository
     {
         Task<IEnumerable<Provider>> GetAllProvidersAsync();
-        Task RegisterProviderAsync(CreateUpdateProviderDTO provider);
-        Task UpdateProviderTelehealthAsync(int Pid, CreateUpdateProviderDTO dto);
-        Task<Provider> GetProviderByNPIAsync(string NpiId);
-        Task<Provider> GetProviderByNameAsync(string ProviderName);
-        Task<IEnumerable<ProviderActiveInfo>> GetActiveProvidersAsync();
+        Task<Provider?> GetProviderByIdAsync(int providerId);
+        Task<Provider?> GetProviderByNPIAsync(string npiId);
+        Task<Provider?> GetProviderByNameAsync(string providerName);
+        Task<List<Provider>> GetActiveProvidersAsync();
 
-        Task DeleteProviderByIdAsync(int Pid);
+        Task AddProviderAsync(Provider provider);
+        Task UpdateProviderAsync(Provider provider);
+
+        Task DeleteProviderAsync(Provider provider);
     }
 }
