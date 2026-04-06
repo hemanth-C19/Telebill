@@ -10,8 +10,8 @@ namespace Telebill.Services.MasterData
         Task<IEnumerable<PayerNamesDTO>> GetAllPayersNames();
         Task<IEnumerable<PayerDTO>> GetAllPayersAsync();
 
-        Task AddPayerAsync(PayerDTO payerDto);
-        Task UpdatePayerAsync(PayerDTO payerDto);
+        Task AddPayerAsync(AddPayerDTO payerDto);
+        Task UpdatePayerAsync(UpdatePayerDTO payerDto);
         Task DeletePayerAsync(int payerId);
     }
 }

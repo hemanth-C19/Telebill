@@ -41,7 +41,7 @@ namespace Telebill.Services.MasterData
             });
         }
 
-        public async Task AddPayerAsync(PayerDTO payerDto)
+        public async Task AddPayerAsync(AddPayerDTO payerDto)
         {
             if (string.IsNullOrWhiteSpace(payerDto.Name))
                 throw new ArgumentException("Payer name is required.");
@@ -58,7 +58,7 @@ namespace Telebill.Services.MasterData
             await _payerRepository.AddAsync(entity);
         }
 
-        public async Task UpdatePayerAsync(PayerDTO payerDto)
+        public async Task UpdatePayerAsync(UpdatePayerDTO payerDto)
         {
             if (!payerDto.PayerId.HasValue)
                 throw new ArgumentException("PayerId is required for update.");

@@ -10,7 +10,7 @@ using Telebill.Dto.MasterData;
 namespace Telebill.Controllers.MasterData
 {
     [ApiController]
-    [Route("api/[Controller]")]
+    [Route("api/v1/MasterData/[controller]")]
     public class ProviderController : ControllerBase
     {
         private readonly IProviderService _service;

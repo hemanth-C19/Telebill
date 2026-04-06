@@ -4,7 +4,7 @@ using Telebill.Validations;
 
 namespace Telebill.Validations.MasterData;
 
-public class FeeDtoValidator : AbstractValidator<FeeDTO>
+public class FeeDtoValidator : AbstractValidator<AddFeeDTO>
 {
     public FeeDtoValidator()
     {

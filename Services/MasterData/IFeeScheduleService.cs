@@ -9,8 +9,8 @@ public interface IFeeScheduleService
 {
     Task<IEnumerable<FeeSchedule>> GetFeesByPlanIdAsync(int planId);
 
-    Task AddFeeAsync(FeeDTO fee);
-    Task UpdateFeeAsync(FeeDTO fee);
+    Task AddFeeAsync(AddFeeDTO fee);
+    Task UpdateFeeAsync(UpdateFeeDTO fee);
     Task DeleteFeeAsync(int feeId);
 }
 

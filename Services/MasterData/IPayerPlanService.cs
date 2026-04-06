@@ -10,8 +10,8 @@ public interface IPayerPlanService
     Task<IEnumerable<PayerPlan>> GetPlansByPayerIdAsync(int payerId);
     Task<IEnumerable<PlanNamesDTO>> GetPlanNamesByPayerIdAsync(int payerId);
 
-    Task AddPlanAsync(PayerPlanDTO plan);
-    Task UpdatePlanAsync(PayerPlanDTO plan);
+    Task AddPlanAsync(AddPayerPlanDTO plan);
+    Task UpdatePlanAsync(UpdatePayerPlanDTO plan);
     Task DeletePlanAsync(int planId);
 }
 

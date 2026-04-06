@@ -24,7 +24,7 @@ public class FeeScheduleService : IFeeScheduleService
         return await _feeRepo.GetByPlanIdAsync(planId);
     }
 
-    public async Task AddFeeAsync(FeeDTO fee)
+    public async Task AddFeeAsync(AddFeeDTO fee)
     {
         if (!fee.PlanId.HasValue)
             throw new ArgumentException("PlanId is required.");
@@ -48,7 +48,7 @@ public class FeeScheduleService : IFeeScheduleService
         await _feeRepo.AddAsync(entity);
     }
 
-    public async Task UpdateFeeAsync(FeeDTO fee)
+    public async Task UpdateFeeAsync(UpdateFeeDTO fee)
     {
         if (!fee.FeeId.HasValue)
             throw new ArgumentException("FeeId is required for update.");

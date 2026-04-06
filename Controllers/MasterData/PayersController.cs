@@ -7,7 +7,7 @@ using Telebill.Services.MasterData;
 namespace Telebill.Controllers.MasterData;
 
 [ApiController]
-[Route("api/Payer")]
+[Route("api/v1/MasterData/[controller]")]
 public class PayersController : ControllerBase
 {
     private readonly IPayerService _payerService;
@@ -32,7 +32,7 @@ public class PayersController : ControllerBase
     }
 
     [HttpPost("AddPayer")]
-    public async Task<IActionResult> AddPayer([FromBody] PayerDTO payerDto)
+    public async Task<IActionResult> AddPayer([FromBody] AddPayerDTO payerDto)
     {
         try
         {
@@ -46,7 +46,7 @@ public class PayersController : ControllerBase
     }
 
     [HttpPut("UpdatePayer")]
-    public async Task<IActionResult> UpdatePayer([FromBody] PayerDTO payerDto)
+    public async Task<IActionResult> UpdatePayer([FromBody] UpdatePayerDTO payerDto)
     {
         try
         {

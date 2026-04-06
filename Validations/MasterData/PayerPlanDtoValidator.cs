@@ -4,7 +4,7 @@ using Telebill.Validations;
 
 namespace Telebill.Validations.MasterData;
 
-public class PayerPlanDtoValidator : AbstractValidator<PayerPlanDTO>
+public class PayerPlanDtoValidator : AbstractValidator<AddPayerPlanDTO>
 {
     public PayerPlanDtoValidator()
     {

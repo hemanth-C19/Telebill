@@ -8,7 +8,7 @@ using Telebill.Services.MasterData;
 namespace Telebill.Controllers.MasterData;
 
 [ApiController]
-[Route("api/Payer")]
+[Route("api/v1/MasterData/[controller]")]
 public class FeeSchedulesController : ControllerBase
 {
     private readonly IFeeScheduleService _feeService;
@@ -33,7 +33,7 @@ public class FeeSchedulesController : ControllerBase
     }
 
     [HttpPost("AddFee")]
-    public async Task<IActionResult> AddFee([FromBody] FeeDTO fee)
+    public async Task<IActionResult> AddFee([FromBody] AddFeeDTO fee)
     {
         try
         {
@@ -51,7 +51,7 @@ public class FeeSchedulesController : ControllerBase
     }
 
     [HttpPut("UpdateFee")]
-    public async Task<IActionResult> UpdateFee([FromBody] FeeDTO fee)
+    public async Task<IActionResult> UpdateFee([FromBody] UpdateFeeDTO fee)
     {
         try
         {

@@ -36,7 +36,7 @@ public class PayerPlanService : IPayerPlanService
         return plans.Select(p => new PlanNamesDTO { PlanId = p.PlanId, PlanName = p.PlanName });
     }
 
-    public async Task AddPlanAsync(PayerPlanDTO plan)
+    public async Task AddPlanAsync(AddPayerPlanDTO plan)
     {
         if (!plan.PayerId.HasValue)
             throw new ArgumentException("PayerId is required.");
@@ -59,7 +59,7 @@ public class PayerPlanService : IPayerPlanService
         await _planRepo.AddAsync(entity);
     }
 
-    public async Task UpdatePlanAsync(PayerPlanDTO plan)
+    public async Task UpdatePlanAsync(UpdatePayerPlanDTO plan)
     {
         if (!plan.PlanId.HasValue)
             throw new ArgumentException("PlanId is required for update.");
