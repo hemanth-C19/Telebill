@@ -70,9 +70,6 @@ public partial class PostingService
 
         await _repo.UpdatePatientBalanceAsync(b);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "UPDATE_BALANCE_STATUS", $"PatientBalance:{balanceID}",
-            JsonSerializer.Serialize(new { previousStatus = prev, newStatus = dto.Status, reason = dto.Reason }));
-
         return MapBalance(b);
     }
 
@@ -105,9 +102,6 @@ public partial class PostingService
         }
 
         await _repo.SaveAllPatientBalancesAsync(openBalances);
-
-        await _repo.WriteAuditLogAsync(0, "AGING_BUCKET_JOB", "PatientBalance:batch",
-            JsonSerializer.Serialize(new { balancesUpdated = updated, runAt = DateTime.UtcNow }));
 
         var completed = DateTime.UtcNow;
         return new AgingBatchJobResultDto
@@ -200,9 +194,6 @@ public partial class PostingService
         }
         await _repo.SaveAllPatientBalancesAsync(balances);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "GENERATE_STATEMENT", $"Statement:{statement.StatementId}",
-            JsonSerializer.Serialize(new { patientID = dto.PatientID, periodStart = dto.PeriodStart, periodEnd = dto.PeriodEnd, amountDue }));
-
         var frontDeskUsers = await _repo.GetUsersByRoleAsync("FrontDesk");
         foreach (var u in frontDeskUsers)
         {
@@ -246,18 +237,11 @@ public partial class PostingService
             {
                 // statement already exists - skip
             }
-            catch (Exception ex)
-            {
-                await _repo.WriteAuditLogAsync(0, "GENERATE_STATEMENT_BATCH_ERROR", $"Patient:{patientId}", ex.Message);
-            }
 
             patientsProcessed++;
         }
 
         var completed = DateTime.UtcNow;
-
-        await _repo.WriteAuditLogAsync(0, "GENERATE_STATEMENT_BATCH", "Statement:batch",
-            JsonSerializer.Serialize(new { statementsGenerated, patientsProcessed, totalAmountBilled }));
 
         var notifyUsers = (await _repo.GetUsersByRoleAsync("AR")).Concat(await _repo.GetUsersByRoleAsync("FrontDesk")).DistinctBy(u => u.UserId).ToList();
         foreach (var u in notifyUsers)
@@ -309,8 +293,6 @@ public partial class PostingService
         if (s == null) throw new KeyNotFoundException("statement not found");
         s.Status = dto.Status;
         await _repo.UpdateStatementAsync(s);
-        await _repo.WriteAuditLogAsync(currentUserID, "UPDATE_STATEMENT_STATUS", $"Statement:{statementID}",
-            JsonSerializer.Serialize(new { newStatus = dto.Status }));
         return await GetStatementByIdAsync(statementID);
     }
 

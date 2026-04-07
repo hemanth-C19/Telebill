@@ -38,9 +38,6 @@ public partial class PostingService
 
         entity = await _repo.CreateRemitRefAsync(entity);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "CREATE_REMIT_REF", $"RemitRef:{entity.RemitId}",
-            JsonSerializer.Serialize(new { payerID = dto.PayerID, batchID = dto.BatchID, receivedDate = dto.ReceivedDate }));
-
         var payer = await _repo.GetPayerByIdAsync(dto.PayerID);
 
         return new RemitRefDto
@@ -105,9 +102,6 @@ public partial class PostingService
         r.Status = dto.Status;
         await _repo.UpdateRemitRefAsync(r);
 
-        await _repo.WriteAuditLogAsync(currentUserID, "UPDATE_REMIT_STATUS", $"RemitRef:{remitID}",
-            JsonSerializer.Serialize(new { newStatus = dto.Status }));
-
         return await GetRemitRefByIdAsync(remitID);
     }
 
@@ -167,9 +161,6 @@ public partial class PostingService
 
         var (newClaimStatus, totalPaid, totalCharge, denialCreated) = await RecalculateClaimStatusAsync(dto.ClaimID);
         var balance = await RecalculatePatientBalanceAsync(dto.ClaimID);
-
-        await _repo.WriteAuditLogAsync(currentUserID, "POST_PAYMENT", $"PaymentPost:{post.PaymentId}",
-            JsonSerializer.Serialize(new { claimID = dto.ClaimID, claimLineID = dto.ClaimLineID, amountPaid = dto.AmountPaid, totalAdjustments }));
 
         var createdPostDto = await MapPaymentPostDto(post);
 
@@ -249,9 +240,6 @@ public partial class PostingService
 
         var (newClaimStatus, totalPaid, totalCharge, denialCreated) = await RecalculateClaimStatusAsync(post.ClaimId ?? 0);
         var balance = await RecalculatePatientBalanceAsync(post.ClaimId ?? 0);
-
-        await _repo.WriteAuditLogAsync(currentUserID, "VOID_PAYMENT", $"PaymentPost:{paymentID}",
-            JsonSerializer.Serialize(new { claimID = post.ClaimId, claimLineID = post.ClaimLineId, amountPaid = post.AmountPaid ?? 0m, reason = dto.Reason }));
 
         return new PostingResultDto
         {
@@ -397,9 +385,6 @@ public partial class PostingService
                     $"Claim #{claimID} has been denied (CARC {string.Join(",", reasonCodes)}). Please review and file an appeal if applicable.",
                     "Denial");
             }
-
-            await _repo.WriteAuditLogAsync(0, "CREATE_DENIAL_FROM_POSTING", $"Claim:{claimID}",
-                JsonSerializer.Serialize(new { denialCount, reasonCodes = reasonCodes.ToList() }));
         }
 
         return denialCount > 0;
