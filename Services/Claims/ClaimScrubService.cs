@@ -4,12 +4,14 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Telebill.Dto;
+using Telebill.Dto.Notifications;
 using Telebill.Models;
 using Telebill.Repositories.Claims;
+using Telebill.Services.Notifications;
 
 namespace Services;
 
-public class ClaimScrubService(IClaimRepository repo, IClaimX12Service x12Service) : IClaimScrubService
+public class ClaimScrubService(IClaimRepository repo, IClaimX12Service x12Service, INotificationService notificationService) : IClaimScrubService
 {
     public async Task<ScrubResultDto?> ScrubClaimAsync(int claimID)
     {
@@ -94,11 +96,25 @@ public class ClaimScrubService(IClaimRepository repo, IClaimX12Service x12Servic
         var openErrors = await repo.CountOpenErrorsAsync(claimID);
         var openWarnings = await repo.CountOpenWarningsAsync(claimID);
 
+        var previousStatus = claim.ClaimStatus ?? string.Empty;
         if (openErrors == 0)
         {
             await repo.UpdateStatusAsync(claimID, "Ready");
             await x12Service.Generate837PAsync(claimID);
             claim.ClaimStatus = "Ready";
+            if (!string.Equals(previousStatus, "Ready", StringComparison.OrdinalIgnoreCase))
+            {
+                var codingLock = await repo.GetActiveCodingLockAsync(claim.EncounterId ?? 0);
+                if (codingLock?.CoderId is int coderId && coderId > 0)
+                {
+                    await notificationService.CreateAsync(new CreateNotificationDto
+                    {
+                        UserId = coderId,
+                        Category = "Scrub",
+                        Message = $"Claim #{claimID} has passed all scrub rules and is Ready for batching"
+                    });
+                }
+            }
         }
         else
         {
@@ -505,6 +521,20 @@ public class ClaimScrubService(IClaimRepository repo, IClaimX12Service x12Servic
                 };
                 await repo.CreateIssueAsync(issue);
                 newIssues++;
+                if (string.Equals(rule.Severity, "Error", StringComparison.OrdinalIgnoreCase))
+                {
+                    var claim = await repo.GetByIdAsync(claimID);
+                    var codingLock = await repo.GetActiveCodingLockAsync(claim?.EncounterId ?? 0);
+                    if (codingLock?.CoderId is int coderId && coderId > 0)
+                    {
+                        await notificationService.CreateAsync(new CreateNotificationDto
+                        {
+                            UserId = coderId,
+                            Category = "Scrub",
+                            Message = $"Claim #{claimID} failed scrub: {message}"
+                        });
+                    }
+                }
             }
         }
         else

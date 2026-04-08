@@ -8,31 +8,24 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.Notifications;
 
-public class NotificationRepository : INotificationRepository
+public class NotificationRepository(TeleBillContext context) : INotificationRepository
 {
-    private readonly TeleBillContext _context;
-
-    public NotificationRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
-
     public async Task AddAsync(Notification notification)
     {
-        await _context.Notifications.AddAsync(notification);
-        await _context.SaveChangesAsync();
+        await context.Notifications.AddAsync(notification);
+        await context.SaveChangesAsync();
     }
 
     public Task<Notification?> GetByIdAsync(int notificationId)
     {
-        return _context.Notifications
+        return context.Notifications
             .FirstOrDefaultAsync(n => n.NotificationId == notificationId);
     }
 
     public async Task<(List<Notification> Items, int TotalCount)> GetByUserIdAsync(
         NotificationFilterParams filters)
     {
-        var query = _context.Notifications
+        var query = context.Notifications
             .Where(n => n.UserId == filters.UserId)
             .AsQueryable();
 
@@ -59,19 +52,19 @@ public class NotificationRepository : INotificationRepository
 
     public Task<int> GetUnreadCountAsync(int userId)
     {
-        return _context.Notifications
+        return context.Notifications
             .CountAsync(n => n.UserId == userId && n.Status == "Unread");
     }
 
     public async Task UpdateStatusAsync(Notification notification)
     {
-        _context.Notifications.Update(notification);
-        await _context.SaveChangesAsync();
+        context.Notifications.Update(notification);
+        await context.SaveChangesAsync();
     }
 
     public async Task MarkAllReadAsync(int userId)
     {
-        var unread = await _context.Notifications
+        var unread = await context.Notifications
             .Where(n => n.UserId == userId && n.Status == "Unread")
             .ToListAsync();
 
@@ -80,7 +73,7 @@ public class NotificationRepository : INotificationRepository
             n.Status = "Read";
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }
 

@@ -9,19 +9,12 @@ namespace Telebill.Controllers.Reports;
 
 [ApiController]
 [Route("api/v1/reports/kpi")]
-public class KpiController : ControllerBase
+public class KpiController(IBillingReportService billingReportService) : ControllerBase
 {
-    private readonly IBillingReportService _billingReportService;
-
-    public KpiController(IBillingReportService billingReportService)
-    {
-        _billingReportService = billingReportService;
-    }
-
     [HttpPost("generate")]
     public async Task<IActionResult> GenerateKpi([FromBody] GenerateReportRequestDto dto)
     {
-        var (success, error, result) = await _billingReportService.GenerateAndStoreAsync(dto);
+        var (success, error, result) = await billingReportService.GenerateAndStoreAsync(dto);
         if (!success)
         {
             return BadRequest(error);
@@ -38,7 +31,7 @@ public class KpiController : ControllerBase
             Scope = scope
         };
 
-        var reports = await _billingReportService.GetAllAsync(filters);
+        var reports = await billingReportService.GetAllAsync(filters);
         var latest = reports
             .OrderByDescending(r => r.GeneratedDate)
             .FirstOrDefault();
@@ -48,7 +41,7 @@ public class KpiController : ControllerBase
             return NotFound();
         }
 
-        var detail = await _billingReportService.GetByIdAsync(latest.ReportId);
+        var detail = await billingReportService.GetByIdAsync(latest.ReportId);
         if (detail == null)
         {
             return NotFound();

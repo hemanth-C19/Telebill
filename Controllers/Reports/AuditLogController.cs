@@ -8,15 +8,8 @@ namespace Telebill.Controllers.Reports;
 
 [ApiController]
 [Route("api/v1/reports/audit")]
-public class AuditLogController : ControllerBase
+public class AuditLogController(IAuditSearchService auditSearchService) : ControllerBase
 {
-    private readonly IAuditSearchService _auditSearchService;
-
-    public AuditLogController(IAuditSearchService auditSearchService)
-    {
-        _auditSearchService = auditSearchService;
-    }
-
     [HttpGet]
     public async Task<IActionResult> Search(
         [FromQuery] int? userId,
@@ -38,7 +31,7 @@ public class AuditLogController : ControllerBase
             PageSize = pageSize
         };
 
-        var result = await _auditSearchService.SearchAsync(filters);
+        var result = await auditSearchService.SearchAsync(filters);
         return Ok(result);
     }
 
@@ -59,7 +52,7 @@ public class AuditLogController : ControllerBase
             DateTo = dateTo
         };
 
-        var rows = await _auditSearchService.ExportAsync(filters);
+        var rows = await auditSearchService.ExportAsync(filters);
         return Ok(rows);
     }
 }

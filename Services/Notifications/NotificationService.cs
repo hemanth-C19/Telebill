@@ -7,15 +7,8 @@ using Telebill.Repositories.Notifications;
 
 namespace Telebill.Services.Notifications;
 
-public class NotificationService : INotificationService
+public class NotificationService(INotificationRepository repo) : INotificationService
 {
-    private readonly INotificationRepository _repo;
-
-    public NotificationService(INotificationRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<int> CreateAsync(CreateNotificationDto dto)
     {
         var allowedCategories = new[]
@@ -49,7 +42,7 @@ public class NotificationService : INotificationService
             CreatedDate = DateTime.UtcNow
         };
 
-        await _repo.AddAsync(notification);
+        await repo.AddAsync(notification);
 
         return notification.NotificationId;
     }

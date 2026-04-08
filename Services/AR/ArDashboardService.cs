@@ -3,23 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Telebill.Dto.AR;
+using Telebill.Models;
 using Telebill.Repositories.AR;
 
 namespace Telebill.Services.AR;
 
-public class ArDashboardService : IArDashboardService
+public class ArDashboardService(IArRepository repo) : IArDashboardService
 {
-    private readonly IArRepository _repo;
-
-    public ArDashboardService(IArRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<ArDashboardSummaryDto> GetArDashboardAsync()
     {
-        var openDenials = await _repo.GetAllOpenDenialsAsync();
-        var partialClaims = await _repo.GetPartiallyPaidClaimsAsync();
+        var openDenials = await repo.GetAllOpenDenialsAsync();
+        var partialClaims = await repo.GetPartiallyPaidClaimsAsync();
         var today = DateOnly.FromDateTime(DateTime.Today);
 
         // Aging breakdown
@@ -61,7 +55,7 @@ public class ArDashboardService : IArDashboardService
         var claimEntities = new List<Models.Claim>();
         foreach (var id in planIds)
         {
-            var claim = await _repo.GetClaimByIdAsync(id);
+            var claim = await repo.GetClaimByIdAsync(id);
             if (claim != null)
             {
                 claimEntities.Add(claim);
@@ -76,8 +70,8 @@ public class ArDashboardService : IArDashboardService
         foreach (var group in payerGroups)
         {
             var planId = group.Key;
-            var plan = await _repo.GetPayerPlanByIdAsync(planId);
-            var payer = plan != null ? await _repo.GetPayerByPlanIdAsync(plan.PlanId) : null;
+            var plan = await repo.GetPayerPlanByIdAsync(planId);
+            var payer = plan != null ? await repo.GetPayerByPlanIdAsync(plan.PlanId) : null;
             if (payer == null) continue;
 
             var payerId = payer.PayerId;
@@ -88,7 +82,7 @@ public class ArDashboardService : IArDashboardService
 
             var denialCount = payerDenials.Count;
             var totalDenied = payerDenials.Sum(d => d.AmountDenied ?? 0m);
-            var totalSubmitted = await _repo.GetTotalClaimsSubmittedByPayerAsync(payerId);
+            var totalSubmitted = await repo.GetTotalClaimsSubmittedByPayerAsync(payerId);
             var rate = totalSubmitted > 0
                 ? Math.Round((double)denialCount / totalSubmitted * 100d, 1)
                 : 0d;

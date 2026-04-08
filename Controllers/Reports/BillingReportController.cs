@@ -7,15 +7,8 @@ namespace Telebill.Controllers.Reports;
 
 [ApiController]
 [Route("api/v1/reports/billing")]
-public class BillingReportController : ControllerBase
+public class BillingReportController(IBillingReportService billingReportService) : ControllerBase
 {
-    private readonly IBillingReportService _billingReportService;
-
-    public BillingReportController(IBillingReportService billingReportService)
-    {
-        _billingReportService = billingReportService;
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetReports(
         [FromQuery] string? scope,
@@ -29,14 +22,14 @@ public class BillingReportController : ControllerBase
             GeneratedTo = generatedTo
         };
 
-        var items = await _billingReportService.GetAllAsync(filters);
+        var items = await billingReportService.GetAllAsync(filters);
         return Ok(items);
     }
 
     [HttpGet("{reportId:int}")]
     public async Task<IActionResult> GetReport(int reportId)
     {
-        var detail = await _billingReportService.GetByIdAsync(reportId);
+        var detail = await billingReportService.GetByIdAsync(reportId);
         if (detail == null)
         {
             return NotFound();

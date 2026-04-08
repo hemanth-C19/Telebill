@@ -8,15 +8,8 @@ namespace Telebill.Controllers.Reports;
 
 [ApiController]
 [Route("api/v1/reports/export")]
-public class ExportController : ControllerBase
+public class ExportController(IExportService exportService) : ControllerBase
 {
-    private readonly IExportService _exportService;
-
-    public ExportController(IExportService exportService)
-    {
-        _exportService = exportService;
-    }
-
     private static ExportFilterParams BuildFilters(
         DateTime? dateFrom,
         DateTime? dateTo,
@@ -46,7 +39,7 @@ public class ExportController : ControllerBase
         [FromQuery] string? status)
     {
         var filters = BuildFilters(dateFrom, dateTo, payerId, planId, providerId, status);
-        var rows = await _exportService.GetClaimsListingAsync(filters);
+        var rows = await exportService.GetClaimsListingAsync(filters);
         return Ok(rows);
     }
 
@@ -60,7 +53,7 @@ public class ExportController : ControllerBase
         [FromQuery] string? status)
     {
         var filters = BuildFilters(dateFrom, dateTo, payerId, planId, providerId, status);
-        var rows = await _exportService.GetScrubIssuesAsync(filters);
+        var rows = await exportService.GetScrubIssuesAsync(filters);
         return Ok(rows);
     }
 
@@ -74,7 +67,7 @@ public class ExportController : ControllerBase
         [FromQuery] string? status)
     {
         var filters = BuildFilters(dateFrom, dateTo, payerId, planId, providerId, status);
-        var rows = await _exportService.GetArAgingAsync(filters);
+        var rows = await exportService.GetArAgingAsync(filters);
         return Ok(rows);
     }
 
@@ -88,7 +81,7 @@ public class ExportController : ControllerBase
         [FromQuery] string? status)
     {
         var filters = BuildFilters(dateFrom, dateTo, payerId, planId, providerId, status);
-        var rows = await _exportService.GetStatementsSummaryAsync(filters);
+        var rows = await exportService.GetStatementsSummaryAsync(filters);
         return Ok(rows);
     }
 
@@ -102,7 +95,7 @@ public class ExportController : ControllerBase
         [FromQuery] string? status)
     {
         var filters = BuildFilters(dateFrom, dateTo, payerId, planId, providerId, status);
-        var rows = await _exportService.GetRemitSummaryAsync(filters);
+        var rows = await exportService.GetRemitSummaryAsync(filters);
         return Ok(rows);
     }
 }

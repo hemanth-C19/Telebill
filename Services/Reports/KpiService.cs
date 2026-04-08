@@ -109,9 +109,9 @@ public class KpiService : IKpiService
                 .OrderBy(sr => sr.AckDate)
                 .FirstOrDefault();
 
-            if (initial != null && ack?.AckDate != null)
+            if (initial?.SubmitDate != null && ack?.AckDate != null)
             {
-                tatValues.Add((ack.AckDate.Value - initial.SubmitDate).TotalDays);
+                tatValues.Add((ack.AckDate.Value - initial.SubmitDate.Value).TotalDays);
             }
         }
 

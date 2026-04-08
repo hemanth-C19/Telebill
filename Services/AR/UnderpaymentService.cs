@@ -9,18 +9,11 @@ using Telebill.Repositories.AR;
 
 namespace Telebill.Services.AR;
 
-public class UnderpaymentService : IUnderpaymentService
+public class UnderpaymentService(IArRepository repo) : IUnderpaymentService
 {
-    private readonly IArRepository _repo;
-
-    public UnderpaymentService(IArRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<List<UnderpaymentItemDto>> GetUnderpaymentWorklistAsync()
     {
-        var partialClaims = await _repo.GetPartiallyPaidClaimsAsync();
+        var partialClaims = await repo.GetPartiallyPaidClaimsAsync();
         var result = new List<UnderpaymentItemDto>();
 
         foreach (var claim in partialClaims)
@@ -30,21 +23,21 @@ public class UnderpaymentService : IUnderpaymentService
                 continue;
             }
 
-            var enc = await _repo.GetEncounterByClaimIdAsync(claim.ClaimId);
+            var enc = await repo.GetEncounterByClaimIdAsync(claim.ClaimId);
             var patient = claim.PatientId.HasValue
-                ? await _repo.GetPatientByIdAsync(claim.PatientId.Value)
+                ? await repo.GetPatientByIdAsync(claim.PatientId.Value)
                 : null;
 
             PayerPlan? plan = claim.PlanId.HasValue
-                ? await _repo.GetPayerPlanByIdAsync(claim.PlanId.Value)
+                ? await repo.GetPayerPlanByIdAsync(claim.PlanId.Value)
                 : null;
 
             Payer? payer = plan != null
-                ? await _repo.GetPayerByPlanIdAsync(plan.PlanId)
+                ? await repo.GetPayerByPlanIdAsync(plan.PlanId)
                 : null;
 
-            var lines = await _repo.GetClaimLinesByClaimIdAsync(claim.ClaimId);
-            var payments = await _repo.GetPaymentPostsByClaimIdAsync(claim.ClaimId);
+            var lines = await repo.GetClaimLinesByClaimIdAsync(claim.ClaimId);
+            var payments = await repo.GetPaymentPostsByClaimIdAsync(claim.ClaimId);
 
             var lineItems = new List<LineUnderpaymentDto>();
             decimal totalAllowed = 0m;
@@ -73,7 +66,7 @@ public class UnderpaymentService : IUnderpaymentService
                 FeeSchedule? fee = null;
                 if (claim.PlanId.HasValue)
                 {
-                    fee = await _repo.GetFeeScheduleAsync(claim.PlanId.Value, line.CptHcpcs ?? string.Empty, modCombo, serviceDate);
+                    fee = await repo.GetFeeScheduleAsync(claim.PlanId.Value, line.CptHcpcs ?? string.Empty, modCombo, serviceDate);
                 }
 
                 var linePayment = payments
@@ -128,7 +121,7 @@ public class UnderpaymentService : IUnderpaymentService
 
     public async Task<(bool success, string error)> FlagUnderpaymentAsync(FlagUnderpaymentDto dto, int userId)
     {
-        var claim = await _repo.GetClaimByIdAsync(dto.ClaimId);
+        var claim = await repo.GetClaimByIdAsync(dto.ClaimId);
         if (claim == null)
         {
             return (false, "Claim not found");
@@ -139,7 +132,7 @@ public class UnderpaymentService : IUnderpaymentService
             return (false, "Only PartiallyPaid claims can be flagged as underpayments");
         }
 
-        var existing = await _repo.GetDenialsByClaimIdAsync(dto.ClaimId);
+        var existing = await repo.GetDenialsByClaimIdAsync(dto.ClaimId);
         if (existing.Any(d => d.ReasonCode == "UNDERPAYMENT" && d.Status == "Open"))
         {
             return (false, "An underpayment dispute already exists for this claim");
@@ -156,7 +149,7 @@ public class UnderpaymentService : IUnderpaymentService
             Status = "Open"
         };
 
-        await _repo.AddDenialAsync(denial);
+        await repo.AddDenialAsync(denial);
 
         return (true, string.Empty);
     }

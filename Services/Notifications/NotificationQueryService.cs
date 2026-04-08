@@ -6,22 +6,15 @@ using Telebill.Repositories.Notifications;
 
 namespace Telebill.Services.Notifications;
 
-public class NotificationQueryService : INotificationQueryService
+public class NotificationQueryService(INotificationRepository repo) : INotificationQueryService
 {
-    private readonly INotificationRepository _repo;
-
-    public NotificationQueryService(INotificationRepository repo)
-    {
-        _repo = repo;
-    }
-
     public async Task<NotificationPagedResultDto> GetByUserIdAsync(NotificationFilterParams filters)
     {
         if (filters.Page < 1) filters.Page = 1;
         if (filters.PageSize < 1) filters.PageSize = 20;
         if (filters.PageSize > 100) filters.PageSize = 100;
 
-        var (items, totalCount) = await _repo.GetByUserIdAsync(filters);
+        var (items, totalCount) = await repo.GetByUserIdAsync(filters);
 
         var dtoItems = items.Select(n => new NotificationItemDto
         {
@@ -45,7 +38,7 @@ public class NotificationQueryService : INotificationQueryService
 
     public async Task<UnreadCountDto> GetUnreadCountAsync(int userId)
     {
-        var count = await _repo.GetUnreadCountAsync(userId);
+        var count = await repo.GetUnreadCountAsync(userId);
 
         return new UnreadCountDto
         {
@@ -63,7 +56,7 @@ public class NotificationQueryService : INotificationQueryService
             return (false, $"Invalid status '{dto.NewStatus}'. Allowed: Read, Dismissed");
         }
 
-        var notification = await _repo.GetByIdAsync(notificationId);
+        var notification = await repo.GetByIdAsync(notificationId);
         if (notification == null)
         {
             return (false, "Notification not found");
@@ -80,7 +73,7 @@ public class NotificationQueryService : INotificationQueryService
         }
 
         notification.Status = dto.NewStatus;
-        await _repo.UpdateStatusAsync(notification);
+        await repo.UpdateStatusAsync(notification);
 
         return (true, string.Empty);
     }
@@ -92,7 +85,7 @@ public class NotificationQueryService : INotificationQueryService
             return (false, "Invalid userId");
         }
 
-        await _repo.MarkAllReadAsync(userId);
+        await repo.MarkAllReadAsync(userId);
 
         return (true, string.Empty);
     }

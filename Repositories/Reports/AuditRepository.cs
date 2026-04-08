@@ -8,15 +8,8 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.Reports;
 
-public class AuditRepository : IAuditRepository
+public class AuditRepository(TeleBillContext context) : IAuditRepository
 {
-    private readonly TeleBillContext _context;
-
-    public AuditRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
-
     public async Task<(List<AuditLog> Items, int TotalCount)> SearchAsync(AuditSearchParams filters)
     {
         var query = BuildAuditQuery(filters);
@@ -42,13 +35,13 @@ public class AuditRepository : IAuditRepository
 
     public async Task<string?> GetUserNameByIdAsync(int userId)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
         return user?.Name;
     }
 
     private IQueryable<AuditLog> BuildAuditQuery(AuditSearchParams filters)
     {
-        var query = _context.AuditLogs.AsQueryable();
+        var query = context.AuditLogs.AsQueryable();
 
         if (filters.UserId.HasValue)
             query = query.Where(a => a.UserId == filters.UserId.Value);

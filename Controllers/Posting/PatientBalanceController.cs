@@ -9,15 +9,8 @@ namespace Telebill.Controllers.Posting;
 
 [ApiController]
 [Route("api/v1/posting/balances")]
-public class PatientBalanceController : ControllerBase
+public class PatientBalanceController(IPostingService service) : ControllerBase
 {
-    private readonly IPostingService _service;
-
-    public PatientBalanceController(IPostingService service)
-    {
-        _service = service;
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int? patientID,
@@ -39,14 +32,14 @@ public class PatientBalanceController : ControllerBase
             PageSize = pageSize
         };
 
-        var result = await _service.GetPatientBalancesAsync(filters);
+        var result = await service.GetPatientBalancesAsync(filters);
         return Ok(result);
     }
 
     [HttpGet("aging-summary")]
     public async Task<IActionResult> GetAgingSummary()
     {
-        var result = await _service.GetAgingSummaryAsync();
+        var result = await service.GetAgingSummaryAsync();
         return Ok(result);
     }
 
@@ -55,7 +48,7 @@ public class PatientBalanceController : ControllerBase
     {
         try
         {
-            var result = await _service.GetPatientBalanceByIdAsync(balanceID);
+            var result = await service.GetPatientBalanceByIdAsync(balanceID);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -69,7 +62,7 @@ public class PatientBalanceController : ControllerBase
     {
         try
         {
-            var result = await _service.GetBalancesByPatientAsync(patientID);
+            var result = await service.GetBalancesByPatientAsync(patientID);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -83,7 +76,7 @@ public class PatientBalanceController : ControllerBase
     {
         try
         {
-            var result = await _service.UpdatePatientBalanceStatusAsync(balanceID, dto, GetCurrentUserId());
+            var result = await service.UpdatePatientBalanceStatusAsync(balanceID, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (ArgumentException ex)
@@ -101,7 +94,7 @@ public class PatientBalanceController : ControllerBase
     {
         try
         {
-            var result = await _service.RunAgingBucketJobAsync(schedulerKey);
+            var result = await service.RunAgingBucketJobAsync(schedulerKey);
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)

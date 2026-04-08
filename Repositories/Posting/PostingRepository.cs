@@ -9,23 +9,16 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.Posting;
 
-public class PostingRepository : IPostingRepository
+public class PostingRepository(TeleBillContext context) : IPostingRepository
 {
-    private readonly TeleBillContext _context;
-
-    public PostingRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
-
     public Task<RemitRef?> GetRemitRefByIdAsync(int remitID)
     {
-        return _context.RemitRefs.Include(r => r.Payer).FirstOrDefaultAsync(r => r.RemitId == remitID);
+        return context.RemitRefs.Include(r => r.Payer).FirstOrDefaultAsync(r => r.RemitId == remitID);
     }
 
     public async Task<(List<RemitRef> items, int totalCount)> GetRemitRefsPagedAsync(int? payerID, string? status, DateOnly? dateFrom, DateOnly? dateTo, int page, int pageSize)
     {
-        var query = _context.RemitRefs.Include(r => r.Payer).AsQueryable();
+        var query = context.RemitRefs.Include(r => r.Payer).AsQueryable();
 
         if (payerID.HasValue)
         {
@@ -61,20 +54,20 @@ public class PostingRepository : IPostingRepository
 
     public async Task<RemitRef> CreateRemitRefAsync(RemitRef entity)
     {
-        _context.RemitRefs.Add(entity);
-        await _context.SaveChangesAsync();
+        context.RemitRefs.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task UpdateRemitRefAsync(RemitRef entity)
     {
-        _context.RemitRefs.Update(entity);
-        await _context.SaveChangesAsync();
+        context.RemitRefs.Update(entity);
+        await context.SaveChangesAsync();
     }
 
     public Task<PaymentPost?> GetPaymentPostByIdAsync(int paymentID)
     {
-        return _context.PaymentPosts
+        return context.PaymentPosts
             .Include(p => p.PostedByNavigation)
             .Include(p => p.ClaimLine)
             .FirstOrDefaultAsync(p => p.PaymentId == paymentID);
@@ -82,7 +75,7 @@ public class PostingRepository : IPostingRepository
 
     public Task<List<PaymentPost>> GetPaymentPostsByClaimAsync(int claimID)
     {
-        return _context.PaymentPosts
+        return context.PaymentPosts
             .Include(p => p.PostedByNavigation)
             .Include(p => p.ClaimLine)
             .Where(p => p.ClaimId == claimID)
@@ -92,7 +85,7 @@ public class PostingRepository : IPostingRepository
 
     public Task<bool> ActivePostExistsForLineAsync(int claimID, int? claimLineID)
     {
-        return _context.PaymentPosts.AnyAsync(p =>
+        return context.PaymentPosts.AnyAsync(p =>
             p.ClaimId == claimID &&
             p.ClaimLineId == claimLineID &&
             p.Status == "Active");
@@ -100,35 +93,35 @@ public class PostingRepository : IPostingRepository
 
     public async Task<PaymentPost> CreatePaymentPostAsync(PaymentPost entity)
     {
-        _context.PaymentPosts.Add(entity);
-        await _context.SaveChangesAsync();
+        context.PaymentPosts.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task UpdatePaymentPostAsync(PaymentPost entity)
     {
-        _context.PaymentPosts.Update(entity);
-        await _context.SaveChangesAsync();
+        context.PaymentPosts.Update(entity);
+        await context.SaveChangesAsync();
     }
 
     public Task<PatientBalance?> GetPatientBalanceByIdAsync(int balanceID)
     {
-        return _context.PatientBalances.Include(b => b.Patient).FirstOrDefaultAsync(b => b.BalanceId == balanceID);
+        return context.PatientBalances.Include(b => b.Patient).FirstOrDefaultAsync(b => b.BalanceId == balanceID);
     }
 
     public Task<PatientBalance?> GetPatientBalanceByClaimAsync(int claimID)
     {
-        return _context.PatientBalances.Include(b => b.Patient).FirstOrDefaultAsync(b => b.ClaimId == claimID);
+        return context.PatientBalances.Include(b => b.Patient).FirstOrDefaultAsync(b => b.ClaimId == claimID);
     }
 
     public Task<List<PatientBalance>> GetPatientBalancesByPatientAsync(int patientID)
     {
-        return _context.PatientBalances.Include(b => b.Patient).Where(b => b.PatientId == patientID).ToListAsync();
+        return context.PatientBalances.Include(b => b.Patient).Where(b => b.PatientId == patientID).ToListAsync();
     }
 
     public async Task<(List<PatientBalance> items, int totalCount)> GetPatientBalancesPagedAsync(PatientBalanceFilterParams filters)
     {
-        var query = _context.PatientBalances.Include(b => b.Patient).AsQueryable();
+        var query = context.PatientBalances.Include(b => b.Patient).AsQueryable();
 
         if (filters.PatientID.HasValue)
         {
@@ -167,7 +160,7 @@ public class PostingRepository : IPostingRepository
 
     public async Task<AgingSummaryDto> GetAgingSummaryAsync()
     {
-        var openBalances = await _context.PatientBalances.Where(b => b.Status == "Open").ToListAsync();
+        var openBalances = await context.PatientBalances.Where(b => b.Status == "Open").ToListAsync();
         decimal Sum(string bucket) => openBalances.Where(b => b.AgingBucket == bucket).Sum(b => b.AmountDue ?? 0m);
 
         return new AgingSummaryDto
@@ -183,36 +176,36 @@ public class PostingRepository : IPostingRepository
 
     public Task<List<PatientBalance>> GetAllOpenBalancesAsync()
     {
-        return _context.PatientBalances.Where(b => b.Status == "Open").ToListAsync();
+        return context.PatientBalances.Where(b => b.Status == "Open").ToListAsync();
     }
 
     public async Task<PatientBalance> CreatePatientBalanceAsync(PatientBalance entity)
     {
-        _context.PatientBalances.Add(entity);
-        await _context.SaveChangesAsync();
+        context.PatientBalances.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task UpdatePatientBalanceAsync(PatientBalance entity)
     {
-        _context.PatientBalances.Update(entity);
-        await _context.SaveChangesAsync();
+        context.PatientBalances.Update(entity);
+        await context.SaveChangesAsync();
     }
 
     public async Task SaveAllPatientBalancesAsync(List<PatientBalance> entities)
     {
-        _context.PatientBalances.UpdateRange(entities);
-        await _context.SaveChangesAsync();
+        context.PatientBalances.UpdateRange(entities);
+        await context.SaveChangesAsync();
     }
 
     public Task<Statement?> GetStatementByIdAsync(int statementID)
     {
-        return _context.Statements.Include(s => s.Patient).FirstOrDefaultAsync(s => s.StatementId == statementID);
+        return context.Statements.Include(s => s.Patient).FirstOrDefaultAsync(s => s.StatementId == statementID);
     }
 
     public Task<bool> StatementExistsForPeriodAsync(int patientID, DateOnly periodStart, DateOnly periodEnd)
     {
-        return _context.Statements.AnyAsync(s =>
+        return context.Statements.AnyAsync(s =>
             s.PatientId == patientID &&
             s.PeriodStart == periodStart &&
             s.PeriodEnd == periodEnd);
@@ -220,7 +213,7 @@ public class PostingRepository : IPostingRepository
 
     public async Task<(List<Statement> items, int totalCount)> GetStatementsPagedAsync(int? patientID, string? status, DateOnly? dateFrom, DateOnly? dateTo, int page, int pageSize)
     {
-        var query = _context.Statements.Include(s => s.Patient).AsQueryable();
+        var query = context.Statements.Include(s => s.Patient).AsQueryable();
 
         if (patientID.HasValue)
         {
@@ -256,20 +249,20 @@ public class PostingRepository : IPostingRepository
 
     public async Task<Statement> CreateStatementAsync(Statement entity)
     {
-        _context.Statements.Add(entity);
-        await _context.SaveChangesAsync();
+        context.Statements.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public async Task UpdateStatementAsync(Statement entity)
     {
-        _context.Statements.Update(entity);
-        await _context.SaveChangesAsync();
+        context.Statements.Update(entity);
+        await context.SaveChangesAsync();
     }
 
     public Task<Claim?> GetClaimByIdAsync(int claimID)
     {
-        return _context.Claims
+        return context.Claims
             .Include(c => c.Patient)
             .Include(c => c.Encounter)
             .FirstOrDefaultAsync(c => c.ClaimId == claimID);
@@ -277,69 +270,78 @@ public class PostingRepository : IPostingRepository
 
     public Task<List<ClaimLine>> GetActiveClaimLinesByClaimAsync(int claimID)
     {
-        return _context.ClaimLines.Where(l => l.ClaimId == claimID && l.LineStatus == "Active").ToListAsync();
+        return context.ClaimLines.Where(l => l.ClaimId == claimID && l.LineStatus == "Active").ToListAsync();
     }
 
     public Task<ClaimLine?> GetClaimLineByIdAsync(int claimLineID)
     {
-        return _context.ClaimLines.FirstOrDefaultAsync(l => l.ClaimLineId == claimLineID);
+        return context.ClaimLines.FirstOrDefaultAsync(l => l.ClaimLineId == claimLineID);
     }
 
     public async Task UpdateClaimStatusAsync(int claimID, string newStatus)
     {
-        var claim = await _context.Claims.FirstOrDefaultAsync(c => c.ClaimId == claimID);
+        var claim = await context.Claims.FirstOrDefaultAsync(c => c.ClaimId == claimID);
         if (claim == null) return;
         claim.ClaimStatus = newStatus;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public Task<Encounter?> GetEncounterByIdAsync(int encounterID)
     {
-        return _context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == encounterID);
+        return context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == encounterID);
     }
 
     public Task<Patient?> GetPatientByIdAsync(int patientID)
     {
-        return _context.Patients.FirstOrDefaultAsync(p => p.PatientId == patientID);
+        return context.Patients.FirstOrDefaultAsync(p => p.PatientId == patientID);
     }
 
     public Task<bool> PayerExistsAsync(int payerID)
     {
-        return _context.Payers.AnyAsync(p => p.PayerId == payerID);
+        return context.Payers.AnyAsync(p => p.PayerId == payerID);
     }
 
     public Task<bool> BatchExistsAsync(int batchID)
     {
-        return _context.SubmissionBatches.AnyAsync(b => b.BatchId == batchID);
+        return context.SubmissionBatches.AnyAsync(b => b.BatchId == batchID);
     }
 
     public Task<Payer?> GetPayerByIdAsync(int payerID)
     {
-        return _context.Payers.FirstOrDefaultAsync(p => p.PayerId == payerID);
+        return context.Payers.FirstOrDefaultAsync(p => p.PayerId == payerID);
+    }
+
+    public Task<int> GetClaimCountForBatchAsync(int batchID)
+    {
+        return context.SubmissionRefs
+            .Where(sr => sr.BatchId == batchID && sr.ClaimId != null)
+            .Select(sr => sr.ClaimId!.Value)
+            .Distinct()
+            .CountAsync();
     }
 
     public Task<DateTime?> GetFirstPostingDateForClaimAsync(int claimID)
     {
-        return _context.PaymentPosts
+        return context.PaymentPosts
             .Where(p => p.ClaimId == claimID && p.Status == "Active")
             .MinAsync(p => (DateTime?)p.PostedDate);
     }
 
     public async Task<Denial> CreateDenialAsync(Denial entity)
     {
-        _context.Denials.Add(entity);
-        await _context.SaveChangesAsync();
+        context.Denials.Add(entity);
+        await context.SaveChangesAsync();
         return entity;
     }
 
     public Task<List<User>> GetUsersByRoleAsync(string role)
     {
-        return _context.Users.Where(u => u.Role == role && u.Status == "Active").ToListAsync();
+        return context.Users.Where(u => u.Role == role && u.Status == "Active").ToListAsync();
     }
 
     public Task<List<int>> GetDistinctPatientIDsWithOpenBalancesAsync()
     {
-        return _context.PatientBalances
+        return context.PatientBalances
             .Where(b => b.Status == "Open" && (b.AmountDue ?? 0m) > 0m)
             .Select(b => b.PatientId ?? 0)
             .Where(id => id != 0)
@@ -349,7 +351,7 @@ public class PostingRepository : IPostingRepository
 
     public async Task WriteAuditLogAsync(int userID, string action, string resource, string? metadata)
     {
-        _context.AuditLogs.Add(new AuditLog
+        context.AuditLogs.Add(new AuditLog
         {
             UserId = userID,
             Action = action,
@@ -357,12 +359,12 @@ public class PostingRepository : IPostingRepository
             Timestamp = DateTime.UtcNow,
             Metadata = metadata
         });
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task CreateNotificationAsync(int userID, string message, string category)
     {
-        _context.Notifications.Add(new Notification
+        context.Notifications.Add(new Notification
         {
             UserId = userID,
             Message = message,
@@ -370,7 +372,7 @@ public class PostingRepository : IPostingRepository
             Status = "Unread",
             CreatedDate = DateTime.UtcNow
         });
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }
 

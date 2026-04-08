@@ -24,7 +24,6 @@ public class NotificationFilterParams
     public int PageSize { get; set; } = 20;
 }
 
-// Paged result wrapper
 public class NotificationPagedResultDto
 {
     public List<NotificationItemDto> Items { get; set; } = new();
@@ -34,27 +33,23 @@ public class NotificationPagedResultDto
     public int TotalPages { get; set; }
 }
 
-// Unread badge count
 public class UnreadCountDto
 {
     public int UserId { get; set; }
     public int UnreadCount { get; set; }
 }
 
-// Status update request (mark read or dismiss)
 public class UpdateNotificationStatusDto
 {
     public string NewStatus { get; set; } = string.Empty;
-    // Allowed values: "Read" | "Dismissed"
+    // "Read" | "Dismissed"
 }
 
-// Internal DTO — used by INotificationService (called by other modules)
-// NOT exposed via HTTP
 public class CreateNotificationDto
 {
-    public int UserId { get; set; }    // FK → User (recipient)
+    public int UserId { get; set; }
     public string Message { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
-    // Allowed Category values: Scrub / Submission / Ack / Remit / Denial / Statement
+    // Category: Scrub / Submission / Ack / Remit / Denial / Statement
 }
 

@@ -13,7 +13,7 @@ public partial class PostingService
     public async Task<PatientBalanceListResponseDto> GetPatientBalancesAsync(PatientBalanceFilterParams filters)
     {
         filters.PageSize = Math.Min(filters.PageSize, 100);
-        var (items, total) = await _repo.GetPatientBalancesPagedAsync(filters);
+        var (items, total) = await repo.GetPatientBalancesPagedAsync(filters);
         var mapped = items.Select(MapBalance).ToList();
         return new PatientBalanceListResponseDto
         {
@@ -25,22 +25,22 @@ public partial class PostingService
 
     public Task<AgingSummaryDto> GetAgingSummaryAsync()
     {
-        return _repo.GetAgingSummaryAsync();
+        return repo.GetAgingSummaryAsync();
     }
 
     public async Task<PatientBalanceDto> GetPatientBalanceByIdAsync(int balanceID)
     {
-        var b = await _repo.GetPatientBalanceByIdAsync(balanceID);
+        var b = await repo.GetPatientBalanceByIdAsync(balanceID);
         if (b == null) throw new KeyNotFoundException("balance not found");
         return MapBalance(b);
     }
 
     public async Task<PatientBalanceListResponseDto> GetBalancesByPatientAsync(int patientID)
     {
-        var patient = await _repo.GetPatientByIdAsync(patientID);
+        var patient = await repo.GetPatientByIdAsync(patientID);
         if (patient == null) throw new KeyNotFoundException("patient not found");
 
-        var items = await _repo.GetPatientBalancesByPatientAsync(patientID);
+        var items = await repo.GetPatientBalancesByPatientAsync(patientID);
         var mapped = items.Select(MapBalance).ToList();
         return new PatientBalanceListResponseDto
         {
@@ -52,7 +52,7 @@ public partial class PostingService
 
     public async Task<PatientBalanceDto> UpdatePatientBalanceStatusAsync(int balanceID, UpdatePatientBalanceStatusRequestDto dto, int currentUserID)
     {
-        var b = await _repo.GetPatientBalanceByIdAsync(balanceID);
+        var b = await repo.GetPatientBalanceByIdAsync(balanceID);
         if (b == null) throw new KeyNotFoundException("balance not found");
 
         if (!string.Equals(dto.Status, "Paid", StringComparison.OrdinalIgnoreCase) &&
@@ -68,27 +68,27 @@ public partial class PostingService
             b.AmountDue = 0m;
         }
 
-        await _repo.UpdatePatientBalanceAsync(b);
+        await repo.UpdatePatientBalanceAsync(b);
 
         return MapBalance(b);
     }
 
     public async Task<AgingBatchJobResultDto> RunAgingBucketJobAsync(string? schedulerKey)
     {
-        var configured = _config["SchedulerKey"];
+        var configured = config["SchedulerKey"];
         if (!string.IsNullOrWhiteSpace(configured) && !string.Equals(configured, schedulerKey))
         {
             throw new UnauthorizedAccessException("Invalid scheduler key");
         }
 
         var started = DateTime.UtcNow;
-        var openBalances = await _repo.GetAllOpenBalancesAsync();
+        var openBalances = await repo.GetAllOpenBalancesAsync();
         int updated = 0;
 
         foreach (var b in openBalances)
         {
             if (b.ClaimId == null) continue;
-            var firstPostDate = await _repo.GetFirstPostingDateForClaimAsync(b.ClaimId.Value) ?? started;
+            var firstPostDate = await repo.GetFirstPostingDateForClaimAsync(b.ClaimId.Value) ?? started;
             var days = (DateTime.UtcNow - firstPostDate).Days;
             var newBucket = days <= 30 ? "0-30" :
                 days <= 60 ? "31-60" :
@@ -101,7 +101,7 @@ public partial class PostingService
             }
         }
 
-        await _repo.SaveAllPatientBalancesAsync(openBalances);
+        await repo.SaveAllPatientBalancesAsync(openBalances);
 
         var completed = DateTime.UtcNow;
         return new AgingBatchJobResultDto
@@ -115,17 +115,17 @@ public partial class PostingService
 
     public async Task<StatementDto> GenerateStatementAsync(GenerateStatementRequestDto dto, int currentUserID)
     {
-        var patient = await _repo.GetPatientByIdAsync(dto.PatientID);
+        var patient = await repo.GetPatientByIdAsync(dto.PatientID);
         if (patient == null) throw new KeyNotFoundException("patient not found");
         if (dto.PeriodEnd < dto.PeriodStart) throw new ArgumentException("PeriodEnd must be after PeriodStart");
 
-        var balances = (await _repo.GetPatientBalancesByPatientAsync(dto.PatientID))
+        var balances = (await repo.GetPatientBalancesByPatientAsync(dto.PatientID))
             .Where(b => b.Status == "Open" && (b.AmountDue ?? 0m) > 0m)
             .ToList();
 
         if (balances.Count == 0) throw new ArgumentException("No open balances found for this patient");
 
-        if (await _repo.StatementExistsForPeriodAsync(dto.PatientID, dto.PeriodStart, dto.PeriodEnd))
+        if (await repo.StatementExistsForPeriodAsync(dto.PatientID, dto.PeriodStart, dto.PeriodEnd))
         {
             throw new InvalidOperationException("A statement already exists for this patient and period");
         }
@@ -137,13 +137,13 @@ public partial class PostingService
 
         foreach (var bal in balances)
         {
-            var claim = await _repo.GetClaimByIdAsync(bal.ClaimId ?? 0);
+            var claim = await repo.GetClaimByIdAsync(bal.ClaimId ?? 0);
             if (claim == null) continue;
-            var enc = claim.EncounterId.HasValue ? await _repo.GetEncounterByIdAsync(claim.EncounterId.Value) : null;
+            var enc = claim.EncounterId.HasValue ? await repo.GetEncounterByIdAsync(claim.EncounterId.Value) : null;
             var serviceDate = enc == null ? DateOnly.FromDateTime(DateTime.UtcNow) : DateOnly.FromDateTime(enc.EncounterDateTime);
 
-            var lines = await _repo.GetActiveClaimLinesByClaimAsync(claim.ClaimId);
-            var posts = (await _repo.GetPaymentPostsByClaimAsync(claim.ClaimId)).Where(p => p.Status == "Active").ToList();
+            var lines = await repo.GetActiveClaimLinesByClaimAsync(claim.ClaimId);
+            var posts = (await repo.GetPaymentPostsByClaimAsync(claim.ClaimId)).Where(p => p.Status == "Active").ToList();
 
             foreach (var line in lines)
             {
@@ -185,19 +185,19 @@ public partial class PostingService
             Status = "Open"
         };
 
-        statement = await _repo.CreateStatementAsync(statement);
+        statement = await repo.CreateStatementAsync(statement);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         foreach (var bal in balances)
         {
             bal.LastStatementDate = today;
         }
-        await _repo.SaveAllPatientBalancesAsync(balances);
+        await repo.SaveAllPatientBalancesAsync(balances);
 
-        var frontDeskUsers = await _repo.GetUsersByRoleAsync("FrontDesk");
+        var frontDeskUsers = await repo.GetUsersByRoleAsync("FrontDesk");
         foreach (var u in frontDeskUsers)
         {
-            await _repo.CreateNotificationAsync(u.UserId,
+            await repo.CreateNotificationAsync(u.UserId,
                 $"Statement generated for Patient #{dto.PatientID}: ${amountDue} due for period {dto.PeriodStart} to {dto.PeriodEnd}.",
                 "Statement");
         }
@@ -207,7 +207,7 @@ public partial class PostingService
 
     public async Task<StatementBatchResultDto> GenerateStatementBatchAsync(GenerateStatementBatchRequestDto dto)
     {
-        var configured = _config["SchedulerKey"];
+        var configured = config["SchedulerKey"];
         if (!string.IsNullOrWhiteSpace(configured) && !string.Equals(configured, dto.SchedulerKey))
         {
             throw new UnauthorizedAccessException("Invalid scheduler key");
@@ -218,7 +218,7 @@ public partial class PostingService
         int patientsProcessed = 0;
         decimal totalAmountBilled = 0m;
 
-        var patientIds = await _repo.GetDistinctPatientIDsWithOpenBalancesAsync();
+        var patientIds = await repo.GetDistinctPatientIDsWithOpenBalancesAsync();
         foreach (var patientId in patientIds)
         {
             try
@@ -243,11 +243,12 @@ public partial class PostingService
 
         var completed = DateTime.UtcNow;
 
-        var notifyUsers = (await _repo.GetUsersByRoleAsync("AR")).Concat(await _repo.GetUsersByRoleAsync("FrontDesk")).DistinctBy(u => u.UserId).ToList();
-        foreach (var u in notifyUsers)
+        var frontDeskUsers = await repo.GetUsersByRoleAsync("FrontDesk");
+        var monthLabel = $"{dto.PeriodStart:yyyy-MM}";
+        foreach (var u in frontDeskUsers)
         {
-            await _repo.CreateNotificationAsync(u.UserId,
-                $"Statement batch complete: {statementsGenerated} statements generated for {patientsProcessed} patients. Total: ${totalAmountBilled}",
+            await repo.CreateNotificationAsync(u.UserId,
+                $"Statements generated for {statementsGenerated} patients for period {monthLabel}",
                 "Statement");
         }
 
@@ -266,7 +267,7 @@ public partial class PostingService
     public async Task<StatementListResponseDto> GetStatementsAsync(int? patientID, string? status, DateOnly? dateFrom, DateOnly? dateTo, int page, int pageSize)
     {
         pageSize = Math.Min(pageSize, 100);
-        var (items, total) = await _repo.GetStatementsPagedAsync(patientID, status, dateFrom, dateTo, page, pageSize);
+        var (items, total) = await repo.GetStatementsPagedAsync(patientID, status, dateFrom, dateTo, page, pageSize);
         return new StatementListResponseDto
         {
             TotalCount = total,
@@ -281,7 +282,7 @@ public partial class PostingService
 
     public async Task<StatementDto> GetStatementByIdAsync(int statementID)
     {
-        var s = await _repo.GetStatementByIdAsync(statementID);
+        var s = await repo.GetStatementByIdAsync(statementID);
         if (s == null) throw new KeyNotFoundException("statement not found");
         var lineItems = DeserializeStatementLineItems(s.SummaryJson);
         return MapStatement(s, s.Patient, lineItems);
@@ -289,10 +290,10 @@ public partial class PostingService
 
     public async Task<StatementDto> UpdateStatementStatusAsync(int statementID, UpdateStatementStatusRequestDto dto, int currentUserID)
     {
-        var s = await _repo.GetStatementByIdAsync(statementID);
+        var s = await repo.GetStatementByIdAsync(statementID);
         if (s == null) throw new KeyNotFoundException("statement not found");
         s.Status = dto.Status;
-        await _repo.UpdateStatementAsync(s);
+        await repo.UpdateStatementAsync(s);
         return await GetStatementByIdAsync(statementID);
     }
 

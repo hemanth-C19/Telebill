@@ -9,25 +9,18 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.Reports;
 
-public class ReportQueryRepository : IReportQueryRepository
+public class ReportQueryRepository(TeleBillContext context) : IReportQueryRepository
 {
-    private readonly TeleBillContext _context;
-
-    public ReportQueryRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
-
     public async Task<List<Claim>> GetClaimsForPeriodAsync(
         DateTime from, DateTime to, int? payerId, int? planId, int? providerId)
     {
-        var query = _context.Claims.AsQueryable();
+        var query = context.Claims.AsQueryable();
 
         query = query.Where(c => c.CreatedDate >= from && c.CreatedDate <= to);
 
         if (payerId.HasValue)
         {
-            var planIds = await _context.PayerPlans
+            var planIds = await context.PayerPlans
                 .Where(pp => pp.PayerId == payerId.Value)
                 .Select(pp => pp.PlanId)
                 .ToListAsync();
@@ -41,7 +34,7 @@ public class ReportQueryRepository : IReportQueryRepository
 
         if (providerId.HasValue)
         {
-            var encounterIds = await _context.Encounters
+            var encounterIds = await context.Encounters
                 .Where(e => e.ProviderId == providerId.Value)
                 .Select(e => e.EncounterId)
                 .ToListAsync();
@@ -53,27 +46,27 @@ public class ReportQueryRepository : IReportQueryRepository
 
     public Task<List<ScrubIssue>> GetScrubIssuesByClaimIdsAsync(List<int> claimIds)
     {
-        return _context.ScrubIssues
+        return context.ScrubIssues
             .Where(si => si.ClaimId.HasValue && claimIds.Contains(si.ClaimId.Value))
             .ToListAsync();
     }
 
     public Task<ScrubRule?> GetScrubRuleByIdAsync(int ruleId)
     {
-        return _context.ScrubRules
+        return context.ScrubRules
             .FirstOrDefaultAsync(r => r.RuleId == ruleId);
     }
 
     public Task<List<SubmissionRef>> GetSubmissionRefsByClaimIdsAsync(List<int> claimIds)
     {
-        return _context.SubmissionRefs
+        return context.SubmissionRefs
             .Where(sr => sr.ClaimId.HasValue && claimIds.Contains(sr.ClaimId.Value))
             .ToListAsync();
     }
 
     public Task<List<PaymentPost>> GetPaymentPostsByClaimIdsAsync(List<int> claimIds)
     {
-        return _context.PaymentPosts
+        return context.PaymentPosts
             .Where(pp => pp.ClaimId.HasValue && claimIds.Contains(pp.ClaimId.Value))
             .ToListAsync();
     }
@@ -81,14 +74,14 @@ public class ReportQueryRepository : IReportQueryRepository
     public Task<List<Encounter>> GetEncountersByIdsAsync(List<int?> encounterIds)
     {
         var ids = encounterIds.Where(id => id.HasValue).Select(id => id!.Value).ToList();
-        return _context.Encounters
+        return context.Encounters
             .Where(e => ids.Contains(e.EncounterId))
             .ToListAsync();
     }
 
     public Task<List<Denial>> GetDenialsByClaimIdsAsync(List<int> claimIds)
     {
-        return _context.Denials
+        return context.Denials
             .Where(d => d.ClaimId.HasValue && claimIds.Contains(d.ClaimId.Value))
             .ToListAsync();
     }
@@ -100,22 +93,22 @@ public class ReportQueryRepository : IReportQueryRepository
             return Task.FromResult<Patient?>(null);
         }
 
-        return _context.Patients.FirstOrDefaultAsync(p => p.PatientId == patientId.Value);
+        return context.Patients.FirstOrDefaultAsync(p => p.PatientId == patientId.Value);
     }
 
     public Task<Provider?> GetProviderByIdAsync(int providerId)
     {
-        return _context.Providers.FirstOrDefaultAsync(p => p.ProviderId == providerId);
+        return context.Providers.FirstOrDefaultAsync(p => p.ProviderId == providerId);
     }
 
     public Task<Payer?> GetPayerByIdAsync(int payerId)
     {
-        return _context.Payers.FirstOrDefaultAsync(p => p.PayerId == payerId);
+        return context.Payers.FirstOrDefaultAsync(p => p.PayerId == payerId);
     }
 
     public Task<PayerPlan?> GetPlanByIdAsync(int planId)
     {
-        return _context.PayerPlans.FirstOrDefaultAsync(pp => pp.PlanId == planId);
+        return context.PayerPlans.FirstOrDefaultAsync(pp => pp.PlanId == planId);
     }
 
     public async Task<int?> GetPayerIdByPlanIdAsync(int? planId)
@@ -125,7 +118,7 @@ public class ReportQueryRepository : IReportQueryRepository
             return null;
         }
 
-        var plan = await _context.PayerPlans.FirstOrDefaultAsync(pp => pp.PlanId == planId.Value);
+        var plan = await context.PayerPlans.FirstOrDefaultAsync(pp => pp.PlanId == planId.Value);
         return plan?.PayerId;
     }
 
@@ -136,13 +129,13 @@ public class ReportQueryRepository : IReportQueryRepository
             return null;
         }
 
-        var enc = await _context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == encounterId.Value);
+        var enc = await context.Encounters.FirstOrDefaultAsync(e => e.EncounterId == encounterId.Value);
         return enc?.ProviderId;
     }
 
     public async Task<List<Claim>> GetClaimsForExportAsync(ExportFilterParams filters)
     {
-        var query = _context.Claims.AsQueryable();
+        var query = context.Claims.AsQueryable();
 
         if (filters.DateFrom.HasValue)
             query = query.Where(c => c.CreatedDate >= filters.DateFrom.Value);
@@ -154,14 +147,14 @@ public class ReportQueryRepository : IReportQueryRepository
             query = query.Where(c => c.ClaimStatus == filters.Status);
         if (filters.PayerId.HasValue)
         {
-            var planIds = await _context.PayerPlans
+            var planIds = await context.PayerPlans
                 .Where(pp => pp.PayerId == filters.PayerId.Value)
                 .Select(pp => pp.PlanId).ToListAsync();
             query = query.Where(c => c.PlanId.HasValue && planIds.Contains(c.PlanId.Value));
         }
         if (filters.ProviderId.HasValue)
         {
-            var encounterIds = await _context.Encounters
+            var encounterIds = await context.Encounters
                 .Where(e => e.ProviderId == filters.ProviderId.Value)
                 .Select(e => e.EncounterId).ToListAsync();
             query = query.Where(c => c.EncounterId.HasValue && encounterIds.Contains(c.EncounterId.Value));
@@ -172,7 +165,7 @@ public class ReportQueryRepository : IReportQueryRepository
 
     public async Task<List<ScrubIssue>> GetScrubIssuesForExportAsync(ExportFilterParams filters)
     {
-        var query = _context.ScrubIssues.AsQueryable();
+        var query = context.ScrubIssues.AsQueryable();
 
         if (filters.DateFrom.HasValue)
             query = query.Where(si => si.DetectedDate >= filters.DateFrom.Value);
@@ -186,7 +179,7 @@ public class ReportQueryRepository : IReportQueryRepository
 
     public async Task<List<Denial>> GetDenialsForExportAsync(ExportFilterParams filters)
     {
-        var query = _context.Denials.AsQueryable();
+        var query = context.Denials.AsQueryable();
 
         if (filters.DateFrom.HasValue)
             query = query.Where(d => d.DenialDate >= DateOnly.FromDateTime(filters.DateFrom.Value));
@@ -196,10 +189,10 @@ public class ReportQueryRepository : IReportQueryRepository
             query = query.Where(d => d.Status == filters.Status);
         if (filters.PayerId.HasValue)
         {
-            var planIds = await _context.PayerPlans
+            var planIds = await context.PayerPlans
                 .Where(pp => pp.PayerId == filters.PayerId.Value)
                 .Select(pp => pp.PlanId).ToListAsync();
-            var claimIds = await _context.Claims
+            var claimIds = await context.Claims
                 .Where(c => c.PlanId.HasValue && planIds.Contains(c.PlanId.Value))
                 .Select(c => c.ClaimId).ToListAsync();
             query = query.Where(d => d.ClaimId.HasValue && claimIds.Contains(d.ClaimId.Value));
@@ -210,7 +203,7 @@ public class ReportQueryRepository : IReportQueryRepository
 
     public async Task<List<Statement>> GetStatementsForExportAsync(ExportFilterParams filters)
     {
-        var query = _context.Statements.AsQueryable();
+        var query = context.Statements.AsQueryable();
 
         if (filters.DateFrom.HasValue)
             query = query.Where(s => s.GeneratedDate >= filters.DateFrom.Value);
@@ -224,7 +217,7 @@ public class ReportQueryRepository : IReportQueryRepository
 
     public async Task<List<RemitRef>> GetRemitRefsForExportAsync(ExportFilterParams filters)
     {
-        var query = _context.RemitRefs.AsQueryable();
+        var query = context.RemitRefs.AsQueryable();
 
         if (filters.DateFrom.HasValue)
             query = query.Where(r => r.ReceivedDate >= filters.DateFrom.Value);
@@ -240,13 +233,13 @@ public class ReportQueryRepository : IReportQueryRepository
 
     public async Task<decimal> GetTotalPostedByRemitIdAsync(int remitId)
     {
-        var remit = await _context.RemitRefs.FirstOrDefaultAsync(r => r.RemitId == remitId);
+        var remit = await context.RemitRefs.FirstOrDefaultAsync(r => r.RemitId == remitId);
         if (remit == null || !remit.BatchId.HasValue)
         {
             return 0m;
         }
 
-        var claimIds = await _context.SubmissionRefs
+        var claimIds = await context.SubmissionRefs
             .Where(sr => sr.BatchId == remit.BatchId.Value)
             .Select(sr => sr.ClaimId)
             .Where(id => id.HasValue)
@@ -254,7 +247,7 @@ public class ReportQueryRepository : IReportQueryRepository
             .Distinct()
             .ToListAsync();
 
-        return await _context.PaymentPosts
+        return await context.PaymentPosts
             .Where(pp => pp.ClaimId.HasValue && claimIds.Contains(pp.ClaimId.Value))
             .SumAsync(pp => pp.AmountPaid ?? 0m);
     }

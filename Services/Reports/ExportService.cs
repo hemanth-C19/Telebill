@@ -7,35 +7,28 @@ using Telebill.Repositories.Reports;
 
 namespace Telebill.Services.Reports;
 
-public class ExportService : IExportService
+public class ExportService(IReportQueryRepository queryRepo) : IExportService
 {
-    private readonly IReportQueryRepository _queryRepo;
-
-    public ExportService(IReportQueryRepository queryRepo)
-    {
-        _queryRepo = queryRepo;
-    }
-
     public async Task<List<ClaimsListingRowDto>> GetClaimsListingAsync(ExportFilterParams filters)
     {
-        var claims = await _queryRepo.GetClaimsForExportAsync(filters);
+        var claims = await queryRepo.GetClaimsForExportAsync(filters);
         var result = new List<ClaimsListingRowDto>();
 
         foreach (var claim in claims)
         {
-            var patient = await _queryRepo.GetPatientByIdAsync(claim.PatientId);
-            var payerId = await _queryRepo.GetPayerIdByPlanIdAsync(claim.PlanId);
+            var patient = await queryRepo.GetPatientByIdAsync(claim.PatientId);
+            var payerId = await queryRepo.GetPayerIdByPlanIdAsync(claim.PlanId);
             var payer = payerId.HasValue
-                ? await _queryRepo.GetPayerByIdAsync(payerId.Value)
+                ? await queryRepo.GetPayerByIdAsync(payerId.Value)
                 : null;
             var plan = claim.PlanId.HasValue
-                ? await _queryRepo.GetPlanByIdAsync(claim.PlanId.Value)
+                ? await queryRepo.GetPlanByIdAsync(claim.PlanId.Value)
                 : null;
-            var provId = await _queryRepo.GetProviderIdByEncounterIdAsync(claim.EncounterId);
+            var provId = await queryRepo.GetProviderIdByEncounterIdAsync(claim.EncounterId);
             var provider = provId.HasValue
-                ? await _queryRepo.GetProviderByIdAsync(provId.Value)
+                ? await queryRepo.GetProviderByIdAsync(provId.Value)
                 : null;
-            var encList = await _queryRepo.GetEncountersByIdsAsync(new List<int?> { claim.EncounterId });
+            var encList = await queryRepo.GetEncountersByIdsAsync(new List<int?> { claim.EncounterId });
             var enc = encList.FirstOrDefault();
 
             result.Add(new ClaimsListingRowDto
@@ -48,7 +41,7 @@ public class ExportService : IExportService
                 EncounterDate = enc?.EncounterDateTime ?? DateTime.MinValue,
                 TotalCharge = claim.TotalCharge ?? 0m,
                 ClaimStatus = claim.ClaimStatus,
-                CreatedDate = claim.CreatedDate
+                CreatedDate = claim.CreatedDate ?? DateTime.MinValue
             });
         }
 
@@ -57,26 +50,26 @@ public class ExportService : IExportService
 
     public async Task<List<ScrubIssueExportRowDto>> GetScrubIssuesAsync(ExportFilterParams filters)
     {
-        var issues = await _queryRepo.GetScrubIssuesForExportAsync(filters);
+        var issues = await queryRepo.GetScrubIssuesForExportAsync(filters);
         var result = new List<ScrubIssueExportRowDto>();
 
         foreach (var issue in issues)
         {
             var rule = issue.RuleId.HasValue
-                ? await _queryRepo.GetScrubRuleByIdAsync(issue.RuleId.Value)
+                ? await queryRepo.GetScrubRuleByIdAsync(issue.RuleId.Value)
                 : null;
 
-            var allClaims = await _queryRepo.GetClaimsForExportAsync(new ExportFilterParams());
+            var allClaims = await queryRepo.GetClaimsForExportAsync(new ExportFilterParams());
             var claim = allClaims.FirstOrDefault(c => c.ClaimId == issue.ClaimId);
 
             var patient = claim != null
-                ? await _queryRepo.GetPatientByIdAsync(claim.PatientId)
+                ? await queryRepo.GetPatientByIdAsync(claim.PatientId)
                 : null;
             var payerId = claim != null
-                ? await _queryRepo.GetPayerIdByPlanIdAsync(claim.PlanId)
+                ? await queryRepo.GetPayerIdByPlanIdAsync(claim.PlanId)
                 : null;
             var payer = payerId.HasValue
-                ? await _queryRepo.GetPayerByIdAsync(payerId.Value)
+                ? await queryRepo.GetPayerByIdAsync(payerId.Value)
                 : null;
 
             result.Add(new ScrubIssueExportRowDto
@@ -85,7 +78,7 @@ public class ExportService : IExportService
                 ClaimId = issue.ClaimId ?? 0,
                 ClaimLineId = issue.ClaimLineId,
                 RuleName = rule?.Name,
-                Severity = issue.Severity,
+                Severity = rule?.Severity,
                 Message = issue.Message,
                 DetectedDate = issue.DetectedDate ?? DateTime.MinValue,
                 IssueStatus = issue.Status,
@@ -99,25 +92,26 @@ public class ExportService : IExportService
 
     public async Task<List<ArAgingRowDto>> GetArAgingAsync(ExportFilterParams filters)
     {
-        var denials = await _queryRepo.GetDenialsForExportAsync(filters);
+        var denials = await queryRepo.GetDenialsForExportAsync(filters);
         var today = DateOnly.FromDateTime(DateTime.Today);
         var result = new List<ArAgingRowDto>();
 
         foreach (var denial in denials)
         {
-            var allClaims = await _queryRepo.GetClaimsForExportAsync(new ExportFilterParams());
+            var allClaims = await queryRepo.GetClaimsForExportAsync(new ExportFilterParams());
             var claim = allClaims.FirstOrDefault(c => c.ClaimId == denial.ClaimId);
             var patient = claim != null
-                ? await _queryRepo.GetPatientByIdAsync(claim.PatientId)
+                ? await queryRepo.GetPatientByIdAsync(claim.PatientId)
                 : null;
             var payerId = claim != null
-                ? await _queryRepo.GetPayerIdByPlanIdAsync(claim.PlanId)
+                ? await queryRepo.GetPayerIdByPlanIdAsync(claim.PlanId)
                 : null;
             var payer = payerId.HasValue
-                ? await _queryRepo.GetPayerByIdAsync(payerId.Value)
+                ? await queryRepo.GetPayerByIdAsync(payerId.Value)
                 : null;
 
-            var days = today.DayNumber - denial.DenialDate.DayNumber;
+            var denialDate = denial.DenialDate ?? DateOnly.FromDateTime(DateTime.Today);
+            var days = today.DayNumber - denialDate.DayNumber;
             var bucket = days switch
             {
                 <= 30 => "0-30",
@@ -133,8 +127,8 @@ public class ExportService : IExportService
                 PatientName = patient?.Name,
                 PayerName = payer?.Name,
                 ReasonCode = denial.ReasonCode,
-                AmountDenied = denial.AmountDenied,
-                DenialDate = denial.DenialDate,
+                AmountDenied = denial.AmountDenied ?? 0m,
+                DenialDate = denialDate,
                 DaysSinceDenial = days,
                 AgingBucket = bucket,
                 DenialStatus = denial.Status
@@ -148,12 +142,12 @@ public class ExportService : IExportService
 
     public async Task<List<StatementSummaryRowDto>> GetStatementsSummaryAsync(ExportFilterParams filters)
     {
-        var statements = await _queryRepo.GetStatementsForExportAsync(filters);
+        var statements = await queryRepo.GetStatementsForExportAsync(filters);
         var result = new List<StatementSummaryRowDto>();
 
         foreach (var statement in statements)
         {
-            var patient = await _queryRepo.GetPatientByIdAsync(statement.PatientId);
+            var patient = await queryRepo.GetPatientByIdAsync(statement.PatientId);
 
             result.Add(new StatementSummaryRowDto
             {
@@ -172,15 +166,15 @@ public class ExportService : IExportService
 
     public async Task<List<RemitSummaryRowDto>> GetRemitSummaryAsync(ExportFilterParams filters)
     {
-        var remits = await _queryRepo.GetRemitRefsForExportAsync(filters);
+        var remits = await queryRepo.GetRemitRefsForExportAsync(filters);
         var result = new List<RemitSummaryRowDto>();
 
         foreach (var remit in remits)
         {
             var payer = remit.PayerId.HasValue
-                ? await _queryRepo.GetPayerByIdAsync(remit.PayerId.Value)
+                ? await queryRepo.GetPayerByIdAsync(remit.PayerId.Value)
                 : null;
-            var totalPosted = await _queryRepo.GetTotalPostedByRemitIdAsync(remit.RemitId);
+            var totalPosted = await queryRepo.GetTotalPostedByRemitIdAsync(remit.RemitId);
 
             result.Add(new RemitSummaryRowDto
             {

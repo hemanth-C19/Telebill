@@ -7,20 +7,13 @@ namespace Telebill.Controllers.AR;
 
 [ApiController]
 [Route("api/v1/ar/denials")]
-public class DenialController : ControllerBase
+public class DenialController(IDenialService denialService) : ControllerBase
 {
-    private readonly IDenialService _denialService;
-
-    public DenialController(IDenialService denialService)
-    {
-        _denialService = denialService;
-    }
-
     [HttpPatch("{denialId:int}/status")]
     public async Task<IActionResult> UpdateDenialStatus(
         int denialId, [FromBody] UpdateDenialStatusDto dto)
     {
-        var (success, error) = await _denialService.UpdateDenialStatusAsync(denialId, dto);
+        var (success, error) = await denialService.UpdateDenialStatusAsync(denialId, dto);
         if (!success)
         {
             return BadRequest(error);
@@ -34,7 +27,7 @@ public class DenialController : ControllerBase
         int denialId, [FromBody] UploadAppealDocumentDto dto)
     {
         dto.DenialId = denialId;
-        var (success, error, result) = await _denialService.UploadAppealDocumentAsync(dto);
+        var (success, error, result) = await denialService.UploadAppealDocumentAsync(dto);
         if (!success)
         {
             return BadRequest(error);
@@ -46,7 +39,7 @@ public class DenialController : ControllerBase
     [HttpPost("reset-for-resubmission")]
     public async Task<IActionResult> ResetForResubmission([FromBody] ResetClaimForResubmissionDto dto)
     {
-        var (success, error, result) = await _denialService.ResetClaimForResubmissionAsync(dto);
+        var (success, error, result) = await denialService.ResetClaimForResubmissionAsync(dto);
         if (!success)
         {
             if (error == "Denial not found" || error == "Parent claim not found")

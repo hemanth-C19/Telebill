@@ -40,6 +40,7 @@ public interface IArRepository
     Task<Payer?> GetPayerByPlanIdAsync(int planId);
     Task<PayerPlan?> GetPayerPlanByIdAsync(int planId);
     Task<List<Claim>> GetPartiallyPaidClaimsAsync();
+    Task<List<User>> GetUsersByRoleAsync(string role);
 
     // ── DASHBOARD ─────────────────────────────────────────────────
     Task<List<Denial>> GetAllOpenDenialsAsync();

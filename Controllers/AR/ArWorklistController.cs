@@ -8,15 +8,8 @@ namespace Telebill.Controllers.AR;
 
 [ApiController]
 [Route("api/v1/ar/worklist")]
-public class ArWorklistController : ControllerBase
+public class ArWorklistController(IDenialService denialService) : ControllerBase
 {
-    private readonly IDenialService _denialService;
-
-    public ArWorklistController(IDenialService denialService)
-    {
-        _denialService = denialService;
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetWorklist(
         [FromQuery] string? denialStatus,
@@ -36,14 +29,14 @@ public class ArWorklistController : ControllerBase
             DenialDateTo = denialDateTo
         };
 
-        var items = await _denialService.GetArWorklistAsync(filters);
+        var items = await denialService.GetArWorklistAsync(filters);
         return Ok(items);
     }
 
     [HttpGet("{denialId:int}")]
     public async Task<IActionResult> GetDenialDetail(int denialId)
     {
-        var detail = await _denialService.GetDenialDetailAsync(denialId);
+        var detail = await denialService.GetDenialDetailAsync(denialId);
         if (detail == null)
         {
             return NotFound();

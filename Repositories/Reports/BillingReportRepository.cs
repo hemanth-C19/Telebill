@@ -8,18 +8,11 @@ using Telebill.Models;
 
 namespace Telebill.Repositories.Reports;
 
-public class BillingReportRepository : IBillingReportRepository
+public class BillingReportRepository(TeleBillContext context) : IBillingReportRepository
 {
-    private readonly TeleBillContext _context;
-
-    public BillingReportRepository(TeleBillContext context)
-    {
-        _context = context;
-    }
-
     public async Task<List<BillingReport>> GetAllAsync(BillingReportFilterParams filters)
     {
-        var query = _context.BillingReports.AsQueryable();
+        var query = context.BillingReports.AsQueryable();
 
         if (!string.IsNullOrEmpty(filters.Scope))
             query = query.Where(r => r.Scope == filters.Scope);
@@ -35,14 +28,14 @@ public class BillingReportRepository : IBillingReportRepository
 
     public Task<BillingReport?> GetByIdAsync(int reportId)
     {
-        return _context.BillingReports
+        return context.BillingReports
             .FirstOrDefaultAsync(r => r.ReportId == reportId);
     }
 
     public async Task AddAsync(BillingReport report)
     {
-        await _context.BillingReports.AddAsync(report);
-        await _context.SaveChangesAsync();
+        await context.BillingReports.AddAsync(report);
+        await context.SaveChangesAsync();
     }
 }
 

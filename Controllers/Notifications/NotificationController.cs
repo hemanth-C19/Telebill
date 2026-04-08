@@ -7,15 +7,8 @@ namespace Telebill.Controllers.Notifications;
 
 [ApiController]
 [Route("api/v1/notifications")]
-public class NotificationController : ControllerBase
+public class NotificationController(INotificationQueryService queryService) : ControllerBase
 {
-    private readonly INotificationQueryService _queryService;
-
-    public NotificationController(INotificationQueryService queryService)
-    {
-        _queryService = queryService;
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetNotifications(
         [FromQuery] NotificationFilterParams filters)
@@ -25,7 +18,7 @@ public class NotificationController : ControllerBase
             return BadRequest("userId is required");
         }
 
-        var result = await _queryService.GetByUserIdAsync(filters);
+        var result = await queryService.GetByUserIdAsync(filters);
         return Ok(result);
     }
 
@@ -37,7 +30,7 @@ public class NotificationController : ControllerBase
             return BadRequest("userId is required");
         }
 
-        var result = await _queryService.GetUnreadCountAsync(userId);
+        var result = await queryService.GetUnreadCountAsync(userId);
         return Ok(result);
     }
 
@@ -47,7 +40,7 @@ public class NotificationController : ControllerBase
         [FromQuery] int userId,
         [FromBody] UpdateNotificationStatusDto dto)
     {
-        var (success, error) = await _queryService.UpdateStatusAsync(
+        var (success, error) = await queryService.UpdateStatusAsync(
             notificationId, userId, dto);
         if (!success)
         {
@@ -60,7 +53,7 @@ public class NotificationController : ControllerBase
     [HttpPatch("mark-all-read")]
     public async Task<IActionResult> MarkAllRead([FromQuery] int userId)
     {
-        var (success, error) = await _queryService.MarkAllReadAsync(userId);
+        var (success, error) = await queryService.MarkAllReadAsync(userId);
         if (!success)
         {
             return BadRequest(error);

@@ -51,6 +51,7 @@ public interface IPostingRepository
     Task<bool> PayerExistsAsync(int payerID);
     Task<bool> BatchExistsAsync(int batchID);
     Task<Payer?> GetPayerByIdAsync(int payerID);
+    Task<int> GetClaimCountForBatchAsync(int batchID);
     Task<DateTime?> GetFirstPostingDateForClaimAsync(int claimID);
 
     // Module 10 write

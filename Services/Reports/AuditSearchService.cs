@@ -6,28 +6,21 @@ using Telebill.Repositories.Reports;
 
 namespace Telebill.Services.Reports;
 
-public class AuditSearchService : IAuditSearchService
+public class AuditSearchService(IAuditRepository auditRepo) : IAuditSearchService
 {
-    private readonly IAuditRepository _auditRepo;
-
-    public AuditSearchService(IAuditRepository auditRepo)
-    {
-        _auditRepo = auditRepo;
-    }
-
     public async Task<AuditLogPagedResultDto> SearchAsync(AuditSearchParams filters)
     {
         if (filters.Page < 1) filters.Page = 1;
         if (filters.PageSize < 1) filters.PageSize = 50;
         if (filters.PageSize > 200) filters.PageSize = 200;
 
-        var (items, totalCount) = await _auditRepo.SearchAsync(filters);
+        var (items, totalCount) = await auditRepo.SearchAsync(filters);
 
         var rows = new List<AuditLogRowDto>();
         foreach (var item in items)
         {
             var userName = item.UserId.HasValue
-                ? await _auditRepo.GetUserNameByIdAsync(item.UserId.Value)
+                ? await auditRepo.GetUserNameByIdAsync(item.UserId.Value)
                 : null;
 
             rows.Add(new AuditLogRowDto
@@ -57,13 +50,13 @@ public class AuditSearchService : IAuditSearchService
         filters.Page = 1;
         filters.PageSize = int.MaxValue;
 
-        var items = await _auditRepo.ExportAsync(filters);
+        var items = await auditRepo.ExportAsync(filters);
 
         var rows = new List<AuditLogRowDto>();
         foreach (var item in items)
         {
             var userName = item.UserId.HasValue
-                ? await _auditRepo.GetUserNameByIdAsync(item.UserId.Value)
+                ? await auditRepo.GetUserNameByIdAsync(item.UserId.Value)
                 : null;
 
             rows.Add(new AuditLogRowDto

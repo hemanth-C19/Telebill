@@ -7,19 +7,12 @@ namespace Telebill.Controllers.AR;
 
 [ApiController]
 [Route("api/v1/ar/underpayments")]
-public class UnderpaymentController : ControllerBase
+public class UnderpaymentController(IUnderpaymentService underpaymentService) : ControllerBase
 {
-    private readonly IUnderpaymentService _underpaymentService;
-
-    public UnderpaymentController(IUnderpaymentService underpaymentService)
-    {
-        _underpaymentService = underpaymentService;
-    }
-
     [HttpGet]
     public async Task<IActionResult> GetUnderpayments()
     {
-        var items = await _underpaymentService.GetUnderpaymentWorklistAsync();
+        var items = await underpaymentService.GetUnderpaymentWorklistAsync();
         return Ok(items);
     }
 
@@ -28,7 +21,7 @@ public class UnderpaymentController : ControllerBase
         [FromBody] FlagUnderpaymentDto dto,
         [FromQuery] int userId)
     {
-        var (success, error) = await _underpaymentService.FlagUnderpaymentAsync(dto, userId);
+        var (success, error) = await underpaymentService.FlagUnderpaymentAsync(dto, userId);
         if (!success)
         {
             if (error == "Claim not found")

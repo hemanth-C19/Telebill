@@ -8,21 +8,14 @@ namespace Telebill.Controllers.Posting;
 
 [ApiController]
 [Route("api/v1/posting/payments")]
-public class PaymentPostController : ControllerBase
+public class PaymentPostController(IPostingService service) : ControllerBase
 {
-    private readonly IPostingService _service;
-
-    public PaymentPostController(IPostingService service)
-    {
-        _service = service;
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePaymentPostRequestDto dto)
     {
         try
         {
-            var result = await _service.CreatePaymentPostAsync(dto, GetCurrentUserId());
+            var result = await service.CreatePaymentPostAsync(dto, GetCurrentUserId());
             return StatusCode(201, result);
         }
         catch (KeyNotFoundException ex)
@@ -44,7 +37,7 @@ public class PaymentPostController : ControllerBase
     {
         try
         {
-            var result = await _service.GetPaymentPostsByClaimAsync(claimID);
+            var result = await service.GetPaymentPostsByClaimAsync(claimID);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -58,7 +51,7 @@ public class PaymentPostController : ControllerBase
     {
         try
         {
-            var result = await _service.GetPaymentPostByIdAsync(paymentID);
+            var result = await service.GetPaymentPostByIdAsync(paymentID);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)
@@ -72,7 +65,7 @@ public class PaymentPostController : ControllerBase
     {
         try
         {
-            var result = await _service.VoidPaymentPostAsync(paymentID, dto, GetCurrentUserId());
+            var result = await service.VoidPaymentPostAsync(paymentID, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

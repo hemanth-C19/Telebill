@@ -9,21 +9,14 @@ namespace Telebill.Controllers.Posting;
 
 [ApiController]
 [Route("api/v1/posting/remits")]
-public class RemitController : ControllerBase
+public class RemitController(IPostingService service) : ControllerBase
 {
-    private readonly IPostingService _service;
-
-    public RemitController(IPostingService service)
-    {
-        _service = service;
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateRemitRefRequestDto dto)
     {
         try
         {
-            var result = await _service.CreateRemitRefAsync(dto, GetCurrentUserId());
+            var result = await service.CreateRemitRefAsync(dto, GetCurrentUserId());
             return StatusCode(201, result);
         }
         catch (ArgumentException ex)
@@ -41,7 +34,7 @@ public class RemitController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25)
     {
-        var result = await _service.GetRemitRefsAsync(payerID, status, dateFrom, dateTo, page, pageSize);
+        var result = await service.GetRemitRefsAsync(payerID, status, dateFrom, dateTo, page, pageSize);
         return Ok(result);
     }
 
@@ -50,7 +43,7 @@ public class RemitController : ControllerBase
     {
         try
         {
-            var result = await _service.GetRemitRefByIdAsync(remitID);
+            var result = await service.GetRemitRefByIdAsync(remitID);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -64,7 +57,7 @@ public class RemitController : ControllerBase
     {
         try
         {
-            var result = await _service.UpdateRemitRefStatusAsync(remitID, dto, GetCurrentUserId());
+            var result = await service.UpdateRemitRefStatusAsync(remitID, dto, GetCurrentUserId());
             return Ok(result);
         }
         catch (ArgumentException ex)

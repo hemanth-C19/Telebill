@@ -300,7 +300,7 @@ public class BatchService(IBatchRepository repo) : IBatchService
         foreach (var u in frontDesk)
         {
             await repo.CreateNotificationAsync(u.UserId,
-                $"Batch #{batchID} marked as submitted to {dto.ClearinghouseID}. Awaiting 999 acknowledgement.",
+                $"Batch #{batchID} submitted to clearinghouse. {claimIds.Count} claims, total ${(batch.TotalCharge ?? 0m)}",
                 "Submission");
         }
 
@@ -350,25 +350,30 @@ public class BatchService(IBatchRepository repo) : IBatchService
         if (string.Equals(dto.AckStatus, "Accepted", StringComparison.OrdinalIgnoreCase))
         {
             batch.Status = "Acked";
+            var frontDesk = await repo.GetUsersByRoleAsync("FrontDesk");
+            foreach (var u in frontDesk)
+            {
+                await repo.CreateNotificationAsync(u.UserId,
+                    $"Batch #{batchID} accepted by clearinghouse",
+                    "Ack");
+            }
         }
         else
         {
             batch.Status = "Failed";
-            await repo.UpdateClaimStatusBulkAsync(claimIds, "Rejected");
+            await repo.UpdateClaimStatusBulkAsync(claimIds, "Draft");
+            var arUsers = await repo.GetUsersByRoleAsync("AR");
+            foreach (var u in arUsers)
+            {
+                await repo.CreateNotificationAsync(u.UserId,
+                    $"Batch #{batchID} rejected by clearinghouse. All claims returned to Draft",
+                    "Ack");
+            }
         }
         await repo.UpdateBatchAsync(batch);
 
         await repo.WriteAuditLogAsync(currentUserID, "RECORD_999_ACK", $"SubmissionBatch:{batchID}",
             JsonSerializer.Serialize(new { ackStatus = dto.AckStatus, correlationID = dto.CorrelationID, claimsAffected = claimIds.Count }));
-
-        var frontDesk = await repo.GetUsersByRoleAsync("FrontDesk");
-        foreach (var u in frontDesk)
-        {
-            var msg = string.Equals(dto.AckStatus, "Rejected", StringComparison.OrdinalIgnoreCase)
-                ? $"Batch #{batchID} REJECTED by clearinghouse (999 ACK). All {claimIds.Count} claims have been set to Rejected. Reason: {dto.Notes}. Please correct and resubmit."
-                : $"Batch #{batchID} accepted by clearinghouse (999 ACK). Awaiting payer 277CA claim-level acknowledgements.";
-            await repo.CreateNotificationAsync(u.UserId, msg, "Ack");
-        }
 
         return new Record999AckResponseDto
         {
@@ -414,29 +419,30 @@ public class BatchService(IBatchRepository repo) : IBatchService
 
         created = await repo.CreateSubmissionRefAsync(created);
 
-        var newClaimStatus = string.Equals(dto.AckStatus, "Accepted", StringComparison.OrdinalIgnoreCase) ? "Accepted" : "Rejected";
+        var accepted = string.Equals(dto.AckStatus, "Accepted", StringComparison.OrdinalIgnoreCase);
+        var newClaimStatus = accepted ? "Accepted" : "Draft";
         await repo.UpdateClaimStatusAsync(claimID, newClaimStatus);
 
         await repo.WriteAuditLogAsync(currentUserID, "RECORD_277CA_ACK", $"Claim:{claimID}",
             JsonSerializer.Serialize(new { batchID, ackStatus = dto.AckStatus, correlationID = dto.CorrelationID, notes = dto.Notes }));
 
-        if (string.Equals(dto.AckStatus, "Accepted", StringComparison.OrdinalIgnoreCase))
-        {
-            var arUsers = await repo.GetUsersByRoleAsync("AR");
-            foreach (var u in arUsers)
-            {
-                await repo.CreateNotificationAsync(u.UserId,
-                    $"Claim #{claimID} accepted by payer (277CA). Awaiting ERA/payment posting.",
-                    "Ack");
-            }
-        }
-        else
+        if (accepted)
         {
             var frontDesk = await repo.GetUsersByRoleAsync("FrontDesk");
             foreach (var u in frontDesk)
             {
                 await repo.CreateNotificationAsync(u.UserId,
-                    $"Claim #{claimID} REJECTED by payer (277CA). Reason: {dto.Notes}. Please correct and resubmit.",
+                    $"Claim #{claimID} accepted by payer",
+                    "Ack");
+            }
+        }
+        else
+        {
+            var arUsers = await repo.GetUsersByRoleAsync("AR");
+            foreach (var u in arUsers)
+            {
+                await repo.CreateNotificationAsync(u.UserId,
+                    $"Claim #{claimID} rejected by payer. Moved to Draft for correction",
                     "Ack");
             }
         }

@@ -9,22 +9,11 @@ using Telebill.Repositories.Reports;
 
 namespace Telebill.Services.Reports;
 
-public class BillingReportService : IBillingReportService
+public class BillingReportService(
+    IReportQueryRepository queryRepo,
+    IBillingReportRepository reportRepo,
+    IKpiService kpiService) : IBillingReportService
 {
-    private readonly IReportQueryRepository _queryRepo;
-    private readonly IBillingReportRepository _reportRepo;
-    private readonly IKpiService _kpiService;
-
-    public BillingReportService(
-        IReportQueryRepository queryRepo,
-        IBillingReportRepository reportRepo,
-        IKpiService kpiService)
-    {
-        _queryRepo = queryRepo;
-        _reportRepo = reportRepo;
-        _kpiService = kpiService;
-    }
-
     public async Task<(bool success, string error, KpiResultDto? result)> GenerateAndStoreAsync(
         GenerateReportRequestDto dto)
     {
@@ -60,19 +49,19 @@ public class BillingReportService : IBillingReportService
         switch (dto.Scope)
         {
             case "Payer":
-                var payer = await _queryRepo.GetPayerByIdAsync(dto.ScopeId!.Value);
+                var payer = await queryRepo.GetPayerByIdAsync(dto.ScopeId!.Value);
                 if (payer == null) return (false, "Payer not found", null);
                 scopeName = payer.Name;
                 payerId = dto.ScopeId;
                 break;
             case "Plan":
-                var plan = await _queryRepo.GetPlanByIdAsync(dto.ScopeId!.Value);
+                var plan = await queryRepo.GetPlanByIdAsync(dto.ScopeId!.Value);
                 if (plan == null) return (false, "Plan not found", null);
                 scopeName = plan.PlanName;
                 planId = dto.ScopeId;
                 break;
             case "Provider":
-                var provider = await _queryRepo.GetProviderByIdAsync(dto.ScopeId!.Value);
+                var provider = await queryRepo.GetProviderByIdAsync(dto.ScopeId!.Value);
                 if (provider == null) return (false, "Provider not found", null);
                 scopeName = provider.Name;
                 providerId = dto.ScopeId;
@@ -82,29 +71,29 @@ public class BillingReportService : IBillingReportService
                 break;
         }
 
-        var claims = await _queryRepo.GetClaimsForPeriodAsync(
+        var claims = await queryRepo.GetClaimsForPeriodAsync(
             dto.PeriodStart, dto.PeriodEnd, payerId, planId, providerId);
 
         var claimIds = claims.Select(c => c.ClaimId).ToList();
         var encounterIds = claims.Select(c => c.EncounterId).Distinct().ToList();
 
         var scrubIssues = claimIds.Any()
-            ? await _queryRepo.GetScrubIssuesByClaimIdsAsync(claimIds)
+            ? await queryRepo.GetScrubIssuesByClaimIdsAsync(claimIds)
             : new List<ScrubIssue>();
         var submissionRefs = claimIds.Any()
-            ? await _queryRepo.GetSubmissionRefsByClaimIdsAsync(claimIds)
+            ? await queryRepo.GetSubmissionRefsByClaimIdsAsync(claimIds)
             : new List<SubmissionRef>();
         var paymentPosts = claimIds.Any()
-            ? await _queryRepo.GetPaymentPostsByClaimIdsAsync(claimIds)
+            ? await queryRepo.GetPaymentPostsByClaimIdsAsync(claimIds)
             : new List<PaymentPost>();
         var encounters = encounterIds.Any()
-            ? await _queryRepo.GetEncountersByIdsAsync(encounterIds)
+            ? await queryRepo.GetEncountersByIdsAsync(encounterIds)
             : new List<Encounter>();
         var denials = claimIds.Any()
-            ? await _queryRepo.GetDenialsByClaimIdsAsync(claimIds)
+            ? await queryRepo.GetDenialsByClaimIdsAsync(claimIds)
             : new List<Denial>();
 
-        var kpiResult = _kpiService.Compute(
+        var kpiResult = kpiService.Compute(
             filters, scopeName, claims, scrubIssues,
             submissionRefs, paymentPosts, encounters, denials);
 
@@ -130,14 +119,14 @@ public class BillingReportService : IBillingReportService
             GeneratedDate = DateTime.UtcNow
         };
 
-        await _reportRepo.AddAsync(report);
+        await reportRepo.AddAsync(report);
 
         return (true, string.Empty, kpiResult);
     }
 
     public async Task<List<BillingReportListItemDto>> GetAllAsync(BillingReportFilterParams filters)
     {
-        var reports = await _reportRepo.GetAllAsync(filters);
+        var reports = await reportRepo.GetAllAsync(filters);
 
         return reports.Select(r => new BillingReportListItemDto
         {
@@ -150,7 +139,7 @@ public class BillingReportService : IBillingReportService
 
     public async Task<BillingReportDetailDto?> GetByIdAsync(int reportId)
     {
-        var report = await _reportRepo.GetByIdAsync(reportId);
+        var report = await reportRepo.GetByIdAsync(reportId);
         if (report == null)
         {
             return null;
