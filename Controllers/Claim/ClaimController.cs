@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 using Telebill.Dto;
@@ -8,9 +9,11 @@ namespace Telebill.Controllers;
 
 [ApiController]
 [Route("api/claims")]
+[Authorize(Roles = "FrontDesk,Coder,AR,Admin")]
 public class ClaimController(IClaimService claimService) : ControllerBase
 {
     [HttpPost("build")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> BuildClaim([FromBody] BuildClaimRequestDto dto)
     {
         try
@@ -86,6 +89,7 @@ public class ClaimController(IClaimService claimService) : ControllerBase
     }
 
     [HttpPatch("{claimID:int}/status")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> UpdateStatus(int claimID, [FromBody] UpdateClaimStatusRequestDto dto)
     {
         try

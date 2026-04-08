@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.AR;
 using Telebill.Services.AR;
@@ -8,6 +9,7 @@ namespace Telebill.Controllers.AR;
 
 [ApiController]
 [Route("api/v1/ar/worklist")]
+[Authorize(Roles = "AR,Admin")]
 public class ArWorklistController(IDenialService denialService) : ControllerBase
 {
     [HttpGet]

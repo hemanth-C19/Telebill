@@ -1,4 +1,5 @@
 using System;
+using Microsoft.AspNetCore.Authorization;
 using Telebill.Models;
 using Telebill.Repositories.PatientCoverage;
 using Telebill.Services.PatientCoverage;
@@ -9,6 +10,7 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/PatientCoverage/[controller]")] // One base route for the whole module
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public class PatientController(IPatientService service) : ControllerBase
     {
 
@@ -18,6 +20,7 @@ namespace Telebill.Controllers
         public async Task<IActionResult> GetAllPatients() => Ok(await service.ListAllPatients());
 
         [HttpPost("RegisterPatient")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> CreatePatient([FromBody] PatientDto dto) => Ok(await service.RegisterPatient(dto));
 
         [HttpGet("GetPatientById/{PatientId}")]
@@ -34,6 +37,7 @@ namespace Telebill.Controllers
         }
 
         [HttpPut("UpdatePatientById/{PatientId}")] // {id} makes the 'id' box appear in Swagger
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> UpdatePatient(int patientId, [FromBody] PatientDto dto)
         {
             if (patientId <= 0) return BadRequest("Invalid Patient ID");
@@ -47,6 +51,7 @@ namespace Telebill.Controllers
 
         // DELETE: api/patient-management/patients/3
         [HttpDelete("DeletePatientByID/{PatientId}")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> DeletePatient(int patientId)
         {
             var success = await service.RemovePatient(patientId);

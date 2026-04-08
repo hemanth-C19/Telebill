@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Posting;
 using Telebill.Services.Posting;
@@ -8,6 +9,7 @@ namespace Telebill.Controllers.Posting;
 
 [ApiController]
 [Route("api/v1/posting/payments")]
+[Authorize(Roles = "AR,Admin")]
 public class PaymentPostController(IPostingService service) : ControllerBase
 {
     [HttpPost]

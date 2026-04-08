@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.PreCert;
 using Telebill.Services.PreCert;
@@ -9,9 +10,11 @@ namespace Telebill.Controllers.PreCert;
 
 [ApiController]
 [Route("api/v1/precert/prior-auth")]
+[Authorize(Roles = "FrontDesk,AR,Admin")]
 public class PriorAuthController(IPreCertService service) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = "FrontDesk,Admin")]
     public async Task<IActionResult> Create([FromBody] CreatePriorAuthRequestDto dto)
     {
         try
@@ -69,6 +72,7 @@ public class PriorAuthController(IPreCertService service) : ControllerBase
     }
 
     [HttpPatch("{paid:int}")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Update(int paid, [FromBody] UpdatePriorAuthRequestDto dto)
     {
         try
@@ -87,6 +91,7 @@ public class PriorAuthController(IPreCertService service) : ControllerBase
     }
 
     [HttpDelete("{paid:int}")]
+    [Authorize(Roles = "FrontDesk,Admin")]
     public async Task<IActionResult> SoftDelete(int paid)
     {
         try

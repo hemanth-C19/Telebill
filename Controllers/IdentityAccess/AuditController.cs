@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Telebill.Data;
@@ -12,6 +13,7 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/IdentityAccess/[controller]")]
+    [Authorize(Roles = "Admin")]
     public class AuditController(IAuditService auditService, TeleBillContext tb) : ControllerBase
     {
         [HttpGet]

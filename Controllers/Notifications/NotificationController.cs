@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Notifications;
 using Telebill.Services.Notifications;
@@ -7,6 +8,7 @@ namespace Telebill.Controllers.Notifications;
 
 [ApiController]
 [Route("api/v1/notifications")]
+[Authorize(Roles = "FrontDesk,Coder,Provider,AR,Admin")]
 public class NotificationController(INotificationQueryService queryService) : ControllerBase
 {
     [HttpGet]

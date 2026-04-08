@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Reports;
 using Telebill.Services.Reports;
@@ -8,6 +9,7 @@ namespace Telebill.Controllers.Reports;
 
 [ApiController]
 [Route("api/v1/reports/export")]
+[Authorize(Roles = "AR,Admin")]
 public class ExportController(IExportService exportService) : ControllerBase
 {
     private static ExportFilterParams BuildFilters(

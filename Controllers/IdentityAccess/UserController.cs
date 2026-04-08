@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.IdentityAccess;
 using Telebill.Models;
@@ -9,6 +10,7 @@ namespace Telebill.Controllers
     [ApiController]
     // Base URL: /MyProject/User
     [Route("api/v1/IdentityAccess/[controller]")]
+    [Authorize(Roles = "Admin")]
     public class UserController(IUserService userService) : ControllerBase
     {
         // POST: /MyProject/User/AddUser

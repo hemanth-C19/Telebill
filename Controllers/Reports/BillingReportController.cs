@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Reports;
 using Telebill.Services.Reports;
@@ -7,6 +8,7 @@ namespace Telebill.Controllers.Reports;
 
 [ApiController]
 [Route("api/v1/reports/billing")]
+[Authorize(Roles = "FrontDesk,Coder,Provider,AR,Admin")]
 public class BillingReportController(IBillingReportService billingReportService) : ControllerBase
 {
     [HttpGet]

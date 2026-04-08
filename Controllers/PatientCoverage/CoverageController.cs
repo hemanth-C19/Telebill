@@ -1,4 +1,5 @@
 using System;
+using Microsoft.AspNetCore.Authorization;
 using Telebill.Models;
 using Telebill.Repositories.PatientCoverage;
 using Telebill.Services.PatientCoverage;
@@ -9,10 +10,12 @@ namespace Telebill.Controllers.PatientCoverage
 {
     [ApiController]
     [Route("api/v1/PatientCoverage/[controller]")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public class CoverageController(IPatientService service) : ControllerBase
     {
 
         [HttpDelete("DeleteCoverage/{patientId}/{CoverageId}")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> DeleteCoverage(int patientId, int CoverageId)
         {
             var success = await service.RemoveCoverage(patientId, CoverageId);
@@ -24,6 +27,7 @@ namespace Telebill.Controllers.PatientCoverage
         public async Task<IActionResult> GetCoverage(int patientId) => Ok(await service.GetPatientInsurance(patientId));
 
         [HttpPost("AddCoverage")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> AddCoverage([FromBody] CoverageDto dto) => Ok(await service.AddInsurance(dto));
 
 
@@ -35,6 +39,7 @@ namespace Telebill.Controllers.PatientCoverage
             return Ok(coverage);
         }
         [HttpPut("UpdateCoverage/{coverageId}")] // This is the Update action for Coverage/Insurance
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> UpdateCoverage([FromBody] CoverageDto dto)
         {
             // Add logic in your service to update coverage
@@ -44,6 +49,7 @@ namespace Telebill.Controllers.PatientCoverage
         // --- ELIGIBILITY ACTIONS ---
 
         [HttpPost("VerifyInsurance/{coverageId}")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> Verify(int coverageId) => Ok(await service.VerifyInsurance(coverageId));
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using Microsoft.AspNetCore.Authorization;
 using Telebill.Models;
 using Services;
 using Repositories;
@@ -11,6 +12,7 @@ namespace Telebill.Controllers
     [ApiController]
     // [Route("api/[controller]")]
     [Route("api/v1/Encounter/[controller]")]
+    [Authorize(Roles = "FrontDesk,Provider,Coder,AR,Admin")]
 
     public class EncounterController(IEncounterService service) : ControllerBase
     {
@@ -35,6 +37,7 @@ namespace Telebill.Controllers
         }
 
         [HttpPost("AddEncounter")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> Create(AddEncounterDTO encounter)
         {
             var result = await service.Create(encounter);
@@ -42,6 +45,7 @@ namespace Telebill.Controllers
         }
 
         [HttpPut("UpdateEncounter")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> Update(int id,  [FromBody] EncounterUpdateDTO dto)
         {
             var result = await service.Update(id, dto);
@@ -51,6 +55,7 @@ namespace Telebill.Controllers
         
 
         [HttpDelete("DeleteEncounter/{id}")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await service.Delete(id);

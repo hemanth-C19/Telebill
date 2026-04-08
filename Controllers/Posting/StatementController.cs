@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Posting;
 using Telebill.Services.Posting;
@@ -9,9 +10,11 @@ namespace Telebill.Controllers.Posting;
 
 [ApiController]
 [Route("api/v1/posting/statements")]
+[Authorize(Roles = "FrontDesk,AR,Admin")]
 public class StatementController(IPostingService service) : ControllerBase
 {
     [HttpPost("generate")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Generate([FromBody] GenerateStatementRequestDto dto)
     {
         try
@@ -34,6 +37,7 @@ public class StatementController(IPostingService service) : ControllerBase
     }
 
     [HttpPost("generate-batch")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> GenerateBatch([FromBody] GenerateStatementBatchRequestDto dto)
     {
         try
@@ -75,6 +79,7 @@ public class StatementController(IPostingService service) : ControllerBase
     }
 
     [HttpPatch("{statementID:int}/status")]
+    [Authorize(Roles = "AR,Admin")]
     public async Task<IActionResult> UpdateStatus(int statementID, [FromBody] UpdateStatementStatusRequestDto dto)
     {
         try

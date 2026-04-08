@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Coding;
 using Telebill.Services.Coding;
@@ -8,6 +9,7 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/coding/lock")]
+    [Authorize(Roles = "Coder,Admin")]
     public class CodingLockController(ICodingLockService service) : ControllerBase
     {
         [HttpGet("validate/{encounterId:int}")]

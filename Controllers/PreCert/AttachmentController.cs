@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.PreCert;
 using Telebill.Services.PreCert;
@@ -9,9 +10,11 @@ namespace Telebill.Controllers.PreCert;
 
 [ApiController]
 [Route("api/v1/precert/attachments")]
+[Authorize(Roles = "FrontDesk,AR,Admin")]
 public class AttachmentController(IPreCertService service) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateAttachmentRequestDto dto)
     {
         try
@@ -58,6 +61,7 @@ public class AttachmentController(IPreCertService service) : ControllerBase
     }
 
     [HttpPatch("{attachId:int}/status")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> UpdateStatus(int attachId, [FromBody] UpdateAttachmentStatusRequestDto dto)
     {
         try

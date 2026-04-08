@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto;
 using Telebill.Services.Attestations;
@@ -10,6 +11,7 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/Encounter/[controller]")]
+    [Authorize(Roles = "Provider,FrontDesk,Admin")]
     public class AttestationController(IAttestationService service) : ControllerBase
     {
         // GET: EncounterModule/Attestation/ByEncounter/123
@@ -46,6 +48,7 @@ namespace Telebill.Controllers
 
         // POST: EncounterModule/Attestation/Add/encounter/123
         [HttpPost("Add/encounter/{encounterId:int}")]
+        [Authorize(Roles = "Provider,Admin")]
         public async Task<IActionResult> Add([FromRoute] int encounterId, [FromBody] AttestationCreateDto dto, CancellationToken ct)
         {
             try
@@ -61,6 +64,7 @@ namespace Telebill.Controllers
 
         // PUT: EncounterModule/Attestation/123
         [HttpPut("update-attestation")]
+        [Authorize(Roles = "Provider,Admin")]
         public async Task<IActionResult> Update([FromRoute] int attestId, [FromBody] AttestationUpdateDto dto, CancellationToken ct)
         {
             try
@@ -77,6 +81,7 @@ namespace Telebill.Controllers
 
         // DELETE: EncounterModule/Attestation/123
         [HttpDelete("delete-attestation")]
+        [Authorize(Roles = "Provider,Admin")]
         public async Task<IActionResult> Delete([FromRoute] int attestId, CancellationToken ct)
         {
             try
@@ -92,6 +97,7 @@ namespace Telebill.Controllers
 
         // PUT: EncounterModule/Attestation/123/finalize?status=Signed
         [HttpPut("{attestId:int}/finalize")]
+        [Authorize(Roles = "Provider,Admin")]
         public async Task<IActionResult> Finalize([FromRoute] int attestId, [FromQuery] string? status, CancellationToken ct)
         {
             try

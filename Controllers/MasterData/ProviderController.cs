@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Services.MasterData;
 using Telebill.Models;
@@ -11,6 +12,7 @@ namespace Telebill.Controllers.MasterData
 {
     [ApiController]
     [Route("api/v1/MasterData/[controller]")]
+    [Authorize(Roles = "FrontDesk,Coder,Provider,AR,Admin")]
     public class ProviderController : ControllerBase
     {
         private readonly IProviderService _service;
@@ -50,6 +52,7 @@ namespace Telebill.Controllers.MasterData
         }
 
         [HttpPost("CreateProvider")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RegisterProvider(CreateUpdateProviderDTO obj)
         {
             try
@@ -64,6 +67,7 @@ namespace Telebill.Controllers.MasterData
         }
 
         [HttpPut("UpdateProviderById")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateProviderById(int Pid, CreateUpdateProviderDTO dto)
         {
             try
@@ -82,6 +86,7 @@ namespace Telebill.Controllers.MasterData
         }
 
         [HttpDelete("DeleteProviderById")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProviderById(int Pid)
         {
             try

@@ -1,14 +1,17 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 
 namespace Telebill.Controllers;
 
 [ApiController]
+[Authorize(Roles = "FrontDesk,Coder,AR,Admin")]
 public class X12Controller(IClaimService claimService) : ControllerBase
 {
     [HttpPost("api/claims/{claimID:int}/generate-837p")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Generate(int claimID)
     {
         try

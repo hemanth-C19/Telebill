@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Posting;
 using Telebill.Services.Posting;
@@ -9,6 +10,7 @@ namespace Telebill.Controllers.Posting;
 
 [ApiController]
 [Route("api/v1/posting/remits")]
+[Authorize(Roles = "AR,Admin")]
 public class RemitController(IPostingService service) : ControllerBase
 {
     [HttpPost]

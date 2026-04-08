@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Posting;
 using Telebill.Services.Posting;
@@ -9,6 +10,7 @@ namespace Telebill.Controllers.Posting;
 
 [ApiController]
 [Route("api/v1/posting/balances")]
+[Authorize(Roles = "FrontDesk,AR,Admin")]
 public class PatientBalanceController(IPostingService service) : ControllerBase
 {
     [HttpGet]
@@ -72,6 +74,7 @@ public class PatientBalanceController(IPostingService service) : ControllerBase
     }
 
     [HttpPatch("{balanceID:int}/status")]
+    [Authorize(Roles = "AR,Admin")]
     public async Task<IActionResult> UpdateStatus(int balanceID, [FromBody] UpdatePatientBalanceStatusRequestDto dto)
     {
         try
@@ -90,6 +93,7 @@ public class PatientBalanceController(IPostingService service) : ControllerBase
     }
 
     [HttpPost("run-aging-job")]
+    [Authorize(Roles = "AR,Admin")]
     public async Task<IActionResult> RunAgingJob([FromQuery] string? schedulerKey)
     {
         try

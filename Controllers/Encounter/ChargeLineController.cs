@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto;
 using Telebill.Services.ChargeLines;
@@ -10,6 +11,7 @@ namespace Telebill.Controllers
 {
     [ApiController]
     [Route("api/v1/Encounter/[controller]")]
+    [Authorize(Roles = "FrontDesk,Provider,Coder,AR,Admin")]
     public class ChargeLineController(IChargeLineService service) : ControllerBase
     {
         // GET: EncounterModule/ChargeLine/ByEncounter/123
@@ -45,6 +47,7 @@ namespace Telebill.Controllers
 
         // POST: EncounterModule/ChargeLine/Add/encounter/123
         [HttpPost("Add/encounter/{encounterId:int}")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> Add([FromRoute] int encounterId, [FromBody] ChargeLineCreateDto dto, CancellationToken ct)
         {
             try
@@ -61,6 +64,7 @@ namespace Telebill.Controllers
 
         // PUT: EncounterModule/ChargeLine/123
         [HttpPut("{chargeId:int}")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> Update([FromRoute] int chargeId, [FromBody] ChargeLineUpdateDto dto, CancellationToken ct)
         {
             try
@@ -77,6 +81,7 @@ namespace Telebill.Controllers
 
         // DELETE: EncounterModule/ChargeLine/123
         [HttpDelete("{chargeId:int}")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> Delete([FromRoute] int chargeId, CancellationToken ct)
         {
             try
@@ -92,6 +97,7 @@ namespace Telebill.Controllers
 
         // PUT: EncounterModule/ChargeLine/123/status?value=Finalized
         [HttpPut("{chargeId:int}/status")]
+        [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> SetStatus([FromRoute] int chargeId, [FromQuery] string value, CancellationToken ct)
         {
             try

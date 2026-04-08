@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Telebill.Dto.MasterData;
@@ -9,6 +10,7 @@ namespace Telebill.Controllers.MasterData;
 
 [ApiController]
 [Route("api/v1/MasterData/[controller]")]
+[Authorize(Roles = "FrontDesk,Coder,Provider,AR,Admin")]
 public class PayerPlansController : ControllerBase
 {
     private readonly IPayerPlanService _planService;
@@ -47,6 +49,7 @@ public class PayerPlansController : ControllerBase
     }
 
     [HttpPost("AddPlan")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AddPlan([FromBody] AddPayerPlanDTO plan)
     {
         try
@@ -65,6 +68,7 @@ public class PayerPlansController : ControllerBase
     }
 
     [HttpPut("UpdatePlan")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdatePlan([FromBody] UpdatePayerPlanDTO plan)
     {
         try
@@ -83,6 +87,7 @@ public class PayerPlansController : ControllerBase
     }
 
     [HttpDelete("DeletePlan")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeletePlan(int planId)
     {
         try

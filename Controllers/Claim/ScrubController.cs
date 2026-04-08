@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services;
 using Telebill.Dto;
@@ -7,9 +8,11 @@ using Telebill.Dto;
 namespace Telebill.Controllers;
 
 [ApiController]
+[Authorize(Roles = "FrontDesk,Coder,AR,Admin")]
 public class ScrubController(IClaimService claimService) : ControllerBase
 {
     [HttpPost("api/claims/{claimID:int}/scrub")]
+    [Authorize(Roles = "FrontDesk,Coder,Admin")]
     public async Task<IActionResult> ScrubClaim(int claimID)
     {
         var result = await claimService.ScrubClaimAsync(claimID);
@@ -29,6 +32,7 @@ public class ScrubController(IClaimService claimService) : ControllerBase
     }
 
     [HttpPatch("api/claims/{claimID:int}/scrub-issues/{issueID:int}/resolve")]
+    [Authorize(Roles = "FrontDesk,Coder,Admin")]
     public async Task<IActionResult> ResolveIssue(int claimID, int issueID, [FromBody] ResolveIssueRequestDto dto)
     {
         try
@@ -48,6 +52,7 @@ public class ScrubController(IClaimService claimService) : ControllerBase
     }
 
     [HttpPost("api/claims/scrub-batch")]
+    [Authorize(Roles = "FrontDesk,Coder,Admin")]
     public async Task<IActionResult> RunScrubBatch()
     {
         var result = await claimService.RunScrubBatchAsync();
@@ -62,6 +67,7 @@ public class ScrubController(IClaimService claimService) : ControllerBase
     }
 
     [HttpPost("api/scrub-rules")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateRule([FromBody] CreateScrubRuleRequestDto dto)
     {
         var result = await claimService.CreateScrubRuleAsync(dto);
@@ -69,6 +75,7 @@ public class ScrubController(IClaimService claimService) : ControllerBase
     }
 
     [HttpPatch("api/scrub-rules/{ruleID:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateRule(int ruleID, [FromBody] UpdateScrubRuleRequestDto dto)
     {
         var result = await claimService.UpdateScrubRuleAsync(ruleID, dto);

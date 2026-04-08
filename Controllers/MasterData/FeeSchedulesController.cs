@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Telebill.Dto.MasterData;
@@ -9,6 +10,7 @@ namespace Telebill.Controllers.MasterData;
 
 [ApiController]
 [Route("api/v1/MasterData/[controller]")]
+[Authorize(Roles = "FrontDesk,Coder,Provider,AR,Admin")]
 public class FeeSchedulesController : ControllerBase
 {
     private readonly IFeeScheduleService _feeService;
@@ -33,6 +35,7 @@ public class FeeSchedulesController : ControllerBase
     }
 
     [HttpPost("AddFee")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AddFee([FromBody] AddFeeDTO fee)
     {
         try
@@ -51,6 +54,7 @@ public class FeeSchedulesController : ControllerBase
     }
 
     [HttpPut("UpdateFee")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateFee([FromBody] UpdateFeeDTO fee)
     {
         try
@@ -69,6 +73,7 @@ public class FeeSchedulesController : ControllerBase
     }
 
     [HttpDelete("DeleteFee")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteFee(int feeId)
     {
         try

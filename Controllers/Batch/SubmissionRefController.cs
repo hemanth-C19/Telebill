@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Batch;
 using Telebill.Services.Batch;
@@ -8,9 +9,11 @@ namespace Telebill.Controllers.Batch;
 
 [ApiController]
 [Route("api/v1/batch")]
+[Authorize(Roles = "FrontDesk,AR,Admin")]
 public class SubmissionRefController(IBatchService service) : ControllerBase
 {
     [HttpPost("{batchID:int}/ack/999")]
+    [Authorize(Roles = "AR,Admin")]
     public async Task<IActionResult> Record999(int batchID, [FromBody] Record999AckRequestDto dto)
     {
         try
@@ -29,6 +32,7 @@ public class SubmissionRefController(IBatchService service) : ControllerBase
     }
 
     [HttpPost("{batchID:int}/ack/277ca/{claimID:int}")]
+    [Authorize(Roles = "AR,Admin")]
     public async Task<IActionResult> Record277(int batchID, int claimID, [FromBody] Record277CAAckRequestDto dto)
     {
         try

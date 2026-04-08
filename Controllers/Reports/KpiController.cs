@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Reports;
 using Telebill.Services.Reports;
@@ -9,9 +10,11 @@ namespace Telebill.Controllers.Reports;
 
 [ApiController]
 [Route("api/v1/reports/kpi")]
+[Authorize(Roles = "FrontDesk,Coder,Provider,AR,Admin")]
 public class KpiController(IBillingReportService billingReportService) : ControllerBase
 {
     [HttpPost("generate")]
+    [Authorize(Roles = "AR,Admin")]
     public async Task<IActionResult> GenerateKpi([FromBody] GenerateReportRequestDto dto)
     {
         var (success, error, result) = await billingReportService.GenerateAndStoreAsync(dto);

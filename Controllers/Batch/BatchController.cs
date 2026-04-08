@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.Batch;
 using Telebill.Services.Batch;
@@ -9,9 +10,11 @@ namespace Telebill.Controllers.Batch;
 
 [ApiController]
 [Route("api/v1/batch")]
+[Authorize(Roles = "FrontDesk,AR,Admin")]
 public class BatchController(IBatchService service) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Create([FromBody] CreateBatchRequestDto dto)
     {
         var result = await service.CreateBatchAsync(dto, GetCurrentUserId());
@@ -45,6 +48,7 @@ public class BatchController(IBatchService service) : ControllerBase
     }
 
     [HttpPost("{batchID:int}/claims")]
+    [Authorize(Roles = "FrontDesk,Admin")]
     public async Task<IActionResult> AddClaims(int batchID, [FromBody] AddClaimsToBatchRequestDto dto)
     {
         try
@@ -63,6 +67,7 @@ public class BatchController(IBatchService service) : ControllerBase
     }
 
     [HttpDelete("{batchID:int}/claims/{claimID:int}")]
+    [Authorize(Roles = "FrontDesk,Admin")]
     public async Task<IActionResult> RemoveClaim(int batchID, int claimID)
     {
         try
@@ -81,6 +86,7 @@ public class BatchController(IBatchService service) : ControllerBase
     }
 
     [HttpPost("{batchID:int}/generate")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Generate(int batchID)
     {
         try
@@ -99,6 +105,7 @@ public class BatchController(IBatchService service) : ControllerBase
     }
 
     [HttpPost("{batchID:int}/submit")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Submit(int batchID, [FromBody] MarkSubmittedRequestDto dto)
     {
         try

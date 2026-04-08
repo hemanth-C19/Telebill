@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Telebill.Dto.AR;
 using Telebill.Services.AR;
@@ -7,6 +8,7 @@ namespace Telebill.Controllers.AR;
 
 [ApiController]
 [Route("api/v1/ar/denials")]
+[Authorize(Roles = "AR,Admin")]
 public class DenialController(IDenialService denialService) : ControllerBase
 {
     [HttpPatch("{denialId:int}/status")]
