@@ -1,0 +1,8 @@
+export default function BatchDetail() {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900">Batch Details &amp; ACK</h1>
+      <p className="mt-2 text-sm text-gray-500">Batch detail (placeholder).</p>
+    </div>
+  )
+}
