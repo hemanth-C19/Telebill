@@ -1,5 +1,3 @@
-// Admin User Management page — view, search, filter, create, edit, and delete system users. Uses dummy data until API integration.
-
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import Table from '../../components/shared/ui/Table'

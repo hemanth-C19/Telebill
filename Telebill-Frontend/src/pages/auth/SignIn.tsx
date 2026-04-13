@@ -1,5 +1,3 @@
-// Sign-in page — split layout with TeleBill branding on the left and the login form on the right. Role selector determines which portal the user lands on after sign-in.
-
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/shared/ui/Button'

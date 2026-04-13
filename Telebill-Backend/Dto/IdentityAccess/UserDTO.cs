@@ -8,16 +8,31 @@ namespace Telebill.Dto.IdentityAccess
 {
     public class UserAddDTO
     {
-    public string Name { get; set; } = null!;
+        public string Name { get; set; } = null!;
 
-    public string Role { get; set; } = null!;
+        public string Role { get; set; } = null!;
 
-    public string Email { get; set; } = null!;
+        public string Email { get; set; } = null!;
 
-    public string? Phone { get; set; }
+        public string? Phone { get; set; }
 
-    public string? Status { get; set; }
+        public string? Status { get; set; }
 
+    }
+
+    public class UserUpdateDTO
+    {
+        public int UserId { get; set; }
+
+        public string Name { get; set; } = null!;
+
+        public string Role { get; set; } = null!;
+
+        public string Email { get; set; } = null!;
+
+        public string? Phone { get; set; }
+
+        public string? Status { get; set; }
     }
 
     public class GetUserByRoleDto

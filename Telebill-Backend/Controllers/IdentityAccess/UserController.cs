@@ -8,12 +8,10 @@ using Telebill.Services.IdentityAccess;
 namespace Telebill.Controllers
 {
     [ApiController]
-    // Base URL: /MyProject/User
     [Route("api/v1/IdentityAccess/[controller]")]
     [Authorize(Roles = "Admin")]
     public class UserController(IUserService userService) : ControllerBase
     {
-        // POST: /MyProject/User/AddUser
         [HttpPost]
         [Route("AddUser")]
         public async Task<IActionResult> AddUser(UserAddDTO user)
@@ -25,15 +23,12 @@ namespace Telebill.Controllers
                 return ValidationProblem(ModelState);
 
             await userService.AddUserAsync(user);
-            // Keeping your original response style
             return StatusCode(201, "user added");
         }
 
-        // PUT: /MyProject/User/UpdateUser?id=123
-        // (kept signature style similar to your previous code)
         [HttpPut]
         [Route("UpdateUser")]
-        public async Task<IActionResult> UpdateUser(UserAddDTO userDTO, [FromQuery] int id)
+        public async Task<IActionResult> UpdateUser(UserUpdateDTO userDTO)
         {
             if (userDTO is null)
                 return BadRequest("Request body is required.");
@@ -41,34 +36,29 @@ namespace Telebill.Controllers
             if (!ModelState.IsValid)
                 return ValidationProblem(ModelState);
 
-            await userService.UpdateAsync(userDTO, id);
-            // Matching your previous message pattern
+            await userService.UpdateAsync(userDTO);
             return Ok("record updated");
         }
 
-        // DELETE: /MyProject/User/DeleteUser?id=123
         [HttpDelete]
-        [Route("DeleteUser")]
-        public async Task<IActionResult> DeleteUser([FromQuery] int id)
+        [Route("DeleteUser/{id}")]
+        public async Task<IActionResult> DeleteUser([FromRoute] int id)
         {
             await userService.DeleteAsync(id);
             return Ok("deleted record");
         }
 
-        // GET: /MyProject/User/GetUsers
         [HttpGet]
         [Route("GetUsers")]
-        public async Task<IActionResult> GetUsers()
+        public async Task<IActionResult> GetUsers(
+            [FromQuery] string? search,
+            [FromQuery] string? role,
+            [FromQuery] int page = 1,
+            [FromQuery] int limit = 10
+        )
         {
-            var users = await userService.GetAllAsync();
+            var users = await userService.GetAllAsync(search, role, page, limit);
             return Ok(users);
-        }
-        [HttpGet]
-        [Route("GetUserByrole")]
-        public async Task<IActionResult> GetUsersbyRole(GetUserByRoleDto dto)
-        {
-            var user=await userService.Getuserbyrole(dto.role);
-            return Ok(user);
         }
     }
 }

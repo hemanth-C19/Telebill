@@ -12,10 +12,9 @@ namespace Telebill.Repositories.IdentityAccess
     public interface IUserRepository
     {
         Task AddUserAsync(UserAddDTO user);
-        Task UpdateUserAsync(UserAddDTO user, int id);
+        Task UpdateUserAsync(UserUpdateDTO user);
  
         Task DeleteUserAsync(int id);
-        Task<IEnumerable<User>> GetAllAsync();
-        Task<IEnumerable<User?>> GetuserbyroleAsync(string role);
+        Task<IEnumerable<User>> GetAllAsync(string? search, string? role, int page, int limit);
     }
 }

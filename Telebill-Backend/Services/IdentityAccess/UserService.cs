@@ -22,19 +22,13 @@ namespace Telebill.Services.IdentityAccess
             return userRepository.DeleteUserAsync(id);
         }
 
-        public Task<IEnumerable<User>> GetAllAsync()
+        public Task<IEnumerable<User>> GetAllAsync(string? search, string? role, int page, int limit)
         {
-            return userRepository.GetAllAsync();
+            return userRepository.GetAllAsync(search, role, page, limit);
         }
-
-        public Task<IEnumerable<User?>> Getuserbyrole(string role)
+        public Task UpdateAsync(UserUpdateDTO user)
         {
-            return userRepository.GetuserbyroleAsync(role);
-        }
-
-        public Task UpdateAsync(UserAddDTO user, int id)
-        {
-            return userRepository.UpdateUserAsync(user, id);
+            return userRepository.UpdateUserAsync(user);
         }
     }
     

@@ -12,10 +12,9 @@ namespace Telebill.Services.IdentityAccess
     public interface IUserService
     {
         Task AddUserAsync(UserAddDTO user);  
-        Task UpdateAsync(UserAddDTO user, int id);
+        Task UpdateAsync(UserUpdateDTO user);
  
         Task DeleteAsync(int id);
-        Task<IEnumerable<User>> GetAllAsync();
-        Task<IEnumerable<User?>> Getuserbyrole(string role);
+        Task<IEnumerable<User>> GetAllAsync(string? search, string? role, int page, int limit);
     }
 }
