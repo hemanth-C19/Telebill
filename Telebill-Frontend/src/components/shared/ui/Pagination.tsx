@@ -33,7 +33,7 @@ function getPageNumbers(
 
 export function Pagination({
   currentPage,
-  totalPages,
+  totalPages = 10,
   onPageChange,
 }: PaginationProps) {
   const pages = getPageNumbers(currentPage, totalPages)

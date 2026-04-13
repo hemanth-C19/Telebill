@@ -74,6 +74,16 @@ builder.Services.AddControllers(options =>
     options.Filters.Add(new AuthorizeFilter(policy));
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddFluentValidationAutoValidation();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -140,11 +150,12 @@ builder.Services.AddDbContext<TeleBillContext>(options =>
 
 var app = builder.Build();
 
+app.MapControllers();
+app.UseCors();
 app.UseGlobalExceptionMiddleware();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAuditLogger();
-app.MapControllers();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

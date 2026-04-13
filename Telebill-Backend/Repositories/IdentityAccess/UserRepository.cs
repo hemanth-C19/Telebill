@@ -60,7 +60,7 @@ namespace Telebill.Repositories.IdentityAccess
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(u => u.Name == search);
+                query = query.Where(u => u.Name.Contains(search));
             }
 
             if (!string.IsNullOrWhiteSpace(role))
