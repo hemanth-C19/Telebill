@@ -1,29 +1,30 @@
 // Admin portal route definitions — persistent layout with Navbar and AdminSidebar wrapping all admin pages
 
-import React from 'react'
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
-import AdminSidebar from '../../components/admin-portal/AdminSidebar'
-import Navbar from '../../components/shared/ui/Navbar'
-import { useAuth } from '../../hooks/useAuth'
-import Dashboard from './Dashboard'
-import UserManagement from './UserManagement'
-import MasterData from './MasterData'
-import AuditLogs from './AuditLogs'
-import Notifications from '../shared/Notifications'
+import React from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import AdminSidebar from "../../components/admin-portal/AdminSidebar";
+import Navbar from "../../components/shared/ui/Navbar";
+import { useAuth } from "../../hooks/useAuth";
+import Dashboard from "./Dashboard";
+import UserManagement from "./UserManagement";
+import MasterData from "./MasterData";
+import AuditLogs from "./AuditLogs";
+import Notifications from "../shared/Notifications";
+import ProviderManagement from "./Provider";
 
-const PayerPlans = React.lazy(() => import('../admin-portal/PayerPlans'))
-const FeeSchedules = React.lazy(() => import('../admin-portal/FeeSchedules'))
+const PayerPlans = React.lazy(() => import("../admin-portal/PayerPlans"));
+const FeeSchedules = React.lazy(() => import("../admin-portal/FeeSchedules"));
 
 export default function AdminRoutes() {
-  const { logout } = useAuth()
-  const navigate = useNavigate()
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
         onLogout={() => {
-          logout()
-          navigate('/sign-in', { replace: true })
+          logout();
+          navigate("/sign-in", { replace: true });
         }}
         userName="Admin User"
       />
@@ -37,9 +38,16 @@ export default function AdminRoutes() {
           <Routes>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="users" element={<UserManagement />} />
+            <Route path="provider" element={<ProviderManagement />} />
             <Route path="master-data" element={<MasterData />} />
-            <Route path="master-data/payers/:payerId/plans" element={<PayerPlans />} />
-            <Route path="master-data/payers/:payerId/plans/:planId/fees" element={<FeeSchedules />} />
+            <Route
+              path="master-data/payers/:payerId/plans"
+              element={<PayerPlans />}
+            />
+            <Route
+              path="master-data/payers/:payerId/plans/:planId/fees"
+              element={<FeeSchedules />}
+            />
             <Route path="audit" element={<AuditLogs />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="*" element={<Navigate to="dashboard" replace />} />
@@ -47,5 +55,5 @@ export default function AdminRoutes() {
         </div>
       </div>
     </div>
-  )
+  );
 }
