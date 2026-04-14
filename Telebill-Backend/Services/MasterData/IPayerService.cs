@@ -8,7 +8,7 @@ namespace Telebill.Services.MasterData
     public interface IPayerService
     {
         Task<IEnumerable<PayerNamesDTO>> GetAllPayersNames();
-        Task<IEnumerable<PayerDTO>> GetAllPayersAsync();
+        Task<IEnumerable<PayerDTO>> GetAllPayersAsync(string? search, int page, int limit);
 
         Task AddPayerAsync(AddPayerDTO payerDto);
         Task UpdatePayerAsync(UpdatePayerDTO payerDto);

@@ -16,9 +16,9 @@ namespace Telebill.Services.MasterData
             _payerRepository = payerRepository;
         }
 
-        public async Task<IEnumerable<PayerDTO>> GetAllPayersAsync()
+        public async Task<IEnumerable<PayerDTO>> GetAllPayersAsync(string? search, int page, int limit)
         {
-            var payers = await _payerRepository.GetAllAsync();
+            var payers = await _payerRepository.GetAllAsync(search, page, limit);
             return payers.Select(p => new PayerDTO
             {
                 PayerId = p.PayerId,
@@ -32,11 +32,11 @@ namespace Telebill.Services.MasterData
 
         public async Task<IEnumerable<PayerNamesDTO>> GetAllPayersNames()
         {
-            var payers = await _payerRepository.GetAllAsync();
+            var payers = await _payerRepository.GetPayerNamesAsync();
             return payers.Select(p => new PayerNamesDTO
             {
                 PayerId = p.PayerId,
-                PayerName = p.Name,
+                PayerName = p.PayerName,
                 PayerCode = p.PayerCode ?? string.Empty
             });
         }

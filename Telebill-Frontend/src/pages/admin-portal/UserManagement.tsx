@@ -7,6 +7,7 @@ import apiClient from "../../api/client";
 import { Pagination } from "../../components/shared/ui/Pagination";
 import { UserFormFields } from "../../components/admin-portal/UserFormFields";
 import type { User, UserFormData } from "../../types/admin.types";
+import Badge from "../../components/shared/ui/Badge";
 
 const ROLES = ["Admin", "FrontDesk", "Provider", "Coder", "AR"] as const;
 
@@ -171,7 +172,10 @@ export default function UserManagement() {
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <Table
           columns={TABLE_COLUMNS}
-          data={users}
+          data={users.map((user) => ({
+            ...user,
+            status: <Badge status={user.status} />,
+          }))}
           loading={isLoading}
           showActions
           actions={[

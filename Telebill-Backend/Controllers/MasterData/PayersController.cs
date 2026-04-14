@@ -20,9 +20,13 @@ public class PayersController : ControllerBase
     }
 
     [HttpGet("GetAllPayers")]
-    public async Task<ActionResult<IEnumerable<PayerDTO>>> GetAllPayers()
+    public async Task<ActionResult<IEnumerable<PayerDTO>>> GetAllPayers(
+        [FromQuery] string? search,
+        [FromQuery] int page,
+        [FromQuery] int limit = 5
+    )
     {
-        var payers = await _payerService.GetAllPayersAsync();
+        var payers = await _payerService.GetAllPayersAsync(search, page, limit);
         return Ok(payers);
     }
 
@@ -67,9 +71,9 @@ public class PayersController : ControllerBase
         }
     }
 
-    [HttpDelete("DeletePayer")]
+    [HttpDelete("DeletePayer/{payerId}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> DeletePayer(int payerId)
+    public async Task<IActionResult> DeletePayer( [FromRoute] int payerId)
     {
         try
         {

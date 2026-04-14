@@ -1,6 +1,7 @@
 using Telebill.Models;
 using Microsoft.EntityFrameworkCore;
 using Telebill.Data;
+using Telebill.Dto.MasterData;
 
 namespace Telebill.Repositories.MasterData
 {
@@ -15,9 +16,30 @@ namespace Telebill.Repositories.MasterData
 
         // ── PAYER ─────────────────────────────────────────────────
 
-        public Task<List<Payer>> GetAllAsync()
+        public async Task<List<Payer>> GetAllAsync(string? search, int page, int limit)
         {
-            return _context.Payers.ToListAsync();
+            var query = _context.Payers.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(p => p.Name.Contains(search));
+            }
+
+            var payers = await query.Skip((page-1) * limit).Take(limit).ToListAsync();
+
+            return payers;
+        }
+
+        public async Task<List<PayerNamesDTO>> GetPayerNamesAsync()
+        {
+            var payers = await _context.Payers.Select(p => new PayerNamesDTO
+            {
+                PayerId = p.PayerId,
+                PayerName = p.Name,
+                PayerCode = p.PayerCode
+            }).ToListAsync();
+
+            return payers;
         }
 
         public Task<Payer?> GetPayerByIdAsync(int payerId)
