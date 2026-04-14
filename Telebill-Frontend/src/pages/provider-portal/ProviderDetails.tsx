@@ -7,53 +7,10 @@ import { Card } from '../../components/shared/ui/Card'
 import Dialog from '../../components/shared/ui/Dialog'
 import { Pagination } from '../../components/shared/ui/Pagination'
 import Table from '../../components/shared/ui/Table'
+import type { Encounter, ChargeLine, Diagnosis, Attestation } from '../../types/provider.types'
 
 // Simulates logged-in provider — replace with useAuth().userId in production
 const CURRENT_PROVIDER = { providerId: 201, name: 'Dr. Sarah Chen', specialty: 'Internal Medicine' }
-
-type EncounterStatus = 'Open' | 'ReadyForCoding' | 'Finalized'
-type ChargeStatus = 'Draft' | 'Finalized'
-
-type Encounter = {
-  encounterId: number
-  patientId: number
-  patientName: string
-  providerId: number
-  providerName: string
-  encounterDate: string
-  pos: string
-  notes: string
-  status: EncounterStatus
-}
-
-type ChargeLine = {
-  chargeId: number
-  encounterId: number
-  lineNo: number
-  cptCode: string
-  modifiers: string
-  units: number
-  chargeAmount: number
-  dxPointers: string
-  status: ChargeStatus
-}
-
-type Diagnosis = {
-  diagnosisId: number
-  encounterId: number
-  icdCode: string
-  description: string
-  sequence: number
-}
-
-type Attestation = {
-  attestId: number
-  encounterId: number
-  providerId: number
-  providerName: string
-  attestedDate: string
-  signatureNote: string
-}
 
 // Backend ref: GET .../Encounter/GetAllEncounters — filtered to CURRENT_PROVIDER
 const DUMMY_ENCOUNTERS: Encounter[] = [

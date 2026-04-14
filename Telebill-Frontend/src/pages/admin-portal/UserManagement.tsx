@@ -5,26 +5,10 @@ import Dialog from "../../components/shared/ui/Dialog";
 import Button from "../../components/shared/ui/Button";
 import apiClient from "../../api/client";
 import { Pagination } from "../../components/shared/ui/Pagination";
+import { UserFormFields } from "../../components/admin-portal/UserFormFields";
+import type { User, UserFormData } from "../../types/admin.types";
 
-export interface User {
-  userId: number;
-  name: string;
-  role: string;
-  email: string;
-  phone: string;
-  status: string;
-}
-
-export interface UserFormData {
-  userId?: number,
-  name: string;
-  role: string;
-  email: string;
-  phone: string;
-  status: string;
-}
-
-const ROLES = ["Admin", "FrontDesk", "Provider", "Coder", "AR"];
+const ROLES = ["Admin", "FrontDesk", "Provider", "Coder", "AR"] as const;
 
 const EMPTY_FORM: UserFormData = {
   name: "",
@@ -58,29 +42,29 @@ export default function UserManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-   async function GetUsers() {
-      console.log("Request backend");
-      const response = await apiClient.get(
-        "api/v1/IdentityAccess/User/GetUsers",
-        {
-          params: {
-            search: searchTerm,
-            role: roleFilter,
-            page: currentPage,
-            limit: 5
-          },
+  async function GetUsers() {
+    console.log("Request backend");
+    const response = await apiClient.get(
+      "api/v1/IdentityAccess/User/GetUsers",
+      {
+        params: {
+          search: searchTerm,
+          role: roleFilter,
+          page: currentPage,
+          limit: 5,
         },
-      );
-      console.log("got response ", response.data);
-      const users: User[] = response.data;
-      setUsers(users);
-      setIsLoading(false);
-    }
+      },
+    );
+    console.log("got response ", response.data);
+    const users: User[] = response.data;
+    setUsers(users);
+    setIsLoading(false);
+  }
 
   useEffect(() => {
-    const CallUsers = async()=>{
+    const CallUsers = async () => {
       await GetUsers();
-    }
+    };
 
     CallUsers();
   }, [searchTerm, roleFilter, currentPage]);
@@ -120,7 +104,7 @@ export default function UserManagement() {
   }
 
   async function onCreateSubmit(data: UserFormData) {
-    await apiClient.post('api/v1/IdentityAccess/User/AddUser', data);
+    await apiClient.post("api/v1/IdentityAccess/User/AddUser", data);
     resetCreate(EMPTY_FORM);
     setShowCreateDialog(false);
     setIsLoading(true);
@@ -128,8 +112,8 @@ export default function UserManagement() {
   }
 
   async function onEditSubmit(data: UserFormData) {
-    const payload = {...data, userId: selectedUser?.userId}
-    await apiClient.put('api/v1/IdentityAccess/User/UpdateUser', payload) 
+    const payload = { ...data, userId: selectedUser?.userId };
+    await apiClient.put("api/v1/IdentityAccess/User/UpdateUser", payload);
     console.log("Updation Done");
     setIsLoading(true);
     setShowEditDialog(false);
@@ -137,16 +121,11 @@ export default function UserManagement() {
   }
 
   async function handleDelete(userId: number) {
-    await apiClient.delete(`api/v1/IdentityAccess/User/DeleteUser/${userId}`)
+    await apiClient.delete(`api/v1/IdentityAccess/User/DeleteUser/${userId}`);
     console.log("Deletion done");
     setIsLoading(true);
     await GetUsers();
   }
-
-  const requiredName = { required: "Name is required" as const };
-  const requiredEmail = { required: "Email is required" as const };
-  const requiredRole = { required: "Role is required" as const };
-  const requiredPhone = { required: "Phone is required" as const };
 
   return (
     <div className="w-full">
@@ -157,7 +136,12 @@ export default function UserManagement() {
             Manage system users and their role assignments
           </p>
         </div>
-        <Button variant="primary" onClick={()=>{setShowCreateDialog(true)}}>
+        <Button
+          variant="primary"
+          onClick={() => {
+            setShowCreateDialog(true);
+          }}
+        >
           ＋ Create User
         </Button>
       </div>
@@ -209,7 +193,7 @@ export default function UserManagement() {
             },
           ]}
         />
-        <Pagination 
+        <Pagination
           currentPage={currentPage}
           onPageChange={setCurrentPage}
           totalPages={5}
@@ -227,114 +211,14 @@ export default function UserManagement() {
           className="flex flex-col gap-4"
           noValidate
         >
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="create-name"
-              className="text-sm font-medium text-gray-700"
-            >
-              Full Name
-            </label>
-            <input
-              id="create-name"
-              type="text"
-              placeholder="Enter full name"
-              className={fieldClass}
-              {...registerCreate("name", requiredName)}
-            />
-            {createErrors.name != null && (
-              <p className="text-sm text-red-600">
-                {createErrors.name.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="create-email"
-              className="text-sm font-medium text-gray-700"
-            >
-              Email Address
-            </label>
-            <input
-              id="create-email"
-              type="email"
-              placeholder="Enter email address"
-              className={fieldClass}
-              {...registerCreate("email", requiredEmail)}
-            />
-            {createErrors.email != null && (
-              <p className="text-sm text-red-600">
-                {createErrors.email.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="create-phone"
-              className="text-sm font-medium text-gray-700"
-            >
-              Phone Number
-            </label>
-            <input
-              id="create-phone"
-              type="text"
-              placeholder="555-0000"
-              className={fieldClass}
-              {...registerCreate("phone", requiredPhone)}
-            />
-            {createErrors.phone != null && (
-              <p className="text-sm text-red-600">
-                {createErrors.phone.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="create-role"
-              className="text-sm font-medium text-gray-700"
-            >
-              Role
-            </label>
-            <select
-              id="create-role"
-              className={selectClass}
-              {...registerCreate("role", requiredRole)}
-            >
-              <option value="" disabled>
-                Select a role
-              </option>
-              {ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-            {createErrors.role != null && (
-              <p className="text-sm text-red-600">
-                {createErrors.role.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="create-status"
-              className="text-sm font-medium text-gray-700"
-            >
-              Status
-            </label>
-            <select
-              id="create-status"
-              className={selectClass}
-              {...registerCreate("status")}
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-
+          <UserFormFields
+            mode="create"
+            register={registerCreate}
+            errors={createErrors}
+            roles={ROLES}
+            fieldClass={fieldClass}
+            selectClass={selectClass}
+          />
           <div className="mt-2 flex justify-end gap-3">
             <Button variant="secondary" type="button" onClick={handleCloseAll}>
               Cancel
@@ -357,106 +241,14 @@ export default function UserManagement() {
           className="flex flex-col gap-4"
           noValidate
         >
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="edit-name"
-              className="text-sm font-medium text-gray-700"
-            >
-              Full Name
-            </label>
-            <input
-              id="edit-name"
-              type="text"
-              placeholder="Enter full name"
-              className={fieldClass}
-              {...registerEdit("name", requiredName)}
-            />
-            {editErrors.name != null && (
-              <p className="text-sm text-red-600">{editErrors.name.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="edit-email"
-              className="text-sm font-medium text-gray-700"
-            >
-              Email Address
-            </label>
-            <input
-              id="edit-email"
-              type="email"
-              placeholder="Enter email address"
-              className={fieldClass}
-              {...registerEdit("email", requiredEmail)}
-            />
-            {editErrors.email != null && (
-              <p className="text-sm text-red-600">{editErrors.email.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="edit-phone"
-              className="text-sm font-medium text-gray-700"
-            >
-              Phone Number
-            </label>
-            <input
-              id="edit-phone"
-              type="text"
-              placeholder="555-0000"
-              className={fieldClass}
-              {...registerEdit("phone", requiredPhone)}
-            />
-            {editErrors.phone != null && (
-              <p className="text-sm text-red-600">{editErrors.phone.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="edit-role"
-              className="text-sm font-medium text-gray-700"
-            >
-              Role
-            </label>
-            <select
-              id="edit-role"
-              className={selectClass}
-              {...registerEdit("role", requiredRole)}
-            >
-              <option value="" disabled>
-                Select a role
-              </option>
-              {ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-            {editErrors.role != null && (
-              <p className="text-sm text-red-600">{editErrors.role.message}</p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor="edit-status"
-              className="text-sm font-medium text-gray-700"
-            >
-              Status
-            </label>
-            <select
-              id="edit-status"
-              className={selectClass}
-              {...registerEdit("status")}
-            >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-          </div>
-
+          <UserFormFields
+            mode="edit"
+            register={registerEdit}
+            errors={editErrors}
+            roles={ROLES}
+            fieldClass={fieldClass}
+            selectClass={selectClass}
+          />
           <div className="mt-2 flex justify-end gap-3">
             <Button variant="secondary" type="button" onClick={handleCloseAll}>
               Cancel

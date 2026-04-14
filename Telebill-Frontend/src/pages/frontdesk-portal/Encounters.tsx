@@ -5,47 +5,19 @@ import { useForm } from 'react-hook-form'
 import { ActionCard } from '../../components/shared/ui/ActionCard'
 import Badge from '../../components/shared/ui/Badge'
 import Button from '../../components/shared/ui/Button'
-import { Card } from '../../components/shared/ui/Card'
-import Dialog from '../../components/shared/ui/Dialog'
-import Input from '../../components/shared/ui/Input'
 import { Pagination } from '../../components/shared/ui/Pagination'
 import Table from '../../components/shared/ui/Table'
-
-type EncounterStatus = 'Open' | 'ReadyForCoding' | 'Finalized'
-type ChargeStatus = 'Draft' | 'Finalized'
-
-type Encounter = {
-  encounterId: number
-  patientId: number
-  patientName: string
-  providerId: number
-  providerName: string
-  encounterDate: string
-  pos: string
-  notes: string
-  status: EncounterStatus
-  chargeLineCount: number
-}
-
-type ChargeLine = {
-  chargeId: number
-  encounterId: number
-  lineNo: number
-  cptCode: string
-  modifiers: string
-  units: number
-  chargeAmount: number
-  dxPointers: string
-  status: ChargeStatus
-}
-
-type Attestation = {
-  attestId: number
-  encounterId: number
-  attestedBy: string
-  attestedDate: string
-  status: 'Attested' | 'NotAttested'
-}
+import { CreateEncounterDialog } from '../../components/frontdesk-portal/CreateEncounterDialog'
+import { EncounterDetailView } from '../../components/frontdesk-portal/EncounterDetailView'
+import type {
+  AddChargeFormValues,
+  Attestation,
+  ChargeLine,
+  CreateEncounterFormValues,
+  EditChargeFormValues,
+  EditEncounterFormValues,
+  Encounter,
+} from '../../types/frontdesk.types'
 
 // Backend ref: GET /api/v1/Encounter/Encounter/GetAllEncounters — AddEncounterDTO: PatientId, ProviderId, EncounterDate, POS, Notes
 const DUMMY_ENCOUNTERS: Encounter[] = [
@@ -439,30 +411,6 @@ function nextChargeId(map: Record<number, ChargeLine[]>): number {
   return max + 1
 }
 
-type CreateEncounterFormValues = {
-  patientId: string
-  providerId: string
-  encounterDate: string
-  pos: string
-  notes: string
-}
-
-type EditEncounterFormValues = {
-  encounterDate: string
-  pos: string
-  notes: string
-}
-
-type AddChargeFormValues = {
-  cptCode: string
-  modifiers: string
-  units: string
-  chargeAmount: string
-  dxPointers: string
-}
-
-type EditChargeFormValues = AddChargeFormValues
-
 export default function Encounters() {
   const [encounters, setEncounters] = useState<Encounter[]>(() => [...DUMMY_ENCOUNTERS])
   const [chargeLines, setChargeLines] = useState<Record<number, ChargeLine[]>>(cloneChargeLines)
@@ -822,281 +770,44 @@ export default function Encounters() {
     }))
 
     return (
-      <div className="space-y-6">
-        <button
-          type="button"
-          onClick={() => setSelectedEncounter(null)}
-          className="text-sm font-medium text-blue-600 hover:text-blue-800"
-        >
-          ← Back to Encounters
-        </button>
-
-        <Card title="Encounter Information">
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-semibold uppercase text-gray-500">Patient</dt>
-              <dd className="text-sm text-gray-900">{selectedEncounter.patientName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase text-gray-500">Provider</dt>
-              <dd className="text-sm text-gray-900">{selectedEncounter.providerName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase text-gray-500">Date</dt>
-              <dd className="text-sm text-gray-900">
-                {formatEncounterDate(selectedEncounter.encounterDate)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase text-gray-500">POS</dt>
-              <dd className="text-sm text-gray-900">{posDescription(selectedEncounter.pos)}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-semibold uppercase text-gray-500">Notes</dt>
-              <dd className="text-sm text-gray-900">
-                {selectedEncounter.notes.trim() === '' ? '—' : selectedEncounter.notes}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase text-gray-500">Status</dt>
-              <dd className="mt-1">
-                <Badge status={selectedEncounter.status} />
-              </dd>
-            </div>
-          </dl>
-
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowEditDialog(true)}
-            >
-              Edit
-            </Button>
-            {selectedEncounter.status === 'Open' && (
-              <Button type="button" variant="danger" size="sm" onClick={deleteEncounter}>
-                Delete Encounter
-              </Button>
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="mb-4 flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="text-base font-semibold text-gray-800">Charge Lines</h3>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowAddChargeForm((v) => !v)}
-            >
-              Add Charge Line
-            </Button>
-          </div>
-
-          {hasDraft && (
-            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              ⚠ All charge lines must be Finalized before the Provider can mark this encounter as
-              Ready for Coding.
-            </div>
-          )}
-
-          {showAddChargeForm && (
-            <form
-              onSubmit={addChargeForm.handleSubmit(onAddChargeSubmit)}
-              className="mb-4 grid grid-cols-1 gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:grid-cols-2"
-              noValidate
-            >
-              <Input
-                label="CPT/HCPCS"
-                {...addChargeForm.register('cptCode', { required: 'CPT/HCPCS is required' })}
-                error={addChargeForm.formState.errors.cptCode?.message}
-              />
-              <Input
-                label="Units"
-                type="number"
-                min={1}
-                step={1}
-                {...addChargeForm.register('units', { required: 'Required' })}
-                error={addChargeForm.formState.errors.units?.message}
-              />
-              <Input
-                label="Charge Amount"
-                type="number"
-                min={0}
-                step={0.01}
-                {...addChargeForm.register('chargeAmount', { required: 'Required' })}
-                error={addChargeForm.formState.errors.chargeAmount?.message}
-              />
-              <Input label="Modifiers" {...addChargeForm.register('modifiers')} />
-              <div className="sm:col-span-2">
-                <Input label="Dx Pointers" {...addChargeForm.register('dxPointers')} />
-              </div>
-              <div className="flex flex-wrap gap-2 sm:col-span-2">
-                <Button type="submit" variant="primary" size="sm">
-                  Add Line
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setShowAddChargeForm(false)
-                    resetAddChargeForm({
-                      cptCode: '',
-                      modifiers: '',
-                      units: '1',
-                      chargeAmount: '',
-                      dxPointers: '',
-                    })
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          )}
-
-          <Table columns={chargeColumns} data={chargeTableData} />
-        </Card>
-
-        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
-          <svg
-            className="mt-0.5 h-5 w-5 shrink-0 text-blue-600"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            aria-hidden
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4M12 8h.01" />
-          </svg>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-gray-800">
-              <span className="font-bold text-gray-900">Attestation:</span>{' '}
-              {attest?.status === 'Attested' ? (
-                <>
-                  <span className="font-medium text-green-700">✓ Attested</span>
-                  <span className="text-gray-600">
-                    {' '}
-                    by {attest.attestedBy}
-                    {attest.attestedDate !== '' ? ` on ${attest.attestedDate}` : ''}
-                  </span>
-                </>
-              ) : (
-                <span className="font-medium text-amber-700">
-                  ⏳ Not yet attested by provider
-                </span>
-              )}
-            </p>
-            <p className="mt-2 text-xs italic text-gray-500">
-              FrontDesk view only — attestation is managed by the Provider.
-            </p>
-          </div>
-        </div>
-
-        <Dialog
-          isOpen={showEditDialog}
-          onClose={() => setShowEditDialog(false)}
-          title="Edit Encounter"
-          maxWidth="md"
-        >
-          <form
-            onSubmit={editEncounterForm.handleSubmit(onEditEncounterSubmit)}
-            className="flex flex-col gap-4"
-            noValidate
-          >
-            <Input
-              label="Encounter Date"
-              type="datetime-local"
-              {...editEncounterForm.register('encounterDate', { required: 'Required' })}
-              error={editEncounterForm.formState.errors.encounterDate?.message}
-            />
-            <div className="flex flex-col gap-1">
-              <label htmlFor="edit-enc-pos" className="text-sm font-medium text-gray-700">
-                POS
-              </label>
-              <select
-                id="edit-enc-pos"
-                className={selectClassName}
-                {...editEncounterForm.register('pos')}
-              >
-                {POS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="edit-enc-notes" className="text-sm font-medium text-gray-700">
-                Notes
-              </label>
-              <textarea
-                id="edit-enc-notes"
-                rows={3}
-                className={textareaClassName}
-                {...editEncounterForm.register('notes')}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="secondary" onClick={() => setShowEditDialog(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary">
-                Save
-              </Button>
-            </div>
-          </form>
-        </Dialog>
-
-        <Dialog
-          isOpen={editingCharge != null}
-          onClose={() => setEditingCharge(null)}
-          title="Edit Charge Line"
-          maxWidth="md"
-        >
-          <form
-            onSubmit={editChargeForm.handleSubmit(onEditChargeSubmit)}
-            className="flex flex-col gap-4"
-            noValidate
-          >
-            <Input
-              label="CPT/HCPCS"
-              {...editChargeForm.register('cptCode', { required: 'Required' })}
-              error={editChargeForm.formState.errors.cptCode?.message}
-            />
-            <Input label="Modifiers" {...editChargeForm.register('modifiers')} />
-            <Input
-              label="Units"
-              type="number"
-              min={1}
-              step={1}
-              {...editChargeForm.register('units', { required: 'Required' })}
-              error={editChargeForm.formState.errors.units?.message}
-            />
-            <Input
-              label="Charge Amount"
-              type="number"
-              min={0}
-              step={0.01}
-              {...editChargeForm.register('chargeAmount', { required: 'Required' })}
-              error={editChargeForm.formState.errors.chargeAmount?.message}
-            />
-            <Input label="Dx Pointers" {...editChargeForm.register('dxPointers')} />
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="secondary" onClick={() => setEditingCharge(null)}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary">
-                Save
-              </Button>
-            </div>
-          </form>
-        </Dialog>
-      </div>
+      <EncounterDetailView
+        encounter={selectedEncounter}
+        encounterDateDisplay={formatEncounterDate(selectedEncounter.encounterDate)}
+        posLabel={posDescription(selectedEncounter.pos)}
+        onBack={() => setSelectedEncounter(null)}
+        onOpenEditEncounter={() => setShowEditDialog(true)}
+        onDeleteEncounter={deleteEncounter}
+        canDeleteEncounter={selectedEncounter.status === 'Open'}
+        chargeColumns={chargeColumns}
+        chargeTableData={chargeTableData}
+        hasDraft={hasDraft}
+        showAddChargeForm={showAddChargeForm}
+        onToggleAddCharge={() => setShowAddChargeForm((v) => !v)}
+        addChargeForm={addChargeForm}
+        onAddChargeSubmit={onAddChargeSubmit}
+        onCancelAddCharge={() => {
+          setShowAddChargeForm(false)
+          resetAddChargeForm({
+            cptCode: '',
+            modifiers: '',
+            units: '1',
+            chargeAmount: '',
+            dxPointers: '',
+          })
+        }}
+        attest={attest}
+        showEditEncounterDialog={showEditDialog}
+        onCloseEditEncounterDialog={() => setShowEditDialog(false)}
+        editEncounterForm={editEncounterForm}
+        onEditEncounterSubmit={onEditEncounterSubmit}
+        posOptions={POS_OPTIONS}
+        selectClassName={selectClassName}
+        textareaClassName={textareaClassName}
+        editingCharge={editingCharge}
+        onCloseEditCharge={() => setEditingCharge(null)}
+        editChargeForm={editChargeForm}
+        onEditChargeSubmit={onEditChargeSubmit}
+      />
     )
   }
 
@@ -1207,102 +918,19 @@ export default function Encounters() {
         />
       </div>
 
-      <Dialog
+      <CreateEncounterDialog
         isOpen={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
-        title="Create Encounter"
-        maxWidth="lg"
-      >
-        <form
-          onSubmit={createForm.handleSubmit(onCreateEncounterSubmit)}
-          className="flex flex-col gap-4"
-          noValidate
-        >
-          <Input
-            label="Search patient (name or MRN)"
-            placeholder="Filter list…"
-            value={patientSearch}
-            onChange={(e) => setPatientSearch(e.target.value)}
-          />
-          <div className="flex flex-col gap-1">
-            <label htmlFor="create-patient" className="text-sm font-medium text-gray-700">
-              Patient
-            </label>
-            <select
-              id="create-patient"
-              className={selectClassName}
-              {...createForm.register('patientId', { required: 'Select a patient' })}
-            >
-              <option value="">Select patient…</option>
-              {filteredPatientsDropdown.map((p) => (
-                <option key={p.patientId} value={p.patientId}>
-                  {p.mrn} — {p.name}
-                </option>
-              ))}
-            </select>
-            {createForm.formState.errors.patientId != null && (
-              <p className="text-sm text-red-600">{createForm.formState.errors.patientId.message}</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="create-provider" className="text-sm font-medium text-gray-700">
-              Provider
-            </label>
-            <select
-              id="create-provider"
-              className={selectClassName}
-              {...createForm.register('providerId', { required: 'Select a provider' })}
-            >
-              <option value="">Select provider…</option>
-              {DUMMY_PROVIDERS_DROPDOWN.map((p) => (
-                <option key={p.providerId} value={p.providerId}>
-                  {p.name} ({p.specialty})
-                </option>
-              ))}
-            </select>
-            {createForm.formState.errors.providerId != null && (
-              <p className="text-sm text-red-600">{createForm.formState.errors.providerId.message}</p>
-            )}
-          </div>
-          <Input
-            label="Encounter Date & Time"
-            type="datetime-local"
-            {...createForm.register('encounterDate', { required: 'Encounter date is required' })}
-            error={createForm.formState.errors.encounterDate?.message}
-          />
-          <div className="flex flex-col gap-1">
-            <label htmlFor="create-pos" className="text-sm font-medium text-gray-700">
-              POS
-            </label>
-            <select id="create-pos" className={selectClassName} {...createForm.register('pos')}>
-              {POS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="create-notes" className="text-sm font-medium text-gray-700">
-              Notes
-            </label>
-            <textarea
-              id="create-notes"
-              rows={3}
-              className={textareaClassName}
-              {...createForm.register('notes')}
-            />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setShowCreateDialog(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              Create
-            </Button>
-          </div>
-        </form>
-      </Dialog>
+        form={createForm}
+        onSubmit={onCreateEncounterSubmit}
+        patientSearch={patientSearch}
+        onPatientSearchChange={setPatientSearch}
+        patientOptions={filteredPatientsDropdown}
+        providerOptions={DUMMY_PROVIDERS_DROPDOWN}
+        posOptions={POS_OPTIONS}
+        selectClassName={selectClassName}
+        textareaClassName={textareaClassName}
+      />
     </div>
   )
 }
