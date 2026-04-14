@@ -23,9 +23,13 @@ namespace Telebill.Controllers.MasterData
         }
 
         [HttpGet("GetAllProviders")]
-        public async Task<IActionResult> GetProviders()
+        public async Task<IActionResult> GetProviders(
+            [FromQuery] string? search,
+            [FromQuery] int page,
+            [FromQuery] int limit = 5
+        )
         {
-            var result = await _service.GetAllProvidersAsync();
+            var result = await _service.GetAllProvidersAsync(search, page, limit);
             return Ok(result);
         }
 
@@ -46,7 +50,8 @@ namespace Telebill.Controllers.MasterData
         }
 
         [HttpGet("GetActiveProviders")]
-        public async Task<IActionResult> GetActiveProviders(){
+        public async Task<IActionResult> GetActiveProviders()
+        {
             var result = await _service.GetActiveProvidersAsync();
             return Ok(result);
         }
@@ -55,6 +60,7 @@ namespace Telebill.Controllers.MasterData
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RegisterProvider(CreateUpdateProviderDTO obj)
         {
+            Console.WriteLine("-------- ", obj);
             try
             {
                 await _service.RegisterProviderAsync(obj);
@@ -66,9 +72,9 @@ namespace Telebill.Controllers.MasterData
             }
         }
 
-        [HttpPut("UpdateProviderById")]
+        [HttpPut("UpdateProviderById/{Pid}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateProviderById(int Pid, CreateUpdateProviderDTO dto)
+        public async Task<IActionResult> UpdateProviderById([FromRoute] int Pid, CreateUpdateProviderDTO dto)
         {
             try
             {
@@ -85,9 +91,9 @@ namespace Telebill.Controllers.MasterData
             }
         }
 
-        [HttpDelete("DeleteProviderById")]
+        [HttpDelete("DeleteProviderById/{Pid}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> DeleteProviderById(int Pid)
+        public async Task<IActionResult> DeleteProviderById( [FromRoute] int Pid)
         {
             try
             {

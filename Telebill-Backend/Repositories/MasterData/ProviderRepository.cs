@@ -17,9 +17,18 @@ namespace Telebill.Repositories.MasterData
             _context = context;
         }
 
-        public async Task<IEnumerable<Provider>> GetAllProvidersAsync()
+        public async Task<IEnumerable<Provider>> GetAllProvidersAsync(string? search, int page, int limit)
         {
-            return await _context.Providers.ToListAsync();
+            var query = _context.Providers.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(p => p.Name.Contains(search));
+            }
+
+            var data = await query.Skip((page - 1)*limit).Take(limit).ToListAsync();
+
+            return data;
         }
 
         public Task<Provider?> GetProviderByIdAsync(int providerId)

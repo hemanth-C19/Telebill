@@ -16,7 +16,7 @@ namespace Telebill.Services.MasterData
             _repo = repo;
         }
 
-        public Task<IEnumerable<Provider>> GetAllProvidersAsync() => _repo.GetAllProvidersAsync();
+        public Task<IEnumerable<Provider>> GetAllProvidersAsync(string? search, int page, int limit) => _repo.GetAllProvidersAsync(search, page, limit);
 
         public Task<Provider?> GetProviderByNPIAsync(string npiId) => _repo.GetProviderByNPIAsync(npiId);
 

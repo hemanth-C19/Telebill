@@ -9,7 +9,7 @@ namespace Telebill.Services.MasterData
 {
     public interface IProviderService
     {
-        Task<IEnumerable<Provider>> GetAllProvidersAsync();
+        Task<IEnumerable<Provider>> GetAllProvidersAsync(string? search, int page, int limit);
         Task<Provider?> GetProviderByNPIAsync(string npiId);
         Task<Provider?> GetProviderByNameAsync(string providerName);
         Task<IEnumerable<ProviderActiveInfo>> GetActiveProvidersAsync();
