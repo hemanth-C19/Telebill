@@ -42,6 +42,7 @@ export default function FrontDeskRoutes() {
               <Route path="encounters" element={<Encounters />} />
               <Route path="batches" element={<BatchList />} />
               <Route path="batch-detail" element={<BatchDetail />} />
+              <Route path="batch-detail/:batchId" element={<BatchDetail />} />
               <Route path="balances" element={<BalancesStatements />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="*" element={<Navigate to="dashboard" replace />} />

@@ -3,7 +3,7 @@
 import axios from 'axios'
 
 // TEMP: Paste your JWT token here for testing. Replace with localStorage or cookie retrieval once auth flow is wired up.
-const HARDCODED_TOKEN: string = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJoZW1hbnRoQGdtYWlsLmNvbSIsInJvbGUiOiJBZG1pbiIsIm5iZiI6MTc3NjA1Mzc3OCwiZXhwIjoxNzc2MTQwMTc4LCJpYXQiOjE3NzYwNTM3Nzh9.5LcCfOcL26EVSF5WCcFHDKX5N2dwe5QorSGl04cGSGrU-iyKikTRzB_Eu1dbVBfEQxkZdAvZT_UcS3zBJk0Zjg"
+const HARDCODED_TOKEN: string = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIxIiwidW5pcXVlX25hbWUiOiJoZW1hbnRoQGdtYWlsLmNvbSIsInJvbGUiOiJBZG1pbiIsIm5iZiI6MTc3NjE3Mjg3MCwiZXhwIjoxNzc2MjU5MjcwLCJpYXQiOjE3NzYxNzI4NzB9.BIrebSjaFPAMSk4gzrd-o8FG5qGQEhI0P6eEozxmti5XX-Rz8_L0Cn_4sMulLK2iRxu0CA5ItKSekOnsqDznsQ"
 
 const apiClient = axios.create({
   baseURL: 'http://localhost:5183',

@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import AdminRoutes from './pages/admin-portal/AdminRoutes'
 import SignIn from './pages/auth/SignIn'
+import CodingRoutes from './pages/coding-portal/CodingRoutes'
 import FrontDeskRoutes from './pages/frontdesk-portal/FrontDeskRoutes'
 import ProviderRoutes from './pages/provider-portal/ProviderRoutes'
 
@@ -28,6 +29,12 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/coding/*"
+        element={
+          <CodingRoutes />
+        }
+      />
+      <Route
         path="/"
         element={
           <Navigate
@@ -38,6 +45,8 @@ function AppRoutes() {
                   ? '/frontdesk/dashboard'
                   : role === 'Provider'
                     ? '/provider/dashboard'
+                    : role === 'Coder'
+                      ? '/coding/worklist'
                     : '/sign-in'
             }
             replace
