@@ -33,7 +33,7 @@ export function Table({
   const skeletonCols = columns.length + (showActions ? 1 : 0)
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto min-h-50">
       <table className="w-full border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">

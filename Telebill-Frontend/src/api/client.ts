@@ -26,6 +26,9 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 403) {
       console.warn('Forbidden — insufficient role permissions')
     }
+    else{
+      console.warn('Error occured ', error);``
+    }
     return Promise.reject(error)
   },
 )

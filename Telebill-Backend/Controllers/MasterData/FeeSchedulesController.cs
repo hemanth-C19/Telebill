@@ -20,8 +20,8 @@ public class FeeSchedulesController : ControllerBase
         _feeService = feeService;
     }
 
-    [HttpGet("GetFeesByPlanId")]
-    public async Task<ActionResult<IEnumerable<FeeSchedule>>> GetFeesByPlanId(int planId)
+    [HttpGet("GetFeesByPlanId/{planId}")]
+    public async Task<ActionResult<IEnumerable<FeeSchedule>>> GetFeesByPlanId([FromRoute] int planId)
     {
         try
         {
@@ -72,9 +72,9 @@ public class FeeSchedulesController : ControllerBase
         }
     }
 
-    [HttpDelete("DeleteFee")]
+    [HttpDelete("DeleteFee/{feeId}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> DeleteFee(int feeId)
+    public async Task<IActionResult> DeleteFee([FromRoute] int feeId)
     {
         try
         {
