@@ -6,9 +6,8 @@ import ProviderSidebar from '../../components/provider-portal/ProviderSidebar'
 import Navbar from '../../components/shared/ui/Navbar'
 import { Loader } from '../../components/shared/ui/Loader'
 import { useAuth } from '../../hooks/useAuth'
+import EncounterDetails from './EncounterDetail.tsx'
 
-const Dashboard = lazy(() => import('./Dashboard.tsx'))
-const ProviderDetails = lazy(() => import('./ProviderDetails.tsx'))
 const Notifications = lazy(() => import('../shared/Notifications.tsx'))
 
 export default function ProviderRoutes() {
@@ -33,10 +32,9 @@ export default function ProviderRoutes() {
         <div className="ml-64 min-h-[calc(100vh-4rem)] flex-1 overflow-y-auto bg-gray-50 p-6">
           <Suspense fallback={<Loader />}>
             <Routes>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="encounters" element={<ProviderDetails />} />
+              <Route path="encounters" element={<EncounterDetails />} />
               <Route path="notifications" element={<Notifications />} />
-              <Route path="*" element={<Navigate to="dashboard" replace />} />
+              <Route path="*" element={<Navigate to="encounters" replace />} />
             </Routes>
           </Suspense>
         </div>

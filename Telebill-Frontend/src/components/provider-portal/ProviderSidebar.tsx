@@ -4,13 +4,6 @@ import Sidebar from '../shared/ui/Sidebar'
 
 const iconClass = 'h-5 w-5'
 
-const HomeIcon = (
-  <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <path d="M9 22V12h6v10" />
-  </svg>
-)
-
 const CalendarIcon = (
   <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -26,8 +19,7 @@ const BellIcon = (
 )
 
 const navItems = [
-  { label: 'Dashboard', path: '/provider/dashboard', icon: HomeIcon },
-  { label: 'Provider Details', path: '/provider/encounters', icon: CalendarIcon },
+  { label: 'Encounter Details', path: '/provider/encounters', icon: CalendarIcon },
   { label: 'Notifications', path: '/provider/notifications', icon: BellIcon },
 ]
 
