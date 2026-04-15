@@ -26,14 +26,6 @@ type ProviderFormValues = {
   status: string;
 };
 
-// const DUMMY_PROVIDERS: Provider[] = [
-//   { providerId: 201, npi: '1234567890', name: 'Dr. Sarah Chen', taxonomy: 'Internal Medicine', telehealthEnrolled: 1, contactInfo: '555-2001', status: 'Active' },
-//   { providerId: 202, npi: '2345678901', name: 'Dr. James Patel', taxonomy: 'Psychiatry', telehealthEnrolled: 1, contactInfo: '555-2002', status: 'Active' },
-//   { providerId: 203, npi: '3456789012', name: 'Dr. Mark Liu', taxonomy: 'Cardiology', telehealthEnrolled: 1, contactInfo: '555-2003', status: 'Active' },
-//   { providerId: 204, npi: '4567890123', name: 'Dr. Priya Sharma', taxonomy: 'Endocrinology', telehealthEnrolled: 1, contactInfo: '555-2004', status: 'Inactive' },
-//   { providerId: 205, npi: '5678901234', name: 'Dr. Robert Adams', taxonomy: 'Neurology', telehealthEnrolled: 1, contactInfo: '555-2005', status: 'Active' },
-// ]
-
 const fieldClassName =
   "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 

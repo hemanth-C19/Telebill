@@ -7,7 +7,7 @@ namespace Telebill.Services.MasterData;
 
 public interface IPayerPlanService
 {
-    Task<IEnumerable<PayerPlan>> GetPlansByPayerIdAsync(int payerId);
+    Task<IEnumerable<PayerPlan>> GetPlansByPayerIdAsync(int payerId, string? search);
     Task<IEnumerable<PlanNamesDTO>> GetPlanNamesByPayerIdAsync(int payerId);
 
     Task AddPlanAsync(AddPayerPlanDTO plan);

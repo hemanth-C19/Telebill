@@ -20,12 +20,14 @@ public class PayerPlansController : ControllerBase
         _planService = planService;
     }
 
-    [HttpGet("GetPlansByPayerId")]
-    public async Task<ActionResult<IEnumerable<PayerPlan>>> GetPlansByPayerId(int payerId)
+    [HttpGet("GetPlansByPayerId/{payerId}")]
+    public async Task<ActionResult<IEnumerable<PayerPlan>>> GetPlansByPayerId(
+        [FromRoute] int payerId,
+        [FromQuery] string? search)
     {
         try
         {
-            var plans = await _planService.GetPlansByPayerIdAsync(payerId);
+            var plans = await _planService.GetPlansByPayerIdAsync(payerId, search);
             return Ok(plans);
         }
         catch (KeyNotFoundException ex)
@@ -86,7 +88,7 @@ public class PayerPlansController : ControllerBase
         }
     }
 
-    [HttpDelete("DeletePlan")]
+    [HttpDelete("DeletePlan/{planId}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeletePlan(int planId)
     {

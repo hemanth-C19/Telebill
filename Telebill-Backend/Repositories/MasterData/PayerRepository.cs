@@ -25,7 +25,7 @@ namespace Telebill.Repositories.MasterData
                 query = query.Where(p => p.Name.Contains(search));
             }
 
-            var payers = await query.Skip((page-1) * limit).Take(limit).ToListAsync();
+            var payers = await query.Skip((page - 1) * limit).Take(limit).ToListAsync();
 
             return payers;
         }
@@ -72,9 +72,20 @@ namespace Telebill.Repositories.MasterData
 
         // ── PLAN ──────────────────────────────────────────────────
 
-        public Task<List<PayerPlan>> GetByPayerIdAsync(int payerId)
+        public async Task<List<PayerPlan>> GetByPayerIdAsync(int payerId, string? search)
         {
-            return _context.PayerPlans.Where(pp => pp.PayerId == payerId).ToListAsync();
+            var query = _context.PayerPlans.AsQueryable();
+
+            query = query.Where(p => p.PayerId == payerId);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(p => p.PlanName.Contains(search));
+            }
+
+            var payerPlans = await query.ToListAsync();
+
+            return payerPlans;
         }
 
         public Task<List<PayerPlan>> GetActiveByPayerIdAsync(int payerId)

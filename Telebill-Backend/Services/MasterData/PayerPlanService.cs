@@ -19,12 +19,12 @@ public class PayerPlanService : IPayerPlanService
         _planRepo = planRepo;
     }
 
-    public async Task<IEnumerable<PayerPlan>> GetPlansByPayerIdAsync(int payerId)
+    public async Task<IEnumerable<PayerPlan>> GetPlansByPayerIdAsync(int payerId, string? search)
     {
         if (!await _payerRepo.ExistsAsync(payerId))
             throw new KeyNotFoundException($"Payer {payerId} not found.");
 
-        return await _planRepo.GetByPayerIdAsync(payerId);
+        return await _planRepo.GetByPayerIdAsync(payerId, search);
     }
 
     public async Task<IEnumerable<PlanNamesDTO>> GetPlanNamesByPayerIdAsync(int payerId)

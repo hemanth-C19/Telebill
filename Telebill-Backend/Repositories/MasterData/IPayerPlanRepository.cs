@@ -6,7 +6,7 @@ namespace Telebill.Repositories.MasterData;
 
 public interface IPayerPlanRepository
 {
-    Task<List<PayerPlan>> GetByPayerIdAsync(int payerId);
+    Task<List<PayerPlan>> GetByPayerIdAsync(int payerId, string? search);
     Task<List<PayerPlan>> GetActiveByPayerIdAsync(int payerId);
     Task<PayerPlan?> GetPayerPlanByIdAsync(int planId);
     Task<bool> ExistsAsync(int planId);
