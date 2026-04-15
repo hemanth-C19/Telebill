@@ -44,7 +44,7 @@ function AppRoutes() {
                 : role === 'FrontDesk'
                   ? '/frontdesk/dashboard'
                   : role === 'Provider'
-                    ? '/provider/dashboard'
+                    ? '/provider/encounter'
                     : role === 'Coder'
                       ? '/coding/worklist'
                     : '/sign-in'
