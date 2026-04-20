@@ -62,7 +62,7 @@ export default function Patients() {
 
   useEffect(() => {
     GetPatients();
-  }, []);
+  }, [searchQuery, currentPage]);
 
   const {
     register,

@@ -1,7 +1,3 @@
-// PatientCoverage.tsx — Coverage management for a specific patient
-// Route: /patients/:patientId/coverage
-// Backend ref: CoverageController GET .../Coverage/GetCoverageById/{patientId}
-
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -11,134 +7,11 @@ import { Card } from "../../components/shared/ui/Card";
 import Dialog from "../../components/shared/ui/Dialog";
 import Input from "../../components/shared/ui/Input";
 import Table from "../../components/shared/ui/Table";
-
-// ── Dummy data ────────────────────────────────────────────────────────
-
-const DUMMY_PATIENTS: Record<number, { name: string; mrn: string }> = {
-  1: { name: "Alice Johnson", mrn: "PT-A1B2C3D4" },
-  2: { name: "Bob Martinez", mrn: "PT-E5F6G7H8" },
-  3: { name: "Carol Nguyen", mrn: "PT-I9J0K1L2" },
-  4: { name: "David Patel", mrn: "PT-M3N4O5P6" },
-  5: { name: "Emily Rodriguez", mrn: "PT-Q7R8S9T0" },
-  6: { name: "Frank Williams", mrn: "PT-U1V2W3X4" },
-  7: { name: "Grace Kim", mrn: "PT-Y5Z6A7B8" },
-};
-
-type Coverage = {
-  coverageId: number;
-  patientId: number;
-  planId: number;
-  planName: string;
-  memberId: string;
-  groupNumber: string;
-  effectiveFrom: string;
-  effectiveTo: string;
-  status: string;
-};
-
-// Backend ref: CoverageController GET .../Coverage/GetCoverageById/{patientId}
-const DUMMY_COVERAGES: Record<number, Coverage[]> = {
-  1: [
-    {
-      coverageId: 101,
-      patientId: 1,
-      planId: 10,
-      planName: "BlueCross Basic",
-      memberId: "BCB-001",
-      groupNumber: "GRP-100",
-      effectiveFrom: "2023-01-01",
-      effectiveTo: "2024-12-31",
-      status: "Active",
-    },
-    {
-      coverageId: 102,
-      patientId: 1,
-      planId: 11,
-      planName: "BlueCross Dental",
-      memberId: "BCD-001",
-      groupNumber: "GRP-101",
-      effectiveFrom: "2023-01-01",
-      effectiveTo: "2023-12-31",
-      status: "Inactive",
-    },
-  ],
-  2: [
-    {
-      coverageId: 103,
-      patientId: 2,
-      planId: 20,
-      planName: "Aetna PPO",
-      memberId: "AET-202",
-      groupNumber: "GRP-200",
-      effectiveFrom: "2024-03-01",
-      effectiveTo: "2025-02-28",
-      status: "Active",
-    },
-  ],
-  3: [],
-  4: [
-    {
-      coverageId: 104,
-      patientId: 4,
-      planId: 30,
-      planName: "United Gold",
-      memberId: "UHG-404",
-      groupNumber: "GRP-300",
-      effectiveFrom: "2022-06-01",
-      effectiveTo: "2024-05-31",
-      status: "Inactive",
-    },
-  ],
-  5: [
-    {
-      coverageId: 105,
-      patientId: 5,
-      planId: 10,
-      planName: "BlueCross Basic",
-      memberId: "BCB-505",
-      groupNumber: "GRP-100",
-      effectiveFrom: "2024-01-01",
-      effectiveTo: "2025-12-31",
-      status: "Active",
-    },
-  ],
-  6: [],
-  7: [
-    {
-      coverageId: 106,
-      patientId: 7,
-      planId: 40,
-      planName: "Cigna HMO",
-      memberId: "CIG-707",
-      groupNumber: "GRP-400",
-      effectiveFrom: "2023-07-01",
-      effectiveTo: "2025-06-30",
-      status: "Active",
-    },
-  ],
-};
-
-const PAYER_PLANS = [
-  { planId: 10, planName: "BlueCross Basic" },
-  { planId: 11, planName: "BlueCross Dental" },
-  { planId: 20, planName: "Aetna PPO" },
-  { planId: 30, planName: "United Gold" },
-  { planId: 40, planName: "Cigna HMO" },
-  { planId: 50, planName: "Medicare Part B" },
-] as const;
-
-// ── Helpers ───────────────────────────────────────────────────────────
-
-function nextCoverageId(list: Coverage[]): number {
-  return list.reduce((m, c) => Math.max(m, c.coverageId), 0) + 1;
-}
-
-const selectClassName =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20";
-
-// ── Types ─────────────────────────────────────────────────────────────
+import apiClient from "../../api/client";
+import type { Coverage } from "../../types/frontdesk.types";
 
 type CoverageFormValues = {
+  payerId: string;
   planId: string;
   memberId: string;
   groupNumber: string;
@@ -146,7 +19,11 @@ type CoverageFormValues = {
   effectiveTo: string;
 };
 
-// ── Component ─────────────────────────────────────────────────────────
+type PayerOption = { payerId: number; payerName: string; payerCode: string };
+type PlanOption = { planId: number; planName: string };
+
+const selectClassName =
+  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20";
 
 export default function PatientCoverage() {
   const { patientId: patientIdParam } = useParams<{ patientId: string }>();
@@ -154,16 +31,24 @@ export default function PatientCoverage() {
 
   const patientId = Number(patientIdParam);
 
-  // Seed local coverage state from dummy data for this patient
-  const [coverages, setCoverages] = useState<Coverage[]>(() => {
-    return (DUMMY_COVERAGES[patientId] ?? []).map((c) => ({ ...c }));
-  });
-
+  const [coverages, setCoverages] = useState<Coverage[]>([]);
+  const [patient, setPatient] = useState<{ name: string; mrn: string } | null>(
+    null,
+  );
+  const [loading, setLoading] = useState(true);
+  const [payerOptions, setPayerOptions] = useState<PayerOption[]>([]);
+  const [planOptions, setPlanOptions] = useState<PlanOption[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [verifyingId, setVerifyingId] = useState<number | null>(null);
+  const [verifyResult, setVerifyResult] = useState<{
+    coverageId: number;
+    result: string;
+  } | null>(null);
 
   const coverageForm = useForm<CoverageFormValues>({
     defaultValues: {
-      planId: String(PAYER_PLANS[0].planId),
+      payerId: "",
+      planId: "",
       memberId: "",
       groupNumber: "",
       effectiveFrom: "",
@@ -171,49 +56,108 @@ export default function PatientCoverage() {
     },
   });
 
-  // Reset form when dialog opens
+  const watchedPayerId = coverageForm.watch("payerId");
+
+  async function fetchCoverages() {
+    const res = await apiClient.get(
+      `api/v1/PatientCoverage/Coverage/GetCoverageById/${patientId}`,
+    );
+    setCoverages(res.data);
+  }
+
+  async function fetchPatient() {
+    const res = await apiClient.get(
+      `api/v1/PatientCoverage/Patient/GetPatientById/${patientId}`,
+    );
+    setPatient({ name: res.data.name, mrn: res.data.mrn });
+  }
+
+  async function fetchPayers() {
+    const res = await apiClient.get(
+      "api/v1/MasterData/Payers/GetAllPayersNames",
+    );
+    setPayerOptions(res.data);
+  }
+
+  useEffect(() => {
+    Promise.all([fetchPatient(), fetchCoverages(), fetchPayers()]).finally(() =>
+      setLoading(false),
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!watchedPayerId) {
+      setPlanOptions([]);
+      coverageForm.setValue("planId", "");
+      return;
+    }
+    apiClient
+      .get("api/v1/MasterData/PayerPlans/GetPlanNamesByPayerId", {
+        params: { payerId: watchedPayerId },
+      })
+      .then((res) => {
+        setPlanOptions(res.data);
+        coverageForm.setValue(
+          "planId",
+          res.data.length > 0 ? String(res.data[0].planId) : "",
+        );
+      });
+  }, [watchedPayerId]);
+
   useEffect(() => {
     if (showAddDialog) {
       coverageForm.reset({
-        planId: String(PAYER_PLANS[0].planId),
+        payerId: "",
+        planId: "",
         memberId: "",
         groupNumber: "",
         effectiveFrom: "",
         effectiveTo: "",
       });
+      setPlanOptions([]);
     }
-  }, [showAddDialog, coverageForm]);
+  }, [showAddDialog]);
 
-  const patient = DUMMY_PATIENTS[patientId];
-
-  // ── Handlers ────────────────────────────────────────────────────────
-
-  function onAddCoverage(values: CoverageFormValues) {
-    const planId = Number(values.planId);
-    const plan = PAYER_PLANS.find((p) => p.planId === planId);
-    const newCov: Coverage = {
-      coverageId: nextCoverageId(coverages),
-      patientId,
-      planId,
-      planName: plan?.planName ?? "Unknown Plan",
-      memberId: values.memberId.trim(),
-      groupNumber: values.groupNumber.trim(),
-      effectiveFrom: values.effectiveFrom,
-      effectiveTo: values.effectiveTo,
-      status: "Active",
-    };
-    setCoverages((prev) => [...prev, newCov]);
+  async function onAddCoverage(values: CoverageFormValues) {
+    await apiClient.post("api/v1/PatientCoverage/Coverage/AddCoverage", {
+      PatientID: patientId,
+      PlanID: Number(values.planId),
+      MemberID: values.memberId.trim(),
+      GroupNumber: values.groupNumber.trim(),
+      EffectiveFrom: values.effectiveFrom,
+      EffectiveTo: values.effectiveTo,
+    });
+    await fetchCoverages();
     setShowAddDialog(false);
   }
 
-  function handleRemove(coverageId: number) {
-    setCoverages((prev) => prev.filter((c) => c.coverageId !== coverageId));
+  async function handleRemove(coverageId: number) {
+    await apiClient.delete(
+      `api/v1/PatientCoverage/Coverage/DeleteCoverage/${patientId}/${coverageId}`,
+    );
+    await fetchCoverages();
+  }
+
+  async function handleVerify(coverageId: number) {
+    setVerifyingId(coverageId);
+    setVerifyResult(null);
+    try {
+      const res = await apiClient.post(
+        `api/v1/PatientCoverage/Coverage/VerifyInsurance/${coverageId}`,
+      );
+      setVerifyResult({
+        coverageId,
+        result: res.data.result ?? "Eligible",
+      });
+    } finally {
+      setVerifyingId(null);
+    }
   }
 
   // ── Table config ─────────────────────────────────────────────────────
 
   const coverageColumns = [
-    { key: "planName", label: "Plan Name" },
+    { key: "planId", label: "Plan ID" },
     { key: "memberId", label: "Member ID" },
     { key: "groupNumber", label: "Group Number" },
     { key: "effectiveFrom", label: "Effective From" },
@@ -223,17 +167,19 @@ export default function PatientCoverage() {
 
   const coverageTableData = coverages.map((row) => ({
     ...row,
-    status: <Badge status={row.status} />,
+    status: <Badge status={row.status ?? "Active"} />,
   }));
 
-  // ── Guard: unknown patient ────────────────────────────────────────────
+  if (loading) {
+    return <p className="text-sm text-gray-500">Loading...</p>;
+  }
 
   if (patient == null) {
     return (
       <div className="space-y-4">
         <button
           type="button"
-          onClick={() => navigate("/frontdesk/dashboard")}
+          onClick={() => navigate("/frontdesk/patients")}
           className="text-sm font-medium text-blue-600 hover:text-blue-800"
         >
           ← Back to Patients
@@ -242,8 +188,6 @@ export default function PatientCoverage() {
       </div>
     );
   }
-
-  // ── Render ────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -274,6 +218,13 @@ export default function PatientCoverage() {
         </div>
       </Card>
 
+      {/* Eligibility verify result banner */}
+      {verifyResult && (
+        <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+          Coverage #{verifyResult.coverageId} — {verifyResult.result}
+        </div>
+      )}
+
       {/* Coverage table */}
       <Card>
         <div className="mb-4 flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -301,6 +252,10 @@ export default function PatientCoverage() {
             showActions
             actions={[
               {
+                label: verifyingId !== null ? "Validating…" : "Validate",
+                onClick: (row) => handleVerify(row.coverageId as number),
+              },
+              {
                 label: "Remove",
                 onClick: (row) => handleRemove(row.coverageId as number),
                 variant: "danger",
@@ -323,20 +278,55 @@ export default function PatientCoverage() {
           noValidate
         >
           <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700">Payer</label>
+            <select
+              className={selectClassName}
+              {...coverageForm.register("payerId", {
+                required: "Select a payer",
+              })}
+            >
+              <option value="">— Select Payer —</option>
+              {payerOptions.map((p) => (
+                <option key={p.payerId} value={p.payerId}>
+                  {p.payerName}
+                </option>
+              ))}
+            </select>
+            {coverageForm.formState.errors.payerId && (
+              <p className="text-xs text-red-500">
+                {coverageForm.formState.errors.payerId.message}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-gray-700">
               Payer Plan
             </label>
             <select
               className={selectClassName}
-              {...coverageForm.register("planId", { required: true })}
+              disabled={!watchedPayerId || planOptions.length === 0}
+              {...coverageForm.register("planId", {
+                required: "Select a plan",
+              })}
             >
-              {PAYER_PLANS.map((p) => (
+              <option value="">
+                {watchedPayerId && planOptions.length === 0
+                  ? "No plans available"
+                  : "— Select Plan —"}
+              </option>
+              {planOptions.map((p) => (
                 <option key={p.planId} value={p.planId}>
                   {p.planName}
                 </option>
               ))}
             </select>
+            {coverageForm.formState.errors.planId && (
+              <p className="text-xs text-red-500">
+                {coverageForm.formState.errors.planId.message}
+              </p>
+            )}
           </div>
+
           <Input
             label="Member ID"
             {...coverageForm.register("memberId", {
@@ -365,6 +355,7 @@ export default function PatientCoverage() {
             {...coverageForm.register("effectiveTo", { required: "Required" })}
             error={coverageForm.formState.errors.effectiveTo?.message}
           />
+
           <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button"

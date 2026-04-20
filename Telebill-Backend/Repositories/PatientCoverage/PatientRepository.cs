@@ -54,12 +54,15 @@ namespace Telebill.Repositories.PatientCoverage
             }
         }
 
-        public async Task DeleteCoverageByCoverageIdAsync(int patientId ,int CoverageId)
+        public async Task DeleteCoverageByCoverageIdAsync(int patientId, int CoverageId)
         {
-            var patient = await context.Patients.Include(p=> p.Coverages).FirstOrDefaultAsync(p => p.PatientId == patientId);
-            var coverage = patient.Coverages.FirstOrDefault(c=> c.CoverageId == CoverageId);
-            context.Coverages.Remove(coverage);
-            await context.SaveChangesAsync();
+            var coverage = await context.Coverages
+                .FirstOrDefaultAsync(c => c.CoverageId == CoverageId && c.PatientId == patientId);
+            if (coverage != null)
+            {
+                context.Coverages.Remove(coverage);
+                await context.SaveChangesAsync();
+            }
         }
 
         // Eligibility Logic
