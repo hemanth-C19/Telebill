@@ -5,7 +5,7 @@ namespace Telebill.Repositories.PatientCoverage
     public interface IPatientRepository
     {
         // Patient Table
-        Task<IEnumerable<Patient>> GetAllPatientsAsync();
+        Task<IEnumerable<Patient>> GetAllPatientsAsync(string? search, int page, int limit);
         Task<Patient> GetPatientByIdAsync(int id);
 
         Task AddPatientAsync(Patient patient);

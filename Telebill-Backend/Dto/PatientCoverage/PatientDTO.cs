@@ -15,6 +15,9 @@ namespace Telebill.DTOs
     public string? Street { get; set; }
     public string? Area { get; set; }
     public string? City { get; set; }
+    public string? Address { get; set; } // <-- Add this line
+
+    public string? Status {get; set;}
 }
 
 public class CoverageDto {

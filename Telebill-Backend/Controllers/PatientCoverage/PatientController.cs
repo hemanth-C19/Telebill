@@ -15,7 +15,11 @@ namespace Telebill.Controllers
     {
 
         [HttpGet("GetAllPatients")]
-        public async Task<IActionResult> GetAllPatients() => Ok(await service.ListAllPatients());
+        public async Task<IActionResult> GetAllPatients(
+            [FromQuery] string? search,
+            [FromQuery] int page,
+            [FromQuery] int limit = 5
+        ) => Ok(await service.ListAllPatients(search, page, limit));
 
         [HttpPost("RegisterPatient")]
         [Authorize(Roles = "FrontDesk,Admin")]
@@ -36,7 +40,7 @@ namespace Telebill.Controllers
 
         [HttpPut("UpdatePatientById/{PatientId}")] // {id} makes the 'id' box appear in Swagger
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> UpdatePatient(int patientId, [FromBody] PatientDto dto)
+        public async Task<IActionResult> UpdatePatient([FromRoute] int patientId, [FromBody] PatientDto dto)
         {
             if (patientId <= 0) return BadRequest("Invalid Patient ID");
 
@@ -50,7 +54,7 @@ namespace Telebill.Controllers
         // DELETE: api/patient-management/patients/3
         [HttpDelete("DeletePatientByID/{PatientId}")]
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> DeletePatient(int patientId)
+        public async Task<IActionResult> DeletePatient([FromRoute] int patientId)
         {
             var success = await service.RemovePatient(patientId);
             if (!success) return NotFound();

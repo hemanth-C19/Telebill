@@ -1,7 +1,4 @@
-// Patients.tsx — FrontDesk patient list, register, edit
-// Backend ref: PatientController GET .../Patient/GetAllPatients
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import Badge from "../../components/shared/ui/Badge";
@@ -9,99 +6,13 @@ import Button from "../../components/shared/ui/Button";
 import Dialog from "../../components/shared/ui/Dialog";
 import { Pagination } from "../../components/shared/ui/Pagination";
 import Table from "../../components/shared/ui/Table";
-import type { Patient, PatientFormValues } from "../../types/frontdesk.types";
+import type {
+  Patient,
+  PatientFormValues,
+  PatientIncomming,
+} from "../../types/frontdesk.types";
 import { PatientFormFields } from "../../components/frontdesk-portal/PatientFormFields";
-
-
-// ── Dummy data ────────────────────────────────────────────────────────
-const DUMMY_PATIENTS = [
-  {
-    patientId: 1,
-    name: "Alice Johnson",
-    dob: "1985-03-14",
-    gender: "Female",
-    contactInfo: "555-1001",
-    street: "12 Maple St",
-    area: "Downtown",
-    city: "Austin",
-    mrn: "PT-A1B2C3D4",
-    status: "Active",
-  },
-  {
-    patientId: 2,
-    name: "Bob Martinez",
-    dob: "1972-07-22",
-    gender: "Male",
-    contactInfo: "555-1002",
-    street: "45 Oak Ave",
-    area: "Westside",
-    city: "Austin",
-    mrn: "PT-E5F6G7H8",
-    status: "Active",
-  },
-  {
-    patientId: 3,
-    name: "Carol Nguyen",
-    dob: "1990-11-05",
-    gender: "Female",
-    contactInfo: "555-1003",
-    street: "78 Pine Rd",
-    area: "Eastside",
-    city: "Austin",
-    mrn: "PT-I9J0K1L2",
-    status: "Inactive",
-  },
-  {
-    patientId: 4,
-    name: "David Patel",
-    dob: "1965-01-30",
-    gender: "Male",
-    contactInfo: "555-1004",
-    street: "9 Cedar Blvd",
-    area: "Northgate",
-    city: "Austin",
-    mrn: "PT-M3N4O5P6",
-    status: "Active",
-  },
-  {
-    patientId: 5,
-    name: "Emily Rodriguez",
-    dob: "1998-06-18",
-    gender: "Female",
-    contactInfo: "555-1005",
-    street: "33 Elm Court",
-    area: "Southpark",
-    city: "Austin",
-    mrn: "PT-Q7R8S9T0",
-    status: "Active",
-  },
-  {
-    patientId: 6,
-    name: "Frank Williams",
-    dob: "1955-09-09",
-    gender: "Male",
-    contactInfo: "555-1006",
-    street: "201 Birch Way",
-    area: "Lakewood",
-    city: "Austin",
-    mrn: "PT-U1V2W3X4",
-    status: "Inactive",
-  },
-  {
-    patientId: 7,
-    name: "Grace Kim",
-    dob: "2001-12-25",
-    gender: "Female",
-    contactInfo: "555-1007",
-    street: "57 Walnut St",
-    area: "Riverside",
-    city: "Austin",
-    mrn: "PT-Y5Z6A7B8",
-    status: "Active",
-  },
-];
-
-const PAGE_SIZE = 5;
+import apiClient from "../../api/client";
 
 const fieldClassName =
   "w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20";
@@ -114,30 +25,44 @@ const EMPTY_FORM: PatientFormValues = {
   street: "",
   area: "",
   city: "",
-  status: ""
+  status: "",
 };
-
-function generateMrn(): string {
-  const hex = crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
-  return `PT-${hex}`;
-}
-
-function nextPatientId(patients: Patient[]): number {
-  return patients.reduce((m, p) => Math.max(m, p.patientId), 0) + 1;
-}
-
-// ── Component ─────────────────────────────────────────────────────────
 
 export default function Patients() {
   const navigate = useNavigate();
 
-  const [patients, setPatients] = useState<Patient[]>(() => [
-    ...DUMMY_PATIENTS,
-  ]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  async function GetPatients() {
+    console.log("sending request to backend");
+    const result = await apiClient.get(
+      "api/v1/PatientCoverage/Patient/GetAllPatients",
+      {
+        params: {
+          search: searchQuery,
+          page: currentPage,
+          limit: 5,
+        },
+      },
+    );
+    const finalData: Patient[] = result.data.map((data: PatientIncomming) => ({
+      ...data,
+      area: JSON.parse(data.addressJson).Area,
+      city: JSON.parse(data.addressJson).City,
+      street: JSON.parse(data.addressJson).Street,
+    }));
+    setPatients(finalData);
+    setIsLoading(false);
+  }
+
+  useEffect(() => {
+    GetPatients();
+  }, []);
 
   const {
     register,
@@ -146,8 +71,6 @@ export default function Patients() {
     formState: { errors },
   } = useForm<PatientFormValues>({ defaultValues: EMPTY_FORM });
 
-  // ── Dialog open/close ─────────────────────────────────────────────────
-
   function handleOpenAdd() {
     reset(EMPTY_FORM);
     setShowAddDialog(true);
@@ -155,14 +78,17 @@ export default function Patients() {
 
   function handleOpenEdit(row: Patient) {
     setEditingPatient(row);
+    console.log(row);
     reset({
       name: row.name,
       dob: row.dob,
       gender: row.gender,
       contactInfo: row.contactInfo,
-      street: row.street,
+      //@ts-ignore
+      status: row.status.props.status,
       area: row.area,
       city: row.city,
+      street: row.street,
     });
   }
 
@@ -172,74 +98,30 @@ export default function Patients() {
     reset(EMPTY_FORM);
   }
 
-  // ── Single submit handler for both add & edit ─────────────────────────
-
-  function onSubmit(values: PatientFormValues) {
+  async function onSubmit(values: PatientFormValues) {
     if (editingPatient != null) {
-      // Edit — DOB & gender are disabled in edit mode, keep originals
-      setPatients((prev) =>
-        prev.map((p) =>
-          p.patientId === editingPatient.patientId
-            ? {
-                ...p,
-                name: values.name.trim(),
-                contactInfo: values.contactInfo.trim(),
-                street: values.street.trim(),
-                area: values.area.trim(),
-                city: values.city.trim(),
-              }
-            : p,
-        ),
+      await apiClient.put(
+        `api/v1/PatientCoverage/Patient/UpdatePatientById/${editingPatient.patientId}`,
+        values,
       );
+      console.log(values);
     } else {
-      // Add
-      const newPatient: Patient = {
-        patientId: nextPatientId(patients),
-        name: values.name.trim(),
-        dob: values.dob,
-        gender: values.gender,
-        contactInfo: values.contactInfo.trim(),
-        street: values.street.trim(),
-        area: values.area.trim(),
-        city: values.city.trim(),
-        mrn: generateMrn(),
-        status: "Active",
-      };
-      setPatients((prev) => [...prev, newPatient]);
+      await apiClient.post(
+        "api/v1/PatientCoverage/Patient/RegisterPatient",
+        values,
+      );
     }
+    await GetPatients();
     handleClose();
   }
 
-  function handleDelete(patientId: number) {
-    setPatients((prev) => prev.filter((p) => p.patientId !== patientId));
-  }
-
-  // ── Filtering & pagination ────────────────────────────────────────────
-
-  const filteredPatients = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (q === "") return patients;
-    return patients.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) || p.mrn.toLowerCase().includes(q),
+  async function handleDelete(patientId: number) {
+    await apiClient.delete(
+      `api/v1/PatientCoverage/Patient/DeletePatientByID/${patientId}`,
     );
-  }, [patients, searchQuery]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredPatients.length / PAGE_SIZE),
-  );
-
-  useEffect(() => {
-    setCurrentPage((p) => Math.min(p, totalPages));
-  }, [totalPages]);
-
-  const paginatedPatients = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredPatients.slice(start, start + PAGE_SIZE);
-  }, [filteredPatients, currentPage]);
-
-  // ── Table config ──────────────────────────────────────────────────────
+    setIsLoading(true);
+    GetPatients();
+  }
 
   const listColumns = [
     { key: "mrn", label: "MRN" },
@@ -247,15 +129,9 @@ export default function Patients() {
     { key: "dob", label: "Date of Birth" },
     { key: "gender", label: "Gender" },
     { key: "contactInfo", label: "Contact" },
+    { key: "address", label: "Address" },
     { key: "status", label: "Status" },
   ];
-
-  const listTableData = paginatedPatients.map((p) => ({
-    ...p,
-    status: <Badge status={p.status} />,
-  }));
-
-  // ── Render ────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -268,7 +144,6 @@ export default function Patients() {
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
-            setCurrentPage(1);
           }}
           className="w-72 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -282,18 +157,27 @@ export default function Patients() {
         </Button>
       </div>
 
-      {/* Patients Table */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <Table
           columns={listColumns}
-          data={listTableData}
+          data={patients.map((pat) => ({
+            ...pat,
+            address: (
+              <div className="flex flex-col">
+                <span className="text-xs">Street: {pat.street}</span>
+                <span className="text-xs">Area: {pat.area}</span>
+                <span className="text-xs">City: {pat.city}</span>
+              </div>
+            ),
+            status: <Badge status={pat.status} />,
+          }))}
+          loading={isLoading}
           showActions
           actions={[
             {
               label: "Edit",
               onClick: (row) => {
-                const p = patients.find((x) => x.patientId === row.patientId);
-                if (p != null) handleOpenEdit(p);
+                handleOpenEdit(row as Patient);
               },
             },
             {
@@ -309,7 +193,7 @@ export default function Patients() {
         />
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={5}
           onPageChange={setCurrentPage}
         />
       </div>

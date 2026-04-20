@@ -6,16 +6,19 @@ using Telebill.Repositories.PatientCoverage;
 namespace Telebill.Services.PatientCoverage;
 
 
-public class PatientService(IPatientRepository repo) : IPatientService {
+public class PatientService(IPatientRepository repo) : IPatientService
+{
 
-    public async Task<Patient> RegisterPatient(PatientDto dto) {
-        var patient = new Patient {
+    public async Task<Patient> RegisterPatient(PatientDto dto)
+    {
+        var patient = new Patient
+        {
             Name = dto.Name,
             Dob = dto.DOB,
             Gender = dto.Gender,
             ContactInfo = dto.ContactInfo,
             Mrn = "PT-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper(),
-            Status = "Active",
+            Status = dto.Status,
             AddressJson = JsonSerializer.Serialize(new { dto.Street, dto.Area, dto.City })
         };
         await repo.AddPatientAsync(patient);
@@ -23,22 +26,24 @@ public class PatientService(IPatientRepository repo) : IPatientService {
         return patient;
     }
 
-public async Task<Patient> GetPatientById(int id)
-{
-    var patient = await repo.GetPatientByIdAsync(id);
-    if (patient == null)
+    public async Task<Patient> GetPatientById(int id)
     {
-        throw new KeyNotFoundException("Patient not found");
+        var patient = await repo.GetPatientByIdAsync(id);
+        if (patient == null)
+        {
+            throw new KeyNotFoundException("Patient not found");
+        }
+        return patient;
     }
-    return patient;
-}
-    public async Task<Coverage> AddInsurance(CoverageDto dto) {
-        var coverage = new Coverage {
+    public async Task<Coverage> AddInsurance(CoverageDto dto)
+    {
+        var coverage = new Coverage
+        {
             PatientId = dto.PatientID,
             PlanId = dto.PlanID,
             MemberId = dto.MemberID,
             GroupNumber = dto.GroupNumber,
-            
+
             EffectiveFrom = DateOnly.FromDateTime(dto.EffectiveFrom),
             EffectiveTo = DateOnly.FromDateTime(dto.EffectiveFrom),
             Status = "Active"
@@ -48,9 +53,10 @@ public async Task<Patient> GetPatientById(int id)
         return coverage;
     }
 
-    public async Task<EligibilityRef> VerifyInsurance(int coverageId) {
-        // Phase-1 Mock Logic: Automatically return "Eligible" for Indian References
-        var result = new EligibilityRef {
+    public async Task<EligibilityRef> VerifyInsurance(int coverageId)
+    {
+        var result = new EligibilityRef
+        {
             CoverageId = coverageId,
             CheckedDate = DateTime.Now,
             Result = "Eligible",
@@ -71,41 +77,64 @@ public async Task<Patient> GetPatientById(int id)
         }
         return coverage;
     }
-    public async Task<IEnumerable<Patient>> ListAllPatients() => await repo.GetAllPatientsAsync();
+    public async Task<IEnumerable<Patient>> ListAllPatients(string? search, int page, int limit) => await repo.GetAllPatientsAsync(search, page, limit);
     public async Task<IEnumerable<Coverage>> GetPatientInsurance(int patientId) => await repo.GetCoveragesByPatientIdAsync(patientId);
-    public async Task UpdatePatient(int id, PatientDto dto) {
+    public async Task UpdatePatient(int id, PatientDto dto)
+    {
+
+
         var p = await repo.GetPatientByIdAsync(id);
-        if (p == null) throw new KeyNotFoundException("Patient not found");
-        p.Name = dto.Name;
+        if (p == null)
+            throw new KeyNotFoundException("Patient not found");
+
+        Console.WriteLine("----------------------------------------------------");
+        Console.WriteLine(dto);
+
+        p.Name = dto.Name!;
+        p.Dob = dto.DOB;
+        p.Gender = dto.Gender;
         p.ContactInfo = dto.ContactInfo;
+        p.Status = dto.Status;
+
+        var addressObj = new
+        {
+            Street = dto.Street,
+            Area = dto.Area,
+            City = dto.City
+        };
+
+        p.AddressJson = JsonSerializer.Serialize(addressObj);
+
+        p.AddressJson = JsonSerializer.Serialize(addressObj);
+
         repo.UpdatePatient(p);
         await repo.SaveChangesAsync();
     }
-public async Task<bool> RemovePatient(int patientId)
-{
-    // 1. Get all coverages associated with this patient
-    var coverages = await repo.GetCoveragesByPatientIdAsync(patientId);
-
-    // 2. Delete each coverage first
-    foreach (var coverage in coverages)
+    public async Task<bool> RemovePatient(int patientId)
     {
-        await repo.DeleteCoverageAsync(coverage.CoverageId);
+        // 1. Get all coverages associated with this patient
+        var coverages = await repo.GetCoveragesByPatientIdAsync(patientId);
+
+        // 2. Delete each coverage first
+        foreach (var coverage in coverages)
+        {
+            await repo.DeleteCoverageAsync(coverage.CoverageId);
+        }
+
+        // 3. Now it is safe to delete the patient
+        await repo.DeletePatientAsync(patientId);
+
+        // 4. Save all changes together in one transaction
+        await repo.SaveChangesAsync();
+
+        return true;
     }
-
-    // 3. Now it is safe to delete the patient
-    await repo.DeletePatientAsync(patientId);
-
-    // 4. Save all changes together in one transaction
-    await repo.SaveChangesAsync();
-    
-    return true;
-}
-public async Task<bool> RemoveCoverage(int patientId ,int CoverageId)
-{
-    await repo.DeleteCoverageByCoverageIdAsync(patientId, CoverageId);
-    await repo.SaveChangesAsync();
-    return true;
-}
+    public async Task<bool> RemoveCoverage(int patientId, int CoverageId)
+    {
+        await repo.DeleteCoverageByCoverageIdAsync(patientId, CoverageId);
+        await repo.SaveChangesAsync();
+        return true;
+    }
 
     public async Task<bool> DeleteCoverageAsync(int coverageId)
     {
