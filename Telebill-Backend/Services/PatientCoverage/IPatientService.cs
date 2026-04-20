@@ -8,7 +8,7 @@ namespace Telebill.Services.PatientCoverage
     {
         // CRUD Patient
         Task<Patient> RegisterPatient(PatientDto dto);
-        Task<IEnumerable<Patient>> ListAllPatients();
+        Task<IEnumerable<Patient>> ListAllPatients(string? search, int page, int limit);
         Task<Patient> GetPatientById(int id);
         Task UpdatePatient(int id, PatientDto dto);
         Task<bool> RemovePatient(int id);

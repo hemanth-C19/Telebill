@@ -7,9 +7,21 @@ export type Patient = {
   dob: string
   gender: string
   contactInfo: string
-  street: string
   area: string
+  street: string
   city: string
+  mrn: string
+  status: string
+  adressjson: string
+}
+
+export type PatientIncomming ={
+  patientId: number
+  name: string
+  dob: string
+  gender: string
+  contactInfo: string
+  addressJson: string
   mrn: string
   status: string
 }
@@ -130,4 +142,17 @@ export type EncounterProviderOption = {
   providerId: number
   name: string
   specialty: string
+}
+
+// patient.types.ts — shared types for PatientCoverage module
+
+export type PatientFormValues = {
+  name: string
+  dob: string
+  gender: string
+  contactInfo: string
+  street: string
+  area: string
+  city: string
+  status: string
 }

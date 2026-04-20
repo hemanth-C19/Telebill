@@ -16,7 +16,7 @@ namespace Telebill.Controllers.PatientCoverage
 
         [HttpDelete("DeleteCoverage/{patientId}/{CoverageId}")]
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> DeleteCoverage(int patientId, int CoverageId)
+        public async Task<IActionResult> DeleteCoverage([FromRoute] int patientId, [FromRoute] int CoverageId)
         {
             var success = await service.RemoveCoverage(patientId, CoverageId);
             if (!success) return NotFound();

@@ -9,7 +9,20 @@ namespace Telebill.Repositories.PatientCoverage
     {
 
         // Patient Logic
-        public async Task<IEnumerable<Patient>> GetAllPatientsAsync() => await context.Patients.ToListAsync();
+        public async Task<IEnumerable<Patient>> GetAllPatientsAsync(string? search, int page, int limit){
+
+            var query = context.Patients.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(p => p.Name.Contains(search) || p.Mrn.Contains(search));
+            }
+
+            var patients = await query.Skip((page-1) * limit).Take(limit).ToListAsync();
+
+            return patients;
+        }
+            
 
         public async Task AddPatientAsync(Patient patient) => await context.Patients.AddAsync(patient);
         public async Task<Patient?> GetPatientByIdAsync(int id)
@@ -41,12 +54,15 @@ namespace Telebill.Repositories.PatientCoverage
             }
         }
 
-        public async Task DeleteCoverageByCoverageIdAsync(int patientId ,int CoverageId)
+        public async Task DeleteCoverageByCoverageIdAsync(int patientId, int CoverageId)
         {
-            var patient = await context.Patients.Include(p=> p.Coverages).FirstOrDefaultAsync(p => p.PatientId == patientId);
-            var coverage = patient.Coverages.FirstOrDefault(c=> c.CoverageId == CoverageId);
-            context.Coverages.Remove(coverage);
-            await context.SaveChangesAsync();
+            var coverage = await context.Coverages
+                .FirstOrDefaultAsync(c => c.CoverageId == CoverageId && c.PatientId == patientId);
+            if (coverage != null)
+            {
+                context.Coverages.Remove(coverage);
+                await context.SaveChangesAsync();
+            }
         }
 
         // Eligibility Logic

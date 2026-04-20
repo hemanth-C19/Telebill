@@ -78,15 +78,17 @@ export function Table({
             data.map((row, rowIdx) => (
               <tr
                 key={
-                  row.chargeId != null
-                    ? String(row.chargeId)
-                    : row.encounterId != null
-                      ? String(row.encounterId)
-                      : row.userId != null
-                        ? String(row.userId)
-                        : row.patientId != null
-                          ? String(row.patientId)
-                          : rowIdx
+                  row.coverageId != null
+                    ? String(row.coverageId)
+                    : row.chargeId != null
+                      ? String(row.chargeId)
+                      : row.encounterId != null
+                        ? String(row.encounterId)
+                        : row.userId != null
+                          ? String(row.userId)
+                          : row.patientId != null
+                            ? String(row.patientId)
+                            : rowIdx
                 }
                 className="border-b border-gray-100 transition-colors hover:bg-gray-50"
               >

@@ -6,6 +6,7 @@ import FrontDeskSidebar from '../../components/frontdesk-portal/FrontDeskSidebar
 import Navbar from '../../components/shared/ui/Navbar'
 import { Loader } from '../../components/shared/ui/Loader'
 import { useAuth } from '../../hooks/useAuth'
+import PatientCoverage from './PatientCoverage'
 
 const Dashboard = lazy(() => import('./Dashboard'))
 const Patients = lazy(() => import('./Patients'))
@@ -39,6 +40,7 @@ export default function FrontDeskRoutes() {
             <Routes>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="patients" element={<Patients />} />
+              <Route path="patients/:patientId/coverage" element={<PatientCoverage />} />
               <Route path="encounters" element={<Encounters />} />
               <Route path="batches" element={<BatchList />} />
               <Route path="batch-detail" element={<BatchDetail />} />
