@@ -14,8 +14,6 @@ namespace Telebill.Controllers
     public class PatientController(IPatientService service) : ControllerBase
     {
 
-        // --- PATIENT ACTIONS ---
-
         [HttpGet("GetAllPatients")]
         public async Task<IActionResult> GetAllPatients() => Ok(await service.ListAllPatients());
 

@@ -131,3 +131,29 @@ export type EncounterProviderOption = {
   name: string
   specialty: string
 }
+
+// patient.types.ts — shared types for PatientCoverage module
+
+export type PatientFormValues = {
+  name: string
+  dob: string
+  gender: string
+  contactInfo: string
+  street: string
+  area: string
+  city: string
+  status: string
+}
+
+// export type Patient = {
+//   patientId: number
+//   name: string
+//   dob: string
+//   gender: string
+//   contactInfo: string
+//   street: string
+//   area: string
+//   city: string
+//   mrn: string
+//   status: string
+// }
