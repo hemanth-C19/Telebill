@@ -8,5 +8,7 @@ namespace Telebill.Services.IdentityAccess
     {
         Task AddAsync(AuditLogDTO auditLogDTO);
         Task<IEnumerable<AuditLogDTO>> GetTopAsync(int count);
+
+        Task DeleteAuditsAsync();
     }
 }

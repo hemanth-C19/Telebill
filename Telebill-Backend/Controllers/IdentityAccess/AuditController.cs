@@ -28,5 +28,12 @@ namespace Telebill.Controllers
             await auditService.AddAsync(dto);
             return CreatedAtAction(nameof(GetLatest), new { id = dto.AuditId }, dto);
         }
+
+        [HttpDelete("DeleteAllAudits")]
+        public async Task<IActionResult> DeleteAudits()
+        {
+            await auditService.DeleteAuditsAsync();
+            return Ok("Deleted All Audits");
+        }
     }
 }

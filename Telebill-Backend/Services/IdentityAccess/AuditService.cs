@@ -16,5 +16,10 @@ namespace Telebill.Services.IdentityAccess
         {
             return auditRepository.GetTopAsync(count);
         }
+
+        public Task DeleteAuditsAsync()
+        {
+            return auditRepository.DeleteAsync();
+        }
     }
 }

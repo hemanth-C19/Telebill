@@ -66,9 +66,21 @@ export default function AuditLogs() {
     }
   }, [])
 
+  const DeleteLogs = async ()=>{
+    setError(null);
+
+    try{
+      await apiClient.delete('api/v1/IdentityAccess/Audit/DeleteAllAudits')
+    } catch{
+      setError('Failed to load audit logs. Please try again.')
+    } finally{
+      fetchLogs();
+    }
+  }
+
   useEffect(() => {
     fetchLogs()
-  }, [fetchLogs])
+  }, [])
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,11 +93,11 @@ export default function AuditLogs() {
         </div>
         <button
           type="button"
-          onClick={fetchLogs}
+          onClick={DeleteLogs}
           disabled={loading}
           className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:opacity-50"
         >
-          {loading ? 'Refreshing…' : 'Refresh'}
+          {loading ? 'Deleting...' : 'DeleteAll'}
         </button>
       </div>
 
