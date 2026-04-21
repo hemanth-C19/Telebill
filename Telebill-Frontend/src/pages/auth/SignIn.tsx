@@ -23,7 +23,7 @@ const inputClassName =
 const ROLE_HOME: Partial<Record<UserRole, string>> = {
   Admin: '/admin/dashboard',
   FrontDesk: '/frontdesk/dashboard',
-  Provider: '/provider/dashboard',
+  Provider: '/provider/encounters',
 }
 
 export default function SignIn() {
