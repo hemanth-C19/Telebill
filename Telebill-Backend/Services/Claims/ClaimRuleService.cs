@@ -68,5 +68,10 @@ public class ClaimRuleService(IClaimRepository repo) : IClaimRuleService
             Status = updated.Status ?? string.Empty
         };
     }
+
+    public Task<bool> DeleteScrubRuleAsync(int ruleID)
+    {
+        return repo.DeleteScrubRuleAsync(ruleID);
+    }
 }
 

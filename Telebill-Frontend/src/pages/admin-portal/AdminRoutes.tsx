@@ -11,6 +11,7 @@ import MasterData from "./MasterData";
 import AuditLogs from "./AuditLogs";
 import Notifications from "../shared/Notifications";
 import ProviderManagement from "./Provider";
+import ScrubRules from "./ScrubRules";
 
 const PayerPlans = React.lazy(() => import("../admin-portal/PayerPlans"));
 const FeeSchedules = React.lazy(() => import("../admin-portal/FeeSchedules"));
@@ -49,6 +50,7 @@ export default function AdminRoutes() {
               element={<FeeSchedules />}
             />
             <Route path="audit" element={<AuditLogs />} />
+            <Route path="scrub-rules" element={<ScrubRules />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>

@@ -29,6 +29,7 @@ public interface IClaimRepository
     Task<ScrubRule?> GetScrubRuleByIdAsync(int ruleID);
     Task<ScrubRule> CreateScrubRuleAsync(ScrubRule rule);
     Task<ScrubRule> UpdateScrubRuleAsync(ScrubRule rule);
+    Task<bool> DeleteScrubRuleAsync(int ruleID);
 
     // Scrub issues
     Task<List<ScrubIssue>> GetIssuesByClaimIDAsync(int claimID, string statusFilter);

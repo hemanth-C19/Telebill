@@ -7,6 +7,7 @@ const navItems = [
   { label: 'User Management', path: '/admin/users' },
   { label: 'Provider', path: '/admin/provider' },
   { label: 'Master Data', path: '/admin/master-data' },
+  { label: 'Scrub Rules', path: '/admin/scrub-rules' },
   { label: 'Audit Logs', path: '/admin/audit' },
   { label: 'Notifications', path: '/admin/notifications' },
 ]
