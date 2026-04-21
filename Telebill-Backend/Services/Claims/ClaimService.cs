@@ -47,6 +47,9 @@ public class ClaimService(
     public Task<ScrubRuleDto?> UpdateScrubRuleAsync(int ruleID, UpdateScrubRuleRequestDto dto) =>
         ruleService.UpdateScrubRuleAsync(ruleID, dto);
 
+    public Task<bool> DeleteScrubRuleAsync(int ruleID) =>
+        ruleService.DeleteScrubRuleAsync(ruleID);
+
     public Task<X12RefDto?> Generate837PAsync(int claimID) =>
         x12Service.Generate837PAsync(claimID);
 

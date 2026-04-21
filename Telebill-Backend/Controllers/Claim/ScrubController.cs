@@ -86,5 +86,13 @@ public class ScrubController(IClaimService claimService) : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpDelete("api/scrub-rules/{ruleID:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteRule(int ruleID)
+    {
+        var deleted = await claimService.DeleteScrubRuleAsync(ruleID);
+        return deleted ? NoContent() : NotFound();
+    }
 }
 

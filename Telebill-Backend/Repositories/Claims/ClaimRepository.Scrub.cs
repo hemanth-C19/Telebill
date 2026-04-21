@@ -51,6 +51,15 @@ public partial class ClaimRepository
         return rule;
     }
 
+    public async Task<bool> DeleteScrubRuleAsync(int ruleID)
+    {
+        var rule = await context.ScrubRules.FindAsync(ruleID);
+        if (rule == null) return false;
+        context.ScrubRules.Remove(rule);
+        await context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<List<ScrubIssue>> GetIssuesByClaimIDAsync(int claimID, string statusFilter)
     {
         var query = context.ScrubIssues

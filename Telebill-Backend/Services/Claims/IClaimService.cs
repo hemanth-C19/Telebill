@@ -23,6 +23,7 @@ public interface IClaimService
     Task<List<ScrubRuleDto>> GetScrubRulesAsync(string? severity, string? status);
     Task<ScrubRuleDto?> CreateScrubRuleAsync(CreateScrubRuleRequestDto dto);
     Task<ScrubRuleDto?> UpdateScrubRuleAsync(int ruleID, UpdateScrubRuleRequestDto dto);
+    Task<bool> DeleteScrubRuleAsync(int ruleID);
 
     // 837P
     Task<X12RefDto?> Generate837PAsync(int claimID);

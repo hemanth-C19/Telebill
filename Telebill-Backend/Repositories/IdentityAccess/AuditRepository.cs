@@ -46,5 +46,10 @@ namespace Telebill.Repositories.IdentityAccess
                 .ToListAsync()
                 .ConfigureAwait(false);
         }
+
+        public async Task DeleteAsync()
+        {
+            await _tb.AuditLogs.ExecuteDeleteAsync();
+        }
     }
 }
