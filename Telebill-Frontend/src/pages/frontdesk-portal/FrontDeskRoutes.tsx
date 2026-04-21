@@ -7,6 +7,7 @@ import Navbar from '../../components/shared/ui/Navbar'
 import { Loader } from '../../components/shared/ui/Loader'
 import { useAuth } from '../../hooks/useAuth'
 import PatientCoverage from './PatientCoverage'
+import ChargeLines from './ChargeLines'
 
 const Dashboard = lazy(() => import('./Dashboard'))
 const Patients = lazy(() => import('./Patients'))
@@ -42,6 +43,7 @@ export default function FrontDeskRoutes() {
               <Route path="patients" element={<Patients />} />
               <Route path="patients/:patientId/coverage" element={<PatientCoverage />} />
               <Route path="encounters" element={<Encounters />} />
+              <Route path="encounters/chargeLines/:encounterId" element={<ChargeLines />} />
               <Route path="batches" element={<BatchList />} />
               <Route path="batch-detail" element={<BatchDetail />} />
               <Route path="batch-detail/:batchId" element={<BatchDetail />} />
