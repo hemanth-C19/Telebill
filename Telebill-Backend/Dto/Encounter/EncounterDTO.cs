@@ -8,6 +8,7 @@ namespace Telebill.Dto
 
     public class AddEncounterDTO
     {
+        public int? EncounterId { get; set; }
         public int PatientId { get; set; }
         public int ProviderId { get; set; }
         public DateTime EncounterDateTime { get; set; } = DateTime.Now;
@@ -21,13 +22,15 @@ namespace Telebill.Dto
     {
         public int EncounterId { get; set; }
         public int? PatientId { get; set; }
+        public string? PatientName { get; set; }
         public int? ProviderId { get; set; }
+        public string? ProviderName { get; set; }
         public DateTime EncounterDateTime { get; set; }
         public string? VisitType { get; set; }
         public string? Pos { get; set; }
         public string? DocumentationUri { get; set; }
         public string? Status { get; set; }
-
+        public int ChargeLineCount { get; set; }
     }
     public class EncounterUpdateDTO
     {

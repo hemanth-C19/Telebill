@@ -24,16 +24,18 @@ namespace Repositories
                 {
                     EncounterId = e.EncounterId,
                     PatientId = e.PatientId,
+                    PatientName = e.Patient != null ? e.Patient.Name : null,
                     ProviderId = e.ProviderId,
+                    ProviderName = e.Provider != null ? e.Provider.Name : null,
                     EncounterDateTime = e.EncounterDateTime,
                     VisitType = e.VisitType,
                     Pos = e.Pos,
                     DocumentationUri = e.DocumentationUri,
-                    Status = e.Status
+                    Status = e.Status,
+                    ChargeLineCount = e.ChargeLines.Count
                 })
                 .ToListAsync();
         }
-
 
         public async Task<GetEncounterDTO?> GetById(int id)
         {
@@ -43,15 +45,17 @@ namespace Repositories
                 {
                     EncounterId = e.EncounterId,
                     PatientId = e.PatientId,
+                    PatientName = e.Patient != null ? e.Patient.Name : null,
                     ProviderId = e.ProviderId,
+                    ProviderName = e.Provider != null ? e.Provider.Name : null,
                     EncounterDateTime = e.EncounterDateTime,
                     VisitType = e.VisitType,
                     Pos = e.Pos,
                     DocumentationUri = e.DocumentationUri,
-                    Status = e.Status
+                    Status = e.Status,
+                    ChargeLineCount = e.ChargeLines.Count
                 })
-                        .FirstOrDefaultAsync();
-
+                .FirstOrDefaultAsync();
         }
 
 
@@ -75,7 +79,7 @@ namespace Repositories
                 
                 return new AddEncounterDTO
                 {
-                    // EncounterId = entity.EncounterId,
+                    EncounterId = entity.EncounterId,
                     PatientId = (int) entity.PatientId,
                     ProviderId = (int) entity.ProviderId,
                     EncounterDateTime = entity.EncounterDateTime,

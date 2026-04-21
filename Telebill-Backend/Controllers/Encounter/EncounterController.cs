@@ -25,8 +25,8 @@ namespace Telebill.Controllers
         }
 
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("GetEncounterById/{id}")]
+        public async Task<IActionResult> GetById([FromRoute] int id)
         {
             var data = await service.GetById(id);
 
@@ -44,9 +44,9 @@ namespace Telebill.Controllers
             return Ok(result);
         }
 
-        [HttpPut("UpdateEncounter")]
+        [HttpPut("UpdateEncounterById/{id}")]
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> Update(int id,  [FromBody] EncounterUpdateDTO dto)
+        public async Task<IActionResult> Update([FromRoute] int id,  [FromBody] EncounterUpdateDTO dto)
         {
             var result = await service.Update(id, dto);
             return Ok(result);
@@ -56,7 +56,7 @@ namespace Telebill.Controllers
 
         [HttpDelete("DeleteEncounter/{id}")]
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete([FromRoute] int id)
         {
             var result = await service.Delete(id);
 

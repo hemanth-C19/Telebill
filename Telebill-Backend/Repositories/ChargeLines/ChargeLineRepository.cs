@@ -62,7 +62,7 @@ namespace Telebill.Repositories.ChargeLines
                 ChargeAmount = dto.ChargeAmount,
                 RevenueCode = dto.RevenueCode,
                 Notes = dto.Notes,
-                Status = "Draft"
+                Status = "Finalized"
             };
 
             context.ChargeLines.Add(entity);

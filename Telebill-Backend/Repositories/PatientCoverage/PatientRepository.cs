@@ -2,6 +2,7 @@ using System;
 using Telebill.Models;
 using Microsoft.EntityFrameworkCore;
 using Telebill.Data;
+using Telebill.DTOs;
 
 namespace Telebill.Repositories.PatientCoverage
 {
@@ -9,7 +10,8 @@ namespace Telebill.Repositories.PatientCoverage
     {
 
         // Patient Logic
-        public async Task<IEnumerable<Patient>> GetAllPatientsAsync(string? search, int page, int limit){
+        public async Task<IEnumerable<Patient>> GetAllPatientsAsync(string? search, int page, int limit)
+        {
 
             var query = context.Patients.AsQueryable();
 
@@ -18,11 +20,22 @@ namespace Telebill.Repositories.PatientCoverage
                 query = query.Where(p => p.Name.Contains(search) || p.Mrn.Contains(search));
             }
 
-            var patients = await query.Skip((page-1) * limit).Take(limit).ToListAsync();
+            var patients = await query.Skip((page - 1) * limit).Take(limit).ToListAsync();
 
             return patients;
         }
-            
+
+        public async Task<IEnumerable<ActivePatients>> GetPatientNamesAsync()
+        {
+            var patients = await context.Patients.Where(p => p.Status == "Active").Select(p => new ActivePatients
+            {
+                PatientId = p.PatientId,
+                Name = p.Name,
+            }).ToListAsync();
+
+            return patients;
+        }
+
 
         public async Task AddPatientAsync(Patient patient) => await context.Patients.AddAsync(patient);
         public async Task<Patient?> GetPatientByIdAsync(int id)

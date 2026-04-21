@@ -21,6 +21,13 @@ namespace Telebill.Controllers
             [FromQuery] int limit = 5
         ) => Ok(await service.ListAllPatients(search, page, limit));
 
+        [HttpGet("GetActivePatients")]
+        public async Task<IActionResult> GetActivePatients()
+        {
+            var patients = await service.GetActivePatientsAsync();
+            return Ok(patients);
+        }
+
         [HttpPost("RegisterPatient")]
         [Authorize(Roles = "FrontDesk,Admin")]
         public async Task<IActionResult> CreatePatient([FromBody] PatientDto dto) => Ok(await service.RegisterPatient(dto));

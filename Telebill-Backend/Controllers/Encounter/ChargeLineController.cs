@@ -14,9 +14,8 @@ namespace Telebill.Controllers
     [Authorize(Roles = "FrontDesk,Provider,Coder,AR,Admin")]
     public class ChargeLineController(IChargeLineService service) : ControllerBase
     {
-        // GET: EncounterModule/ChargeLine/ByEncounter/123
         [HttpGet("ByEncounter/{encounterId:int}")]
-        public async Task<IActionResult> GetByEncounterId([FromRoute] int encounterId, CancellationToken ct)
+        public async Task<IActionResult> GetByEncounterId([FromRoute] int encounterId)
         {
             try
             {
@@ -29,9 +28,8 @@ namespace Telebill.Controllers
             }
         }
 
-        // GET: EncounterModule/ChargeLine/123
-        [HttpGet("{chargeId:int}")]
-        public async Task<IActionResult> GetById([FromRoute] int chargeId, CancellationToken ct)
+        [HttpGet("GetByChargeLineId/{chargeId:int}")]
+        public async Task<IActionResult> GetById([FromRoute] int chargeId)
         {
             try
             {
@@ -46,9 +44,9 @@ namespace Telebill.Controllers
         }
 
         // POST: EncounterModule/ChargeLine/Add/encounter/123
-        [HttpPost("Add/encounter/{encounterId:int}")]
+        [HttpPost("AddChargeline/{encounterId:int}")]
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> Add([FromRoute] int encounterId, [FromBody] ChargeLineCreateDto dto, CancellationToken ct)
+        public async Task<IActionResult> Add([FromRoute] int encounterId, [FromBody] ChargeLineCreateDto dto)
         {
             try
             {
@@ -63,9 +61,9 @@ namespace Telebill.Controllers
         }
 
         // PUT: EncounterModule/ChargeLine/123
-        [HttpPut("{chargeId:int}")]
+        [HttpPut("UpdateChargeline/{chargeId:int}")]
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> Update([FromRoute] int chargeId, [FromBody] ChargeLineUpdateDto dto, CancellationToken ct)
+        public async Task<IActionResult> Update([FromRoute] int chargeId, [FromBody] ChargeLineUpdateDto dto)
         {
             try
             {
@@ -80,9 +78,9 @@ namespace Telebill.Controllers
         }
 
         // DELETE: EncounterModule/ChargeLine/123
-        [HttpDelete("{chargeId:int}")]
+        [HttpDelete("DeleteChargeline/{chargeId:int}")]
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> Delete([FromRoute] int chargeId, CancellationToken ct)
+        public async Task<IActionResult> Delete([FromRoute] int chargeId)
         {
             try
             {
@@ -96,9 +94,9 @@ namespace Telebill.Controllers
         }
 
         // PUT: EncounterModule/ChargeLine/123/status?value=Finalized
-        [HttpPut("{chargeId:int}/status")]
+        [HttpPut("EditChargeline/{chargeId:int}/status")]
         [Authorize(Roles = "FrontDesk,Admin")]
-        public async Task<IActionResult> SetStatus([FromRoute] int chargeId, [FromQuery] string value, CancellationToken ct)
+        public async Task<IActionResult> SetStatus([FromRoute] int chargeId, [FromQuery] string value)
         {
             try
             {
