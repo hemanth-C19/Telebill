@@ -18,7 +18,7 @@ const BalancesStatements = lazy(() => import('./BalancesStatements'))
 const Notifications = lazy(() => import('../shared/Notifications'))
 
 export default function FrontDeskRoutes() {
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const navigate = useNavigate()
 
   return (
@@ -28,7 +28,7 @@ export default function FrontDeskRoutes() {
           logout()
           navigate('/sign-in', { replace: true })
         }}
-        userName="Front Desk"
+        userName={user?.name ?? 'Front Desk'}
       />
 
       <div className="flex pt-16">
