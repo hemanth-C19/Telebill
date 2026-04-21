@@ -1,6 +1,6 @@
 // Provider portal — my encounters, read-only charges/diagnoses, attestation, mark ready for coding (dummy data only)
 
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import Badge from '../../components/shared/ui/Badge'
 import Button from '../../components/shared/ui/Button'
 import { Card } from '../../components/shared/ui/Card'
@@ -268,11 +268,6 @@ const INITIAL_ATTESTATIONS: Record<number, Attestation> = {
   },
 }
 
-const PAGE_SIZE = 5
-
-const selectClassName =
-  'rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
-
 const textareaClassName =
   'mt-1 w-full resize-none rounded-lg border border-gray-300 p-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
 
@@ -345,7 +340,6 @@ export default function EncounterDetails() {
   }))
 
   const [selectedEncounter, setSelectedEncounter] = useState<Encounter | null>(null)
-  const [statusFilter, setStatusFilter] = useState('All')
   const [currentPage, setCurrentPage] = useState(1)
 
   const [showAttestDialog, setShowAttestDialog] = useState(false)
@@ -366,39 +360,6 @@ export default function EncounterDetails() {
     )
   }
 
-  const counts = useMemo(() => {
-    const mine = encounters.filter((e) => e.providerId === CURRENT_PROVIDER.providerId)
-    return {
-      open: mine.filter((e) => e.status === 'Open').length,
-      ready: mine.filter((e) => e.status === 'ReadyForCoding').length,
-      finalized: mine.filter((e) => e.status === 'Finalized').length,
-    }
-  }, [encounters])
-
-  const filtered = useMemo(
-    () =>
-      encounters
-        .filter((e) => e.providerId === CURRENT_PROVIDER.providerId)
-        .filter((e) => statusFilter === 'All' || e.status === statusFilter),
-    [encounters, statusFilter],
-  )
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-
-  useEffect(() => {
-    setCurrentPage((p) => Math.min(p, totalPages))
-  }, [totalPages])
-
-  const paginated = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE
-    return filtered.slice(start, start + PAGE_SIZE)
-  }, [filtered, currentPage])
-
-  function clearFilters() {
-    setStatusFilter('All')
-    setCurrentPage(1)
-  }
-
   const listColumns = [
     { key: 'encounterId', label: 'Encounter ID' },
     { key: 'patientName', label: 'Patient Name' },
@@ -408,22 +369,6 @@ export default function EncounterDetails() {
     { key: 'attestCol', label: 'Attestation' },
     { key: 'readyCol', label: 'Ready?' },
   ]
-
-  const listTableData = paginated.map((e) => ({
-    ...e,
-    encounterDateDisplay: formatEncounterDate(e.encounterDate),
-    status: <Badge status={e.status} />,
-    attestCol: isAttested(e.encounterId) ? (
-      <span className="text-sm font-medium text-green-700">✓ Attested</span>
-    ) : (
-      <span className="text-sm font-medium text-amber-700">Pending</span>
-    ),
-    readyCol: canMarkReady(e) ? (
-      <span className="text-sm font-medium text-green-700">✓ Ready</span>
-    ) : (
-      <span className="text-sm text-gray-400">—</span>
-    ),
-  }))
 
   function confirmAttestation() {
     if (selectedEncounter == null) return
@@ -660,52 +605,12 @@ export default function EncounterDetails() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">My Encounters</h1>
-
-      <div className="mb-6 flex flex-wrap gap-4">
-        <div className="min-w-[140px] flex-1 rounded-lg border border-gray-200 border-l-4 border-l-blue-500 bg-white p-4 shadow-sm">
-          <p className="text-3xl font-bold text-blue-700">{counts.open}</p>
-          <p className="text-sm font-medium text-gray-600">Open</p>
-        </div>
-        <div className="min-w-[140px] flex-1 rounded-lg border border-gray-200 border-l-4 border-l-yellow-500 bg-white p-4 shadow-sm">
-          <p className="text-3xl font-bold text-yellow-700">{counts.ready}</p>
-          <p className="text-sm font-medium text-gray-600">Ready for Coding</p>
-        </div>
-        <div className="min-w-[140px] flex-1 rounded-lg border border-gray-200 border-l-4 border-l-green-500 bg-white p-4 shadow-sm">
-          <p className="text-3xl font-bold text-green-700">{counts.finalized}</p>
-          <p className="text-sm font-medium text-gray-600">Finalized</p>
-        </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="prov-enc-status" className="text-xs font-medium text-gray-600">
-            Status
-          </label>
-          <select
-            id="prov-enc-status"
-            className={selectClassName}
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value)
-              setCurrentPage(1)
-            }}
-          >
-            <option value="All">All</option>
-            <option value="Open">Open</option>
-            <option value="ReadyForCoding">ReadyForCoding</option>
-            <option value="Finalized">Finalized</option>
-          </select>
-        </div>
-        <Button type="button" variant="secondary" size="sm" onClick={clearFilters}>
-          Clear
-        </Button>
-      </div>
+      <h1 className="text-2xl font-bold text-gray-900">Encounters to be Attested</h1>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <Table
           columns={listColumns}
-          data={listTableData}
+          data={DUMMY_ENCOUNTERS}
           showActions
           actions={[
             {
@@ -719,7 +624,7 @@ export default function EncounterDetails() {
         />
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={5}
           onPageChange={setCurrentPage}
         />
       </div>
