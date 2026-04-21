@@ -7,8 +7,6 @@ namespace Telebill.Repositories.IdentityAccess
     public interface IAuditRepository
     {
         Task AddAsync(AuditLogDTO auditLogDTO);
-
-        // Keeping the signature as-is, but *not* implementing in repo per your request.
-        Task<IEnumerable<AuditLogDTO>> GetallAsync();
+        Task<IEnumerable<AuditLogDTO>> GetTopAsync(int count);
     }
 }

@@ -12,11 +12,9 @@ namespace Telebill.Services.IdentityAccess
             return auditRepository.AddAsync(auditLogDTO);
         }
 
-        // This will still call the repository and thus throw (since repo isn't implementing GetallAsync).
-        // Left as-is so existing code compiles. Your controller will not use this.
-        public Task<IEnumerable<AuditLogDTO>> GetallAsync()
+        public Task<IEnumerable<AuditLogDTO>> GetTopAsync(int count)
         {
-            return auditRepository.GetallAsync();
+            return auditRepository.GetTopAsync(count);
         }
     }
 }
