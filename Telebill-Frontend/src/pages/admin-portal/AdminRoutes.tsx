@@ -16,7 +16,7 @@ const PayerPlans = React.lazy(() => import("../admin-portal/PayerPlans"));
 const FeeSchedules = React.lazy(() => import("../admin-portal/FeeSchedules"));
 
 export default function AdminRoutes() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -26,7 +26,7 @@ export default function AdminRoutes() {
           logout();
           navigate("/sign-in", { replace: true });
         }}
-        userName="Admin User"
+        userName={user?.name ?? 'Admin'}
       />
 
       <div className="flex pt-16">

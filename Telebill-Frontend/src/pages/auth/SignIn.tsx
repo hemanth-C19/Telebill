@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/shared/ui/Button'
@@ -20,15 +21,27 @@ type SignInFormValues = {
 const inputClassName =
   'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
 
-const ROLE_HOME: Partial<Record<UserRole, string>> = {
+const ROLE_HOME: Record<UserRole, string> = {
   Admin: '/admin/dashboard',
   FrontDesk: '/frontdesk/dashboard',
-  Provider: '/provider/dashboard',
+  Provider: '/provider/encounters',
+  Coder: '/coding/worklist',
+  AR: '/sign-in',
 }
 
 export default function SignIn() {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, user } = useAuth()
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Redirect already-authenticated users away from sign-in
+  useEffect(() => {
+    if (user != null) {
+      navigate(ROLE_HOME[user.role], { replace: true })
+    }
+  }, [user, navigate])
+
   const {
     register,
     handleSubmit,
@@ -36,21 +49,22 @@ export default function SignIn() {
     watch,
     formState: { errors },
   } = useForm<SignInFormValues>({
-    defaultValues: {
-      email: '',
-      password: '',
-      selectedRole: '',
-    },
+    defaultValues: { email: '', password: '', selectedRole: '' },
   })
 
   const selectedRole = watch('selectedRole')
 
-  function onSubmit(data: SignInFormValues) {
-    const r = data.selectedRole as UserRole
-    login(r)
-    const next = ROLE_HOME[r]
-    if (next != null) {
-      navigate(next, { replace: true })
+  async function onSubmit(data: SignInFormValues) {
+    setLoginError(null)
+    setIsSubmitting(true)
+    console.log(data)
+    try {
+      await login(data.email, data.password, data.selectedRole)
+      navigate(ROLE_HOME[data.selectedRole as UserRole], { replace: true })
+    } catch {
+      setLoginError('Invalid credentials. Please check your email, password, and role.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -83,12 +97,11 @@ export default function SignIn() {
           <h2 className="mb-1 text-2xl font-bold text-gray-900">Welcome back</h2>
           <p className="mb-8 text-sm text-gray-500">Sign in to your TeleBill account</p>
 
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-5"
-            noValidate
-          >
-            <input type="hidden" {...register('selectedRole', { required: 'Please select a role to continue' })} />
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
+            <input
+              type="hidden"
+              {...register('selectedRole', { required: 'Please select a role to continue' })}
+            />
 
             <div className="flex flex-col gap-1">
               <label htmlFor="signin-email" className="text-sm font-medium text-gray-700">
@@ -149,9 +162,13 @@ export default function SignIn() {
               )}
             </div>
 
+            {loginError != null && (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{loginError}</p>
+            )}
+
             <div className="w-full">
               <Button type="submit" variant="primary" className="w-full">
-                Sign In
+                {isSubmitting ? 'Signing in…' : 'Sign In'}
               </Button>
             </div>
           </form>

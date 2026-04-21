@@ -13,7 +13,7 @@ const EncounterCodingView = lazy(async () => {
 const Notifications = lazy(() => import('../shared/Notifications'))
 
 export default function CodingRoutes() {
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const navigate = useNavigate()
 
   return (
@@ -23,7 +23,7 @@ export default function CodingRoutes() {
           logout()
           navigate('/sign-in', { replace: true })
         }}
-        userName="Coder"
+        userName={user?.name ?? 'Coder'}
       />
 
       <div className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 z-30 bg-white border-r border-gray-200">

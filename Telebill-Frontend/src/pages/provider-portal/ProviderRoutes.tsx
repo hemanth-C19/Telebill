@@ -11,7 +11,7 @@ import EncounterDetails from './EncounterDetail.tsx'
 const Notifications = lazy(() => import('../shared/Notifications.tsx'))
 
 export default function ProviderRoutes() {
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const navigate = useNavigate()
 
   return (
@@ -21,7 +21,7 @@ export default function ProviderRoutes() {
           logout()
           navigate('/sign-in', { replace: true })
         }}
-        userName="Provider"
+        userName={user?.name ?? 'Provider'}
       />
 
       <div className="flex pt-16">

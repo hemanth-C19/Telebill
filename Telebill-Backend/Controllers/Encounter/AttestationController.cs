@@ -16,7 +16,7 @@ namespace Telebill.Controllers
     {
         // GET: EncounterModule/Attestation/ByEncounter/123
         [HttpGet("get-by-encounterId")]
-        public async Task<IActionResult> GetByEncounterId([FromRoute] int encounterId, CancellationToken ct)
+        public async Task<IActionResult> GetByEncounterId([FromQuery] int encounterId)
         {
             try
             {
