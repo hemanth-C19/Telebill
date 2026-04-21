@@ -13,6 +13,8 @@ namespace Telebill.Services.PatientCoverage
         Task UpdatePatient(int id, PatientDto dto);
         Task<bool> RemovePatient(int id);
 
+        Task<IEnumerable<ActivePatients>> GetActivePatientsAsync();
+
         // CRUD Coverage
         Task<Coverage> AddInsurance(CoverageDto dto);
         Task<IEnumerable<Coverage>> GetPatientInsurance(int patientId);

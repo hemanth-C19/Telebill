@@ -1,3 +1,4 @@
+using Telebill.DTOs;
 using Telebill.Models;
 
 namespace Telebill.Repositories.PatientCoverage
@@ -28,5 +29,7 @@ namespace Telebill.Repositories.PatientCoverage
 
         Task SaveChangesAsync();
         Task DeleteCoverageAsync(int coverageId);
+
+        Task<IEnumerable<ActivePatients>> GetPatientNamesAsync();
     }
 }

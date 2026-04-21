@@ -16,8 +16,6 @@ export type CreateEncounterDialogProps = {
   onClose: () => void
   form: UseFormReturn<CreateEncounterFormValues>
   onSubmit: (values: CreateEncounterFormValues) => void
-  patientSearch: string
-  onPatientSearchChange: (value: string) => void
   patientOptions: EncounterPatientOption[]
   providerOptions: EncounterProviderOption[]
   posOptions: readonly PosOption[]
@@ -30,8 +28,6 @@ export function CreateEncounterDialog({
   onClose,
   form,
   onSubmit,
-  patientSearch,
-  onPatientSearchChange,
   patientOptions,
   providerOptions,
   posOptions,
@@ -43,12 +39,6 @@ export function CreateEncounterDialog({
   return (
     <Dialog isOpen={isOpen} onClose={onClose} title="Create Encounter" maxWidth="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-        <Input
-          label="Search patient (name or MRN)"
-          placeholder="Filter list…"
-          value={patientSearch}
-          onChange={(e) => onPatientSearchChange(e.target.value)}
-        />
         <div className="flex flex-col gap-1">
           <label htmlFor="create-patient" className="text-sm font-medium text-gray-700">
             Patient

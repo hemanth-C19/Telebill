@@ -142,4 +142,8 @@ public class PatientService(IPatientRepository repo) : IPatientService
         await repo.SaveChangesAsync();
         return true;
     }
+
+    public async Task<IEnumerable<ActivePatients>> GetActivePatientsAsync(){
+        return await repo.GetPatientNamesAsync();
+    }
 }

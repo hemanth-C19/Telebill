@@ -420,8 +420,6 @@ export default function Encounters() {
 
   const [statusFilter, setStatusFilter] = useState('All')
   const [providerFilter, setProviderFilter] = useState('All')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -522,10 +520,8 @@ export default function Encounters() {
     () =>
       encounters
         .filter((e) => statusFilter === 'All' || e.status === statusFilter)
-        .filter((e) => providerFilter === 'All' || e.providerName === providerFilter)
-        .filter((e) => dateFrom === '' || e.encounterDate >= dateFrom)
-        .filter((e) => dateTo === '' || e.encounterDate.slice(0, 10) <= dateTo),
-    [encounters, statusFilter, providerFilter, dateFrom, dateTo],
+        .filter((e) => providerFilter === 'All' || e.providerName === providerFilter),
+    [encounters, statusFilter, providerFilter],
   )
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -542,8 +538,6 @@ export default function Encounters() {
   function clearFilters() {
     setStatusFilter('All')
     setProviderFilter('All')
-    setDateFrom('')
-    setDateTo('')
     setCurrentPage(1)
   }
 
@@ -860,36 +854,6 @@ export default function Encounters() {
               </option>
             ))}
           </select>
-        </div>
-        <div className="flex min-w-[140px] flex-col gap-1">
-          <label htmlFor="flt-from" className="text-xs font-medium text-gray-600">
-            Date From
-          </label>
-          <input
-            id="flt-from"
-            type="date"
-            className={selectClassName}
-            value={dateFrom}
-            onChange={(e) => {
-              setDateFrom(e.target.value)
-              onFilterChange()
-            }}
-          />
-        </div>
-        <div className="flex min-w-[140px] flex-col gap-1">
-          <label htmlFor="flt-to" className="text-xs font-medium text-gray-600">
-            Date To
-          </label>
-          <input
-            id="flt-to"
-            type="date"
-            className={selectClassName}
-            value={dateTo}
-            onChange={(e) => {
-              setDateTo(e.target.value)
-              onFilterChange()
-            }}
-          />
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={clearFilters}>
           Clear
