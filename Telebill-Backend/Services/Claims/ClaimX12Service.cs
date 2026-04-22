@@ -27,11 +27,6 @@ public class ClaimX12Service(IClaimRepository repo) : IClaimX12Service
             throw new ArgumentException("Claim has open scrub errors");
         }
 
-        if (!await repo.HasApprovedPriorAuthAsync(claimID))
-        {
-            throw new ArgumentException("Prior authorization required but not approved");
-        }
-
         var uri = $"claims/837p/{DateTime.UtcNow:yyyy-MM-dd}-claim-{claimID}.edi";
 
         var existing = await repo.GetX12RefByClaimIDAsync(claimID);
