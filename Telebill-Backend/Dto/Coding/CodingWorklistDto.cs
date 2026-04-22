@@ -7,15 +7,29 @@ namespace Telebill.Dto.Coding
     {
         public int EncounterId { get; set; }
         public string? PatientName { get; set; }
+        public int? ProviderId { get; set; }
         public string? ProviderName { get; set; }
         public DateTime EncounterDateTime { get; set; }
         public string? VisitType { get; set; }
+        public int? PlanId { get; set; }
         public string? PlanName { get; set; }
         public int ChargeLineCount { get; set; }
         public decimal TotalCharge { get; set; }
         public int DiagnosisCount { get; set; }
         public bool HasPrimaryDiagnosis { get; set; }
         public string? Status { get; set; }
+    }
+
+    public class WorklistFilterOptionDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class WorklistFiltersDto
+    {
+        public List<WorklistFilterOptionDto> Providers { get; set; } = new();
+        public List<WorklistFilterOptionDto> Plans { get; set; } = new();
     }
 
     public class CodingEncounterCardDto

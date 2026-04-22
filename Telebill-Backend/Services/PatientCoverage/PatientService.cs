@@ -45,7 +45,7 @@ public class PatientService(IPatientRepository repo) : IPatientService
             GroupNumber = dto.GroupNumber,
 
             EffectiveFrom = DateOnly.FromDateTime(dto.EffectiveFrom),
-            EffectiveTo = DateOnly.FromDateTime(dto.EffectiveFrom),
+            EffectiveTo = DateOnly.FromDateTime(dto.EffectiveTo),
             Status = "Active"
         };
         await repo.AddCoverageAsync(coverage);

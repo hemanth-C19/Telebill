@@ -21,6 +21,13 @@ namespace Telebill.Controllers
             return Ok(items);
         }
 
+        [HttpGet("filters")]
+        public async Task<IActionResult> GetFilters()
+        {
+            var filters = await service.GetWorklistFiltersAsync();
+            return Ok(filters);
+        }
+
         [HttpGet("{encounterId:int}")]
         public async Task<IActionResult> GetEncounterCard(int encounterId)
         {

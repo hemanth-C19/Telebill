@@ -8,6 +8,7 @@ namespace Telebill.Services.Coding
     {
         // Worklist
         Task<List<CodingWorklistItemDto>> GetCodingWorklistAsync(int? providerId, int? planId);
+        Task<WorklistFiltersDto> GetWorklistFiltersAsync();
         Task<CodingEncounterCardDto?> GetCodingEncounterCardAsync(int encounterId);
         Task<(bool success, string error)> UpdateEncounterPosAsync(int encounterId, UpdateEncounterPosDto dto, int userId);
         Task<(bool success, string error, ChargeLineInfoDto? updated)> UpdateChargeLineModifiersAsync(int encounterId, int chargeId, UpdateChargeLineModifiersDto dto, int userId);

@@ -31,13 +31,26 @@ namespace Telebill.Services.Coding
                 var chargeLines = await encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
                 var diagnoses = await diagnosisRepo.GetActiveDiagnosesByEncounterAsync(enc.EncounterId);
 
+                var coverage = enc.PatientId.HasValue
+                    ? await encounterRepo.GetCoverageByPatientIdAsync(enc.PatientId.Value)
+                    : null;
+
+                PayerPlan? plan = null;
+                if (coverage?.PlanId.HasValue == true)
+                {
+                    plan = await encounterRepo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
+                }
+
                 var dto = new CodingWorklistItemDto
                 {
                     EncounterId = enc.EncounterId,
                     PatientName = patient?.Name,
+                    ProviderId = enc.ProviderId,
                     ProviderName = provider?.Name,
                     EncounterDateTime = enc.EncounterDateTime,
                     VisitType = enc.VisitType,
+                    PlanId = plan?.PlanId,
+                    PlanName = plan?.PlanName,
                     ChargeLineCount = chargeLines.Count,
                     TotalCharge = chargeLines.Sum(c => c.ChargeAmount ?? 0m),
                     DiagnosisCount = diagnoses.Count,
@@ -49,6 +62,21 @@ namespace Telebill.Services.Coding
             }
 
             return list;
+        }
+
+        public async Task<WorklistFiltersDto> GetWorklistFiltersAsync()
+        {
+            var (providers, plans) = await encounterRepo.GetWorklistFiltersAsync();
+
+            return new WorklistFiltersDto
+            {
+                Providers = providers
+                    .Select(p => new WorklistFilterOptionDto { Id = p.ProviderId, Name = p.Name ?? string.Empty })
+                    .ToList(),
+                Plans = plans
+                    .Select(p => new WorklistFilterOptionDto { Id = p.PlanId, Name = p.PlanName ?? string.Empty })
+                    .ToList()
+            };
         }
 
         public async Task<CodingEncounterCardDto?> GetCodingEncounterCardAsync(int encounterId)

@@ -1,311 +1,202 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import apiClient from '../../api/client'
 import { Badge } from '../../components/shared/ui/Badge'
 import { Button } from '../../components/shared/ui/Button'
-import { Card } from '../../components/shared/ui/Card'
 import { Pagination } from '../../components/shared/ui/Pagination'
 import { Table } from '../../components/shared/ui/Table'
 
 type WorklistItem = {
   encounterId: number
   patientName: string
-  mrn: string
+  providerId: number | null
   providerName: string
-  encounterDate: string
-  pos: string
+  encounterDateTime: string
+  visitType: string
+  planId: number | null
   planName: string
-  diagnosisCount: number
   chargeLineCount: number
   totalCharge: number
+  diagnosisCount: number
   hasPrimaryDiagnosis: boolean
-  status: 'ReadyForCoding'
-  lockStatus: 'Unlocked' | 'Locked'
-  lockedBy: string
+  status: string
 }
 
-const DUMMY_WORKLIST: WorklistItem[] = [
-  {
-    encounterId: 1002,
-    patientName: 'Bob Martinez',
-    mrn: 'PT-E5F6G7H8',
-    providerName: 'Dr. James Patel',
-    encounterDate: '2024-11-08T14:00',
-    pos: '10',
-    planName: 'Aetna Select PPO',
-    diagnosisCount: 0,
-    chargeLineCount: 3,
-    totalCharge: 595.0,
-    hasPrimaryDiagnosis: false,
-    status: 'ReadyForCoding',
-    lockStatus: 'Unlocked',
-    lockedBy: '',
-  },
-  {
-    encounterId: 1006,
-    patientName: 'Alice Johnson',
-    mrn: 'PT-A1B2C3D4',
-    providerName: 'Dr. Mark Liu',
-    encounterDate: '2024-11-15T10:00',
-    pos: '10',
-    planName: 'BlueCross PPO Basic',
-    diagnosisCount: 1,
-    chargeLineCount: 4,
-    totalCharge: 555.0,
-    hasPrimaryDiagnosis: true,
-    status: 'ReadyForCoding',
-    lockStatus: 'Locked',
-    lockedBy: 'Jane Coder',
-  },
-  {
-    encounterId: 1009,
-    patientName: 'Emily Rodriguez',
-    mrn: 'PT-Q7R8S9T0',
-    providerName: 'Dr. Sarah Chen',
-    encounterDate: '2024-12-05T14:30',
-    pos: '02',
-    planName: 'BlueCross PPO Basic',
-    diagnosisCount: 1,
-    chargeLineCount: 2,
-    totalCharge: 285.0,
-    hasPrimaryDiagnosis: true,
-    status: 'ReadyForCoding',
-    lockStatus: 'Unlocked',
-    lockedBy: '',
-  },
-  {
-    encounterId: 1010,
-    patientName: 'Carol Nguyen',
-    mrn: 'PT-I9J0K1L2',
-    providerName: 'Dr. James Patel',
-    encounterDate: '2024-12-08T09:00',
-    pos: '02',
-    planName: 'Aetna Choice HMO',
-    diagnosisCount: 0,
-    chargeLineCount: 2,
-    totalCharge: 325.0,
-    hasPrimaryDiagnosis: false,
-    status: 'ReadyForCoding',
-    lockStatus: 'Unlocked',
-    lockedBy: '',
-  },
-  {
-    encounterId: 1011,
-    patientName: 'David Patel',
-    mrn: 'PT-M3N4O5P6',
-    providerName: 'Dr. Sarah Chen',
-    encounterDate: '2024-12-10T11:00',
-    pos: '02',
-    planName: 'BCBS HMO Plus',
-    diagnosisCount: 2,
-    chargeLineCount: 1,
-    totalCharge: 250.0,
-    hasPrimaryDiagnosis: true,
-    status: 'ReadyForCoding',
-    lockStatus: 'Locked',
-    lockedBy: 'Jane Coder',
-  },
-  {
-    encounterId: 1012,
-    patientName: 'Grace Kim',
-    mrn: 'PT-Y5Z6A7B8',
-    providerName: 'Dr. Mark Liu',
-    encounterDate: '2024-12-12T15:00',
-    pos: '10',
-    planName: 'Cigna HMO',
-    diagnosisCount: 0,
-    chargeLineCount: 3,
-    totalCharge: 430.0,
-    hasPrimaryDiagnosis: false,
-    status: 'ReadyForCoding',
-    lockStatus: 'Unlocked',
-    lockedBy: '',
-  },
-  {
-    encounterId: 1013,
-    patientName: 'Frank Williams',
-    mrn: 'PT-U1V2W3X4',
-    providerName: 'Dr. Mark Liu',
-    encounterDate: '2024-12-14T08:30',
-    pos: '02',
-    planName: 'UHC Gold PPO',
-    diagnosisCount: 1,
-    chargeLineCount: 2,
-    totalCharge: 315.0,
-    hasPrimaryDiagnosis: true,
-    status: 'ReadyForCoding',
-    lockStatus: 'Unlocked',
-    lockedBy: '',
-  },
-]
+type FilterOption = { id: number; name: string }
 
-const PROVIDER_OPTIONS = [...new Set(DUMMY_WORKLIST.map((w) => w.providerName))]
-const PLAN_OPTIONS = [...new Set(DUMMY_WORKLIST.map((w) => w.planName))]
+type WorklistFilters = {
+  providers: FilterOption[]
+  plans: FilterOption[]
+}
 
-const inputClassName =
-  'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+const PAGE_SIZE = 10
 
-function formatEncounterDate(input: string): string {
-  const date = new Date(input)
-  if (Number.isNaN(date.getTime())) return input
-  const datePart = date.toLocaleDateString('en-US', {
+const selectCls =
+  'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+
+function formatDate(input: string): string {
+  const d = new Date(input)
+  if (Number.isNaN(d.getTime())) return input
+  return d.toLocaleString('en-US', {
     month: 'short',
     day: '2-digit',
     year: 'numeric',
-  })
-  const timePart = date.toLocaleTimeString('en-US', {
-    hour12: false,
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   })
-  return `${datePart} ${timePart}`
 }
 
 export default function Worklist() {
-  const [worklist] = useState<WorklistItem[]>(DUMMY_WORKLIST)
-  const [providerFilter, setProviderFilter] = useState('All')
-  const [planFilter, setPlanFilter] = useState('All')
-  const [lockFilter, setLockFilter] = useState('All')
-  const [search, setSearch] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const PAGE_SIZE = 10
   const navigate = useNavigate()
+  const [worklist, setWorklist] = useState<WorklistItem[]>([])
+  const [filters, setFilters] = useState<WorklistFilters>({ providers: [], plans: [] })
+  const [selectedProviderId, setSelectedProviderId] = useState<number | null>(null)
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const fetchWorklist = useCallback(async (providerId: number | null, planId: number | null) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (providerId != null) params.set('providerId', String(providerId))
+      if (planId != null) params.set('planId', String(planId))
+      const url = params.size > 0
+        ? `api/v1/coding/worklist?${params.toString()}`
+        : 'api/v1/coding/worklist'
+      const res = await apiClient.get<WorklistItem[]>(url)
+      console.log(res.data)
+      setWorklist(res.data)
+    } catch {
+      setError('Failed to load coding worklist.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
+    apiClient
+      .get<WorklistFilters>('api/v1/coding/worklist/filters')
+      .then(res => setFilters(res.data))
+      .catch(() => {})
+
+    fetchWorklist(null, null)
+  }, [fetchWorklist])
+
+  function handleProviderChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value === '' ? null : Number(e.target.value)
+    setSelectedProviderId(id)
     setCurrentPage(1)
-  }, [providerFilter, planFilter, lockFilter, search])
-
-  const totalItems = worklist.length
-  const lockedCount = worklist.filter((w) => w.lockStatus === 'Locked').length
-  const unlockedCount = worklist.filter((w) => w.lockStatus === 'Unlocked').length
-
-  const filtered = useMemo(
-    () =>
-      worklist
-        .filter((w) => providerFilter === 'All' || w.providerName === providerFilter)
-        .filter((w) => planFilter === 'All' || w.planName === planFilter)
-        .filter((w) => lockFilter === 'All' || w.lockStatus === lockFilter)
-        .filter(
-          (w) =>
-            !search ||
-            w.patientName.toLowerCase().includes(search.toLowerCase()) ||
-            w.mrn.toLowerCase().includes(search.toLowerCase()),
-        ),
-    [worklist, providerFilter, planFilter, lockFilter, search],
-  )
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const safeCurrentPage = Math.min(currentPage, totalPages)
-  const paginated = filtered.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE)
-
-  const clearFilters = () => {
-    setSearch('')
-    setProviderFilter('All')
-    setPlanFilter('All')
-    setLockFilter('All')
-    setCurrentPage(1)
+    fetchWorklist(id, selectedPlanId)
   }
+
+  function handlePlanChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value === '' ? null : Number(e.target.value)
+    setSelectedPlanId(id)
+    setCurrentPage(1)
+    fetchWorklist(selectedProviderId, id)
+  }
+
+  function clearFilters() {
+    setSelectedProviderId(null)
+    setSelectedPlanId(null)
+    setCurrentPage(1)
+    fetchWorklist(null, null)
+  }
+
+  const totalPages = Math.max(1, Math.ceil(worklist.length / PAGE_SIZE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginated = worklist.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE)
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Coding Worklist</h1>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">Coding Worklist</h1>
 
-      <div className="flex gap-4 mb-6">
-        <Card className="border-l-4 border-blue-500 flex-1">
-          <p className="text-xs uppercase text-gray-500">Total Encounters</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{totalItems}</p>
-        </Card>
-        <Card className="border-l-4 border-green-500 flex-1">
-          <p className="text-xs uppercase text-gray-500">Unlocked</p>
-          <p className="text-3xl font-bold text-green-600 mt-1">{unlockedCount}</p>
-        </Card>
-        <Card className="border-l-4 border-amber-500 flex-1">
-          <p className="text-xs uppercase text-gray-500">Locked by Coder</p>
-          <p className="text-3xl font-bold text-amber-600 mt-1">{lockedCount}</p>
-        </Card>
-      </div>
+      {error != null && (
+        <p className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+      )}
 
-      <div className="flex gap-3 mb-4 flex-wrap">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by patient name or MRN..."
-          className={`${inputClassName} min-w-64`}
-        />
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <select
-          value={providerFilter}
-          onChange={(e) => setProviderFilter(e.target.value)}
-          className={inputClassName}
+          value={selectedProviderId ?? ''}
+          onChange={handleProviderChange}
+          className={selectCls}
         >
-          <option value="All">All Providers</option>
-          {PROVIDER_OPTIONS.map((provider) => (
-            <option key={provider} value={provider}>
-              {provider}
+          <option value="">All Providers</option>
+          {filters.providers.map(p => (
+            <option key={p.id} value={p.id}>
+              {p.name}
             </option>
           ))}
         </select>
-        <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className={inputClassName}>
-          <option value="All">All Plans</option>
-          {PLAN_OPTIONS.map((plan) => (
-            <option key={plan} value={plan}>
-              {plan}
+
+        <select
+          value={selectedPlanId ?? ''}
+          onChange={handlePlanChange}
+          className={selectCls}
+        >
+          <option value="">All Plans</option>
+          {filters.plans.map(p => (
+            <option key={p.id} value={p.id}>
+              {p.name}
             </option>
           ))}
         </select>
-        <select value={lockFilter} onChange={(e) => setLockFilter(e.target.value)} className={inputClassName}>
-          <option value="All">All Locks</option>
-          <option value="Unlocked">Unlocked</option>
-          <option value="Locked">Locked</option>
-        </select>
-        <Button variant="secondary" size="sm" onClick={clearFilters}>
-          Clear
-        </Button>
+
+        {(selectedProviderId != null || selectedPlanId != null) && (
+          <Button variant="secondary" size="sm" onClick={clearFilters}>
+            Clear
+          </Button>
+        )}
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-400 text-sm">No encounters match your filters.</p>
-          <button onClick={clearFilters} className="text-blue-600 text-sm hover:underline mt-2" type="button">
-            Clear all filters
-          </button>
+      {!loading && worklist.length === 0 ? (
+        <div className="py-16 text-center">
+          <p className="text-sm text-gray-400">No ReadyForCoding encounters found.</p>
         </div>
       ) : (
         <>
           <Table
             columns={[
               { key: 'patientName', label: 'Patient Name' },
-              { key: 'mrn', label: 'MRN' },
               { key: 'providerName', label: 'Provider' },
               { key: 'encounterDateText', label: 'Encounter Date' },
-              { key: 'posText', label: 'POS' },
+              { key: 'visitType', label: 'Visit Type' },
+              { key: 'planName', label: 'Plan' },
               { key: 'diagnoses', label: 'Diagnoses' },
               { key: 'chargeLines', label: 'Charge Lines' },
-              { key: 'lockStatusBadge', label: 'Lock Status' },
+              { key: 'statusBadge', label: 'Status' },
             ]}
-            data={paginated.map((row) => ({
-              ...row,
+            loading={loading}
+            data={paginated.map(row => ({
+              encounterId: row.encounterId,
+              providerName: row.providerName ?? '—',
+              planName: row.planName ?? '—',
+              visitType: row.visitType ?? '—',
               patientName: (
                 <button
                   onClick={() => navigate(`/coding/encounter/${row.encounterId}`)}
-                  className="text-blue-600 hover:underline font-medium text-left"
+                  className="text-left font-medium text-blue-600 hover:underline"
                   type="button"
                 >
                   {row.patientName}
                 </button>
               ),
-              mrn: <span className="font-mono text-sm text-gray-600">{row.mrn}</span>,
-              encounterDateText: formatEncounterDate(row.encounterDate),
-              posText: row.pos === '02' ? '02 – Home' : '10 – Non-Home',
+              encounterDateText: formatDate(row.encounterDateTime),
               diagnoses:
                 row.diagnosisCount === 0 ? (
                   <span className="text-gray-400">—</span>
                 ) : (
                   <span>
-                    {row.diagnosisCount}{' '}
-                    {!row.hasPrimaryDiagnosis ? (
-                      <span title="No primary dx set" className="text-amber-500 ml-1">
+                    {row.diagnosisCount}
+                    {!row.hasPrimaryDiagnosis && (
+                      <span title="No primary diagnosis set" className="ml-1 text-amber-500">
                         ⚠
                       </span>
-                    ) : null}
+                    )}
                   </span>
                 ),
               chargeLines: (
@@ -314,26 +205,21 @@ export default function Worklist() {
                   <p className="text-xs text-gray-500">${row.totalCharge.toFixed(2)}</p>
                 </div>
               ),
-              lockStatusBadge:
-                row.lockStatus === 'Locked' ? (
-                  <div>
-                    <Badge status="Locked" />
-                    <p className="text-xs text-gray-400 mt-0.5">{row.lockedBy}</p>
-                  </div>
-                ) : (
-                  <Badge status="Unlocked" />
-                ),
+              statusBadge: <Badge status={row.status} />,
             }))}
             showActions={true}
             actions={[
               {
                 label: 'Open Coding View',
-                onClick: (row) => navigate(`/coding/encounter/${(row as WorklistItem).encounterId}`),
+                onClick: row => navigate(`/coding/encounter/${row.encounterId as number}`),
               },
             ]}
           />
-
-          <Pagination currentPage={safeCurrentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </>
       )}
     </div>
