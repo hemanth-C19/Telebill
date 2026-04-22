@@ -71,6 +71,8 @@ namespace Telebill.Dto.Coding
     {
         public int PatientId { get; set; }
         public string? Name { get; set; }
+        public string? Mrn { get; set; }
+        public DateOnly Dob { get; set; }
         public string? Gender { get; set; }
     }
 

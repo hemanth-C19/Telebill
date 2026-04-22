@@ -1,52 +1,87 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useParams } from 'react-router-dom'
+import apiClient from '../../api/client'
 import { Badge } from '../../components/shared/ui/Badge'
 import { Button } from '../../components/shared/ui/Button'
 import { Card } from '../../components/shared/ui/Card'
 import { Dialog } from '../../components/shared/ui/Dialog'
+import { getAuthCookie } from '../../utils/cookieToken'
 
-type EncounterCard = {
-  encounterId: number
-  status: string
-  encounterDate: string
-  pos: string
-  documentationUri: string
-  provider: { providerId: number; name: string; npi: string; taxonomy: string }
-  attestation: { attestId: number; attestText: string; attestDate: string; status: string } | null
-  patient: { patientId: number; name: string; mrn: string; gender: string; dob: string }
-  chargeLines: ChargeLineInfo[]
-  primaryPayerPlan: {
-    planId: number
-    planName: string
-    networkType: string
-    requiredModifiers: string[]
-    acceptedModifiers: string[]
-    memberId: string
-  }
-  coverageWarning: string
-  activeLock: { codingLockId: number; coderName: string; lockedDate: string; status: string } | null
+type ProviderInfo = {
+  providerId: number
+  name: string | null
+  npi: string | null
+  taxonomy: string | null
+}
+
+type AttestationInfo = {
+  attestId: number
+  attestText: string | null
+  attestDate: string | null
+  status: string | null
+}
+
+type PatientInfo = {
+  patientId: number
+  name: string | null
+  mrn: string | null
+  dob: string | null
+  gender: string | null
 }
 
 type ChargeLineInfo = {
   chargeId: number
-  cptHcpcs: string
-  modifiers: string
+  cptHcpcs: string | null
+  modifiers: string | null
   modifierList: string[]
-  units: number
-  chargeAmount: number
-  notes: string
-  status: string
+  units: number | null
+  chargeAmount: number | null
+  notes: string | null
+  status: string | null
   modifiersValid: boolean
 }
 
-type Diagnosis = {
+type PayerPlanInfo = {
+  planId: number
+  planName: string | null
+  networkType: string | null
+  requiredModifiers: string[]
+  acceptedModifiers: string[]
+  memberID: string | null
+}
+
+type LockInfo = {
+  codingLockId: number
+  coderName: string | null
+  lockedDate: string
+  status: string | null
+}
+
+type EncounterCard = {
+  encounterId: number
+  status: string
+  encounterDateTime: string
+  visitType: string | null
+  pos: string | null
+  documentationUri: string | null
+  provider: ProviderInfo | null
+  attestation: AttestationInfo | null
+  patient: PatientInfo | null
+  chargeLines: ChargeLineInfo[]
+  primaryPayerPlan: PayerPlanInfo | null
+  coverageWarning: boolean
+  diagnoses: DiagnosisItem[]
+  activeLock: LockInfo | null
+}
+
+type DiagnosisItem = {
   dxId: number
   encounterId: number
-  icd10Code: string
-  description: string
+  icd10Code: string | null
+  description: string | null
   sequence: number
-  status: 'Active' | 'Inactive'
+  status: string | null
 }
 
 type ValidationResult = {
@@ -56,151 +91,21 @@ type ValidationResult = {
   warnings: string[]
 }
 
-const DUMMY_ENCOUNTER_CARDS: Record<number, EncounterCard> = {
-  1002: {
-    encounterId: 1002,
-    status: 'ReadyForCoding',
-    encounterDate: '2024-11-08T14:00',
-    pos: '10',
-    documentationUri: '',
-    provider: { providerId: 202, name: 'Dr. James Patel', npi: '2345678901', taxonomy: 'Psychiatry' },
-    attestation: { attestId: 9002, attestText: 'I attest that the documentation accurately reflects the services rendered.', attestDate: '2024-11-08', status: 'Attested' },
-    patient: { patientId: 2, name: 'Bob Martinez', mrn: 'PT-E5F6G7H8', gender: 'Male', dob: '1972-07-22' },
-    chargeLines: [
-      { chargeId: 5003, cptHcpcs: '99214', modifiers: '25', modifierList: ['25'], units: 1, chargeAmount: 200, notes: '', status: 'Finalized', modifiersValid: true },
-      { chargeId: 5004, cptHcpcs: '90837', modifiers: '', modifierList: [], units: 1, chargeAmount: 175, notes: '', status: 'Finalized', modifiersValid: false },
-      { chargeId: 5005, cptHcpcs: '96130', modifiers: '', modifierList: [], units: 2, chargeAmount: 220, notes: '', status: 'Finalized', modifiersValid: false },
-    ],
-    primaryPayerPlan: { planId: 201, planName: 'Aetna Select PPO', networkType: 'PPO', requiredModifiers: ['GT'], acceptedModifiers: ['GT', 'GQ', '95'], memberId: 'AET-202' },
-    coverageWarning: '',
-    activeLock: null,
-  },
-  1006: {
-    encounterId: 1006,
-    status: 'ReadyForCoding',
-    encounterDate: '2024-11-15T10:00',
-    pos: '10',
-    documentationUri: 'notes/enc-1006.pdf',
-    provider: { providerId: 203, name: 'Dr. Mark Liu', npi: '3456789012', taxonomy: 'Cardiology' },
-    attestation: { attestId: 9006, attestText: 'I attest that the documentation accurately reflects the services rendered.', attestDate: '2024-11-15', status: 'Attested' },
-    patient: { patientId: 1, name: 'Alice Johnson', mrn: 'PT-A1B2C3D4', gender: 'Female', dob: '1985-03-14' },
-    chargeLines: [
-      { chargeId: 5009, cptHcpcs: '99214', modifiers: '', modifierList: [], units: 1, chargeAmount: 200, notes: '', status: 'Finalized', modifiersValid: false },
-      { chargeId: 5010, cptHcpcs: '90837', modifiers: 'GT', modifierList: ['GT'], units: 1, chargeAmount: 175, notes: '', status: 'Finalized', modifiersValid: true },
-      { chargeId: 5011, cptHcpcs: 'G0296', modifiers: '', modifierList: [], units: 1, chargeAmount: 95, notes: '', status: 'Finalized', modifiersValid: false },
-      { chargeId: 5012, cptHcpcs: '93000', modifiers: '', modifierList: [], units: 1, chargeAmount: 85, notes: '', status: 'Finalized', modifiersValid: false },
-    ],
-    primaryPayerPlan: { planId: 101, planName: 'BlueCross PPO Basic', networkType: 'PPO', requiredModifiers: ['GT'], acceptedModifiers: ['GT', 'GQ'], memberId: 'BCB-001' },
-    coverageWarning: '',
-    activeLock: { codingLockId: 4001, coderName: 'Jane Coder', lockedDate: '2024-11-16T09:00', status: 'Locked' },
-  },
-  1009: {
-    encounterId: 1009,
-    status: 'ReadyForCoding',
-    encounterDate: '2024-12-05T14:30',
-    pos: '02',
-    documentationUri: '',
-    provider: { providerId: 201, name: 'Dr. Sarah Chen', npi: '1234567890', taxonomy: 'Internal Medicine' },
-    attestation: { attestId: 9009, attestText: 'I attest that the documentation accurately reflects the services rendered.', attestDate: '2024-12-05', status: 'Attested' },
-    patient: { patientId: 5, name: 'Emily Rodriguez', mrn: 'PT-Q7R8S9T0', gender: 'Female', dob: '1998-06-18' },
-    chargeLines: [
-      { chargeId: 5016, cptHcpcs: '99214', modifiers: '', modifierList: [], units: 1, chargeAmount: 200, notes: '', status: 'Finalized', modifiersValid: false },
-      { chargeId: 5017, cptHcpcs: '93000', modifiers: 'GT', modifierList: ['GT'], units: 1, chargeAmount: 85, notes: '', status: 'Finalized', modifiersValid: true },
-    ],
-    primaryPayerPlan: { planId: 101, planName: 'BlueCross PPO Basic', networkType: 'PPO', requiredModifiers: ['GT'], acceptedModifiers: ['GT', 'GQ'], memberId: 'BCB-505' },
-    coverageWarning: '',
-    activeLock: null,
-  },
-  1010: {
-    encounterId: 1010,
-    status: 'ReadyForCoding',
-    encounterDate: '2024-12-08T09:00',
-    pos: '02',
-    documentationUri: '',
-    provider: { providerId: 202, name: 'Dr. James Patel', npi: '2345678901', taxonomy: 'Psychiatry' },
-    attestation: null,
-    patient: { patientId: 3, name: 'Carol Nguyen', mrn: 'PT-I9J0K1L2', gender: 'Female', dob: '1990-11-05' },
-    chargeLines: [
-      { chargeId: 5018, cptHcpcs: '99213', modifiers: '', modifierList: [], units: 1, chargeAmount: 150, notes: '', status: 'Finalized', modifiersValid: false },
-      { chargeId: 5019, cptHcpcs: '90837', modifiers: 'GQ', modifierList: ['GQ'], units: 1, chargeAmount: 175, notes: '', status: 'Finalized', modifiersValid: true },
-    ],
-    primaryPayerPlan: { planId: 202, planName: 'Aetna Choice HMO', networkType: 'HMO', requiredModifiers: ['GQ'], acceptedModifiers: ['GQ', 'GT'], memberId: 'AET-303' },
-    coverageWarning: 'Coverage effective date ends 2024-12-31 — verify eligibility.',
-    activeLock: null,
-  },
-  1011: {
-    encounterId: 1011,
-    status: 'ReadyForCoding',
-    encounterDate: '2024-12-10T11:00',
-    pos: '02',
-    documentationUri: 'notes/enc-1011.pdf',
-    provider: { providerId: 201, name: 'Dr. Sarah Chen', npi: '1234567890', taxonomy: 'Internal Medicine' },
-    attestation: { attestId: 9011, attestText: 'I attest that the documentation accurately reflects the services rendered.', attestDate: '2024-12-10', status: 'Attested' },
-    patient: { patientId: 4, name: 'David Patel', mrn: 'PT-M3N4O5P6', gender: 'Male', dob: '1965-01-30' },
-    chargeLines: [{ chargeId: 5020, cptHcpcs: '99215', modifiers: 'GT', modifierList: ['GT'], units: 1, chargeAmount: 250, notes: '', status: 'Finalized', modifiersValid: true }],
-    primaryPayerPlan: { planId: 102, planName: 'BCBS HMO Plus', networkType: 'HMO', requiredModifiers: ['GQ'], acceptedModifiers: ['GQ', 'GT'], memberId: 'BCD-001' },
-    coverageWarning: '',
-    activeLock: { codingLockId: 4002, coderName: 'Jane Coder', lockedDate: '2024-12-11T10:00', status: 'Locked' },
-  },
-  1012: {
-    encounterId: 1012,
-    status: 'ReadyForCoding',
-    encounterDate: '2024-12-12T15:00',
-    pos: '10',
-    documentationUri: '',
-    provider: { providerId: 203, name: 'Dr. Mark Liu', npi: '3456789012', taxonomy: 'Cardiology' },
-    attestation: { attestId: 9012, attestText: 'I attest that the documentation accurately reflects the services rendered.', attestDate: '2024-12-12', status: 'Attested' },
-    patient: { patientId: 7, name: 'Grace Kim', mrn: 'PT-Y5Z6A7B8', gender: 'Female', dob: '2001-12-25' },
-    chargeLines: [
-      { chargeId: 5021, cptHcpcs: '99213', modifiers: '', modifierList: [], units: 1, chargeAmount: 150, notes: '', status: 'Finalized', modifiersValid: false },
-      { chargeId: 5022, cptHcpcs: '93000', modifiers: '', modifierList: [], units: 1, chargeAmount: 85, notes: '', status: 'Finalized', modifiersValid: false },
-      { chargeId: 5023, cptHcpcs: 'G0296', modifiers: 'GT', modifierList: ['GT'], units: 1, chargeAmount: 95, notes: '', status: 'Finalized', modifiersValid: true },
-    ],
-    primaryPayerPlan: { planId: 401, planName: 'Cigna HMO', networkType: 'HMO', requiredModifiers: ['GT'], acceptedModifiers: ['GT', '95'], memberId: 'CIG-707' },
-    coverageWarning: '',
-    activeLock: null,
-  },
-  1013: {
-    encounterId: 1013,
-    status: 'ReadyForCoding',
-    encounterDate: '2024-12-14T08:30',
-    pos: '02',
-    documentationUri: '',
-    provider: { providerId: 203, name: 'Dr. Mark Liu', npi: '3456789012', taxonomy: 'Cardiology' },
-    attestation: { attestId: 9013, attestText: 'I attest that the documentation accurately reflects the services rendered.', attestDate: '2024-12-14', status: 'Attested' },
-    patient: { patientId: 6, name: 'Frank Williams', mrn: 'PT-U1V2W3X4', gender: 'Male', dob: '1955-09-09' },
-    chargeLines: [
-      { chargeId: 5024, cptHcpcs: '99214', modifiers: 'GT', modifierList: ['GT'], units: 1, chargeAmount: 200, notes: '', status: 'Finalized', modifiersValid: true },
-      { chargeId: 5025, cptHcpcs: '93000', modifiers: '', modifierList: [], units: 1, chargeAmount: 85, notes: '', status: 'Finalized', modifiersValid: false },
-    ],
-    primaryPayerPlan: { planId: 301, planName: 'UHC Gold PPO', networkType: 'PPO', requiredModifiers: ['GT', '95'], acceptedModifiers: ['GT', '95', 'GQ'], memberId: 'UHG-404' },
-    coverageWarning: '',
-    activeLock: null,
-  },
-}
-
-const INITIAL_DIAGNOSES: Record<number, Diagnosis[]> = {
-  1002: [],
-  1006: [{ dxId: 601, encounterId: 1006, icd10Code: 'F41.1', description: 'Generalized anxiety disorder', sequence: 2, status: 'Active' }],
-  1009: [{ dxId: 602, encounterId: 1009, icd10Code: 'I10', description: 'Essential hypertension', sequence: 1, status: 'Active' }],
-  1010: [],
-  1011: [
-    { dxId: 603, encounterId: 1011, icd10Code: 'I10', description: 'Essential hypertension', sequence: 1, status: 'Active' },
-    { dxId: 604, encounterId: 1011, icd10Code: 'E11.9', description: 'Type 2 diabetes w/o complication', sequence: 2, status: 'Active' },
-  ],
-  1012: [],
-  1013: [{ dxId: 605, encounterId: 1013, icd10Code: 'I25.10', description: 'Atherosclerotic heart disease', sequence: 1, status: 'Active' }],
-}
-
 type DxFormValues = { icd10Code: string; description: string; sequence: string }
 
-function formatDate(input: string): string {
+function formatDate(input: string | null | undefined): string {
+  if (!input) return '—'
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    const [y, m, d] = input.split('-').map(Number)
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+  }
   const date = new Date(input)
   if (Number.isNaN(date.getTime())) return input
   return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
 }
 
-function formatDateTime(input: string): string {
+function formatDateTime(input: string | null | undefined): string {
+  if (!input) return '—'
   const date = new Date(input)
   if (Number.isNaN(date.getTime())) return input
   const d = date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
@@ -208,17 +113,216 @@ function formatDateTime(input: string): string {
   return `${d} ${t}`
 }
 
+function extractErrorMessage(err: unknown): string {
+  const data = (err as { response?: { data?: { message?: string } } })?.response?.data
+  return data?.message ?? 'An unexpected error occurred.'
+}
+
 export default function EncounterCodingView() {
   const { encounterId } = useParams<{ encounterId: string }>()
   const navigate = useNavigate()
   const encounterIdNum = Number(encounterId)
 
-  const card = DUMMY_ENCOUNTER_CARDS[encounterIdNum]
+  const [encounter, setEncounter] = useState<EncounterCard | null>(null)
+  const [diagnoses, setDiagnoses] = useState<DiagnosisItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  if (card == null) {
+  const [editingModifiersId, setEditingModifiersId] = useState<number | null>(null)
+  const [modifierInput, setModifierInput] = useState('')
+  const [editingDxId, setEditingDxId] = useState<number | null>(null)
+  const [editDxForm, setEditDxForm] = useState({ icd10Code: '', description: '', sequence: '' })
+
+  const [validation, setValidation] = useState<ValidationResult | null>(null)
+  const [validating, setValidating] = useState(false)
+
+  const [showLockDialog, setShowLockDialog] = useState(false)
+  const [lockNotes, setLockNotes] = useState('')
+  const [locking, setLocking] = useState(false)
+
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false)
+  const [unlockReason, setUnlockReason] = useState('')
+  const [unlocking, setUnlocking] = useState(false)
+
+  const [apiError, setApiError] = useState<string | null>(null)
+
+  const dxForm = useForm<DxFormValues>({ defaultValues: { sequence: '' } })
+
+  const userId = getAuthCookie()?.userId
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const [cardRes, dxRes] = await Promise.all([
+        apiClient.get<EncounterCard>(`api/v1/coding/worklist/${encounterIdNum}`),
+        apiClient.get<DiagnosisItem[]>(`api/v1/coding/diagnoses/by-encounter/${encounterIdNum}`),
+      ])
+      setEncounter(cardRes.data)
+      setDiagnoses(dxRes.data)
+    } catch {
+      setLoadError('Failed to load encounter data.')
+    } finally {
+      setLoading(false)
+    }
+  }, [encounterIdNum])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  const activeDiagnoses = useMemo(() => diagnoses.filter((d) => d.status === 'Active'), [diagnoses])
+  const activeDxCount = activeDiagnoses.length
+
+  const handleValidate = async () => {
+    setValidating(true)
+    setApiError(null)
+    try {
+      const res = await apiClient.get<ValidationResult>(`api/v1/coding/lock/validate/${encounterIdNum}`)
+      setValidation(res.data)
+    } catch {
+      setApiError('Validation request failed.')
+    } finally {
+      setValidating(false)
+    }
+  }
+
+  const handleSaveModifiers = async (chargeId: number) => {
+    const modList = modifierInput
+      .split(',')
+      .map((m) => m.trim().toUpperCase())
+      .filter(Boolean)
+    setEditingModifiersId(null)
+    setApiError(null)
+    try {
+      const res = await apiClient.patch<ChargeLineInfo>(
+        `api/v1/coding/worklist/${encounterIdNum}/charge-lines/${chargeId}/modifiers?userId=${userId}`,
+        { modifiers: modList },
+      )
+      setEncounter((prev) =>
+        prev == null
+          ? null
+          : { ...prev, chargeLines: prev.chargeLines.map((cl) => (cl.chargeId === chargeId ? res.data : cl)) },
+      )
+      setValidation(null)
+    } catch (err) {
+      setApiError(extractErrorMessage(err))
+    }
+  }
+
+  const handleSaveDx = async (dxId: number) => {
+    setApiError(null)
+    try {
+      const res = await apiClient.patch<DiagnosisItem>(
+        `api/v1/coding/diagnoses/${dxId}?userId=${userId}`,
+        {
+          icd10Code: editDxForm.icd10Code.toUpperCase(),
+          description: editDxForm.description,
+          sequence: Number(editDxForm.sequence),
+        },
+      )
+      setDiagnoses((prev) => prev.map((d) => (d.dxId === dxId ? res.data : d)))
+      setEditingDxId(null)
+      setValidation(null)
+    } catch (err) {
+      setApiError(extractErrorMessage(err))
+    }
+  }
+
+  const handleRemoveDx = async (dxId: number) => {
+    setApiError(null)
+    try {
+      await apiClient.delete(`api/v1/coding/diagnoses/${dxId}?userId=${userId}`)
+      setDiagnoses((prev) => prev.map((d) => (d.dxId === dxId ? { ...d, status: 'Inactive' } : d)))
+      setValidation(null)
+    } catch (err) {
+      setApiError(extractErrorMessage(err))
+    }
+  }
+
+  const onAddDiagnosis = dxForm.handleSubmit(async (data) => {
+    setApiError(null)
+    try {
+      const res = await apiClient.post<DiagnosisItem>(
+        `api/v1/coding/diagnoses?userId=${userId}`,
+        {
+          encounterId: encounterIdNum,
+          icd10Code: data.icd10Code.toUpperCase(),
+          description: data.description,
+          sequence: Number(data.sequence),
+        },
+      )
+      setDiagnoses((prev) => [...prev, res.data])
+      dxForm.reset()
+      setValidation(null)
+    } catch (err) {
+      setApiError(extractErrorMessage(err))
+    }
+  })
+
+  const handleLockConfirm = async () => {
+    setLocking(true)
+    setApiError(null)
+    try {
+      const res = await apiClient.post<{
+        codingLock: LockInfo | null
+        encounterStatus: string
+        claimBuildTriggered: boolean
+        validationErrors: string[]
+      }>(`api/v1/coding/lock/apply?userId=${userId}`, {
+        encounterId: encounterIdNum,
+        notes: lockNotes || null,
+      })
+      if (res.data.validationErrors.length > 0) {
+        setApiError(res.data.validationErrors.join(' | '))
+        return
+      }
+      setEncounter((prev) =>
+        prev == null ? null : { ...prev, status: res.data.encounterStatus, activeLock: res.data.codingLock },
+      )
+      setShowLockDialog(false)
+      setLockNotes('')
+      setValidation(null)
+    } catch (err) {
+      setApiError(extractErrorMessage(err))
+    } finally {
+      setLocking(false)
+    }
+  }
+
+  const handleUnlockConfirm = async () => {
+    setUnlocking(true)
+    setApiError(null)
+    try {
+      const res = await apiClient.post<{ encounterId: number; encounterStatus: string; previousLockId: number }>(
+        `api/v1/coding/lock/unlock?userId=${userId}`,
+        { encounterId: encounterIdNum, reason: unlockReason },
+      )
+      setEncounter((prev) =>
+        prev == null ? null : { ...prev, status: res.data.encounterStatus, activeLock: null },
+      )
+      setShowUnlockDialog(false)
+      setUnlockReason('')
+      setValidation(null)
+    } catch (err) {
+      setApiError(extractErrorMessage(err))
+    } finally {
+      setUnlocking(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading encounter...</p>
+      </div>
+    )
+  }
+
+  if (loadError != null || encounter == null) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
-        <p className="text-gray-500">Encounter not found.</p>
+        <p className="text-red-500">{loadError ?? 'Encounter not found.'}</p>
         <button type="button" className="text-blue-600 hover:underline" onClick={() => navigate('/coding/worklist')}>
           ← Back to Worklist
         </button>
@@ -226,86 +330,7 @@ export default function EncounterCodingView() {
     )
   }
 
-  const [encounter, setEncounter] = useState<EncounterCard>(card)
-  const [diagnoses, setDiagnoses] = useState<Diagnosis[]>(INITIAL_DIAGNOSES[encounterIdNum] ?? [])
-  const [lock, setLock] = useState(card.activeLock ?? null)
-  const [editingModifiersId, setEditingModifiersId] = useState<number | null>(null)
-  const [modifierInput, setModifierInput] = useState('')
-  const [editingDxId, setEditingDxId] = useState<number | null>(null)
-  const [editDxForm, setEditDxForm] = useState({ icd10Code: '', description: '', sequence: '' })
-  const [validation, setValidation] = useState<ValidationResult | null>(null)
-  const [showLockDialog, setShowLockDialog] = useState(false)
-  const [lockNotes, setLockNotes] = useState('')
-  const [showUnlockDialog, setShowUnlockDialog] = useState(false)
-  const [unlockReason, setUnlockReason] = useState('')
-  const dxForm = useForm<DxFormValues>({ defaultValues: { sequence: '' } })
-
-  const activeDiagnoses = useMemo(() => diagnoses.filter((d) => d.status === 'Active'), [diagnoses])
-  const hasPrimaryDx = activeDiagnoses.some((d) => d.sequence === 1)
-  const activeDxCount = activeDiagnoses.length
-
-  const runValidation = (): ValidationResult => {
-    const errors: string[] = []
-    const warnings: string[] = []
-    if (!hasPrimaryDx) errors.push('Sequence 1 (principal diagnosis) is required before locking.')
-    if (activeDxCount === 0) errors.push('At least one active diagnosis is required.')
-    if (!encounter.attestation || encounter.attestation.status !== 'Attested') {
-      errors.push('Encounter has not been attested by the provider.')
-    }
-    const invalidLines = encounter.chargeLines.filter((cl) => !cl.modifiersValid)
-    if (invalidLines.length > 0) warnings.push(`${invalidLines.length} charge line(s) have missing or invalid modifiers for this payer plan.`)
-    if (encounter.coverageWarning) warnings.push(encounter.coverageWarning)
-    return { encounterId: encounterIdNum, canLock: errors.length === 0, errors, warnings }
-  }
-
-  const handleSaveModifiers = (chargeId: number) => {
-    const modList = modifierInput
-      .split(',')
-      .map((m) => m.trim().toUpperCase())
-      .filter(Boolean)
-    const required = encounter.primaryPayerPlan.requiredModifiers
-    const accepted = encounter.primaryPayerPlan.acceptedModifiers
-    const isValid = required.every((r) => modList.includes(r)) && modList.every((m) => accepted.includes(m))
-    setEncounter((prev) => ({
-      ...prev,
-      chargeLines: prev.chargeLines.map((cl) =>
-        cl.chargeId === chargeId ? { ...cl, modifiers: modList.join(','), modifierList: modList, modifiersValid: isValid } : cl,
-      ),
-    }))
-    setEditingModifiersId(null)
-    setValidation(null)
-  }
-
-  const handleSaveDx = (dxId: number) => {
-    setDiagnoses((prev) =>
-      prev.map((d) =>
-        d.dxId === dxId
-          ? { ...d, icd10Code: editDxForm.icd10Code.toUpperCase(), description: editDxForm.description, sequence: Number(editDxForm.sequence) }
-          : d,
-      ),
-    )
-    setEditingDxId(null)
-    setValidation(null)
-  }
-
-  const handleSoftDeleteDx = (dxId: number) => {
-    setDiagnoses((prev) => prev.map((d) => (d.dxId === dxId ? { ...d, status: 'Inactive' } : d)))
-    setValidation(null)
-  }
-
-  const onAddDiagnosis = dxForm.handleSubmit((data) => {
-    const newDx: Diagnosis = {
-      dxId: Math.floor(Math.random() * 9000) + 700,
-      encounterId: encounterIdNum,
-      icd10Code: data.icd10Code.toUpperCase(),
-      description: data.description,
-      sequence: Number(data.sequence),
-      status: 'Active',
-    }
-    setDiagnoses((prev) => [...prev, newDx])
-    dxForm.reset()
-    setValidation(null)
-  })
+  const lock = encounter.activeLock
 
   return (
     <div className="pb-24">
@@ -318,26 +343,35 @@ export default function EncounterCodingView() {
         <Badge status={encounter.status} />
       </div>
 
+      {apiError != null && (
+        <div className="mt-3 rounded-md bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">
+          {apiError}
+        </div>
+      )}
+
       <div className="flex gap-5 mt-4">
         <div className="w-[42%] flex-shrink-0 space-y-4">
           <Card title="Patient & Encounter Info">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <p><span className="text-gray-500">Patient:</span> <strong>{encounter.patient.name}</strong></p>
-              <p><span className="text-gray-500">MRN:</span> <span className="font-mono">{encounter.patient.mrn}</span></p>
-              <p><span className="text-gray-500">DOB:</span> {formatDate(encounter.patient.dob)}</p>
-              <p><span className="text-gray-500">Gender:</span> {encounter.patient.gender}</p>
-              <p><span className="text-gray-500">Provider:</span> {encounter.provider.name}</p>
-              <p><span className="text-gray-500">NPI:</span> {encounter.provider.npi}</p>
-              <p><span className="text-gray-500">Specialty:</span> {encounter.provider.taxonomy}</p>
-              <p><span className="text-gray-500">Encounter Date:</span> {formatDateTime(encounter.encounterDate)}</p>
+              <p><span className="text-gray-500">Patient:</span> <strong>{encounter.patient?.name ?? '—'}</strong></p>
+              <p><span className="text-gray-500">MRN:</span> <span className="font-mono">{encounter.patient?.mrn ?? '—'}</span></p>
+              <p><span className="text-gray-500">DOB:</span> {formatDate(encounter.patient?.dob)}</p>
+              <p><span className="text-gray-500">Gender:</span> {encounter.patient?.gender ?? '—'}</p>
+              <p><span className="text-gray-500">Provider:</span> {encounter.provider?.name ?? '—'}</p>
+              <p><span className="text-gray-500">NPI:</span> {encounter.provider?.npi ?? '—'}</p>
+              <p><span className="text-gray-500">Specialty:</span> {encounter.provider?.taxonomy ?? '—'}</p>
+              <p><span className="text-gray-500">Encounter Date:</span> {formatDateTime(encounter.encounterDateTime)}</p>
               <p className="col-span-2">
                 <span className="text-gray-500">POS:</span>{' '}
-                {encounter.pos === '02' ? '02 – Telehealth Home' : '10 – Telehealth Non-Home'}
+                {encounter.pos === '02' ? '02 – Telehealth Home' : encounter.pos === '10' ? '10 – Telehealth Non-Home' : encounter.pos ?? '—'}
               </p>
             </div>
           </Card>
 
-          <Card title="Attestation" className={encounter.attestation != null ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-amber-500'}>
+          <Card
+            title="Attestation"
+            className={encounter.attestation != null ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-amber-500'}
+          >
             {encounter.attestation != null ? (
               <div>
                 <div className="bg-green-50 text-green-700 text-sm font-medium px-3 py-2 rounded-md mb-3">✓ Attested</div>
@@ -354,32 +388,46 @@ export default function EncounterCodingView() {
           </Card>
 
           <Card title="Payer Plan">
-            <div className="space-y-2 text-sm">
-              <p><span className="text-gray-500">Plan Name:</span> {encounter.primaryPayerPlan.planName}</p>
-              <p><span className="text-gray-500">Network Type:</span> {encounter.primaryPayerPlan.networkType}</p>
-              <p><span className="text-gray-500">Member ID:</span> {encounter.primaryPayerPlan.memberId}</p>
-              <div>
-                <p className="text-gray-500 mb-1">Required Modifiers:</p>
-                <div className="flex flex-wrap gap-1">
-                  {encounter.primaryPayerPlan.requiredModifiers.map((mod) => (
-                    <span key={mod} className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{mod}</span>
-                  ))}
+            {encounter.primaryPayerPlan != null ? (
+              <div className="space-y-2 text-sm">
+                <p><span className="text-gray-500">Plan Name:</span> {encounter.primaryPayerPlan.planName ?? '—'}</p>
+                <p><span className="text-gray-500">Network Type:</span> {encounter.primaryPayerPlan.networkType ?? '—'}</p>
+                <p><span className="text-gray-500">Member ID:</span> {encounter.primaryPayerPlan.memberID ?? '—'}</p>
+                <div>
+                  <p className="text-gray-500 mb-1">Required Modifiers:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {encounter.primaryPayerPlan.requiredModifiers.length > 0 ? (
+                      encounter.primaryPayerPlan.requiredModifiers.map((mod) => (
+                        <span key={mod} className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{mod}</span>
+                      ))
+                    ) : (
+                      <span className="text-gray-400 text-xs italic">None</span>
+                    )}
+                  </div>
                 </div>
+                <div>
+                  <p className="text-gray-500 mb-1">Accepted Modifiers:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {encounter.primaryPayerPlan.acceptedModifiers.length > 0 ? (
+                      encounter.primaryPayerPlan.acceptedModifiers.map((mod) => (
+                        <span key={mod} className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">{mod}</span>
+                      ))
+                    ) : (
+                      <span className="text-gray-400 text-xs italic">None</span>
+                    )}
+                  </div>
+                </div>
+                {encounter.coverageWarning && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 text-xs mt-2">
+                    ⚠ No active coverage found within the encounter date window. Claim may fail scrub.
+                  </div>
+                )}
               </div>
-              <div>
-                <p className="text-gray-500 mb-1">Accepted Modifiers:</p>
-                <div className="flex flex-wrap gap-1">
-                  {encounter.primaryPayerPlan.acceptedModifiers.map((mod) => (
-                    <span key={mod} className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">{mod}</span>
-                  ))}
-                </div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 text-xs">
+                ⚠ No payer plan found for this patient.
               </div>
-              {encounter.coverageWarning && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 text-xs mt-2">
-                  ⚠ {encounter.coverageWarning}
-                </div>
-              )}
-            </div>
+            )}
           </Card>
 
           <Card title="Charge Lines">
@@ -387,6 +435,9 @@ export default function EncounterCodingView() {
               <div className="grid grid-cols-6 gap-2 px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50 uppercase">
                 <span>Line</span><span>CPT</span><span>Modifiers</span><span>Units</span><span>Amount</span><span>Valid</span>
               </div>
+              {encounter.chargeLines.length === 0 && (
+                <div className="px-3 py-6 text-center text-gray-400 text-sm italic">No charge lines.</div>
+              )}
               {encounter.chargeLines.map((cl) => (
                 <div key={cl.chargeId} className="grid grid-cols-6 gap-2 px-3 py-2 text-sm border-t items-center">
                   <span className="text-gray-500 text-xs">#{cl.chargeId}</span>
@@ -403,35 +454,42 @@ export default function EncounterCodingView() {
                       />
                     ) : (
                       <span className="text-gray-600 text-xs">
-                        {cl.modifiers || <span className="text-gray-300 italic">none</span>}
+                        {cl.modifierList.length > 0
+                          ? cl.modifierList.join(',')
+                          : <span className="text-gray-300 italic">none</span>}
                       </span>
                     )}
                   </span>
-                  <span className="text-center text-gray-600">{cl.units}</span>
-                  <span>${cl.chargeAmount.toFixed(2)}</span>
+                  <span className="text-center text-gray-600">{cl.units ?? '—'}</span>
+                  <span>{cl.chargeAmount != null ? `$${cl.chargeAmount.toFixed(2)}` : '—'}</span>
                   <span className="flex items-center gap-1">
                     {cl.modifiersValid ? (
                       <span className="text-green-600 text-xs font-medium">✓</span>
                     ) : (
                       <span className="text-red-500 text-xs font-medium" title="Required modifiers missing for this payer plan">✗</span>
                     )}
-                    <button
-                      onClick={() => {
-                        setEditingModifiersId(cl.chargeId)
-                        setModifierInput(cl.modifiers)
-                      }}
-                      className="text-gray-400 hover:text-blue-600 ml-1 text-xs underline"
-                      type="button"
-                    >
-                      edit
-                    </button>
+                    {lock == null && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingModifiersId(cl.chargeId)
+                          setModifierInput(cl.modifierList.join(','))
+                        }}
+                        className="text-gray-400 hover:text-blue-600 ml-1 text-xs underline"
+                      >
+                        edit
+                      </button>
+                    )}
                   </span>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Required modifiers for {encounter.primaryPayerPlan.planName}: {encounter.primaryPayerPlan.requiredModifiers.join(', ')}
-            </p>
+            {encounter.primaryPayerPlan != null && encounter.primaryPayerPlan.requiredModifiers.length > 0 && (
+              <p className="text-xs text-gray-400 mt-1">
+                Required modifiers for {encounter.primaryPayerPlan.planName}:{' '}
+                {encounter.primaryPayerPlan.requiredModifiers.join(', ')}
+              </p>
+            )}
           </Card>
         </div>
 
@@ -450,46 +508,72 @@ export default function EncounterCodingView() {
                 <span>Seq</span><span>ICD-10</span><span>Description</span><span>Status</span><span>Actions</span>
               </div>
               {[...diagnoses].sort((a, b) => a.sequence - b.sequence).map((dx) => (
-                <div key={dx.dxId} className={`grid grid-cols-[3rem_7rem_1fr_6rem_5rem] gap-2 px-3 py-2.5 border-t text-sm items-start ${dx.status === 'Inactive' ? 'opacity-40' : ''}`}>
+                <div
+                  key={dx.dxId}
+                  className={`grid grid-cols-[3rem_7rem_1fr_6rem_5rem] gap-2 px-3 py-2.5 border-t text-sm items-start ${dx.status === 'Inactive' ? 'opacity-40' : ''}`}
+                >
                   <span className={`font-bold text-center text-sm ${dx.sequence === 1 ? 'text-purple-700' : 'text-gray-600'}`}>
-                    {dx.sequence}
-                    {dx.sequence === 1 ? ' ★' : ''}
+                    {dx.sequence}{dx.sequence === 1 ? ' ★' : ''}
                   </span>
                   {editingDxId === dx.dxId ? (
-                    <input value={editDxForm.icd10Code} onChange={(e) => setEditDxForm((f) => ({ ...f, icd10Code: e.target.value }))} className="border border-gray-300 rounded px-2 py-1 text-xs w-full" />
+                    <input
+                      value={editDxForm.icd10Code}
+                      onChange={(e) => setEditDxForm((f) => ({ ...f, icd10Code: e.target.value }))}
+                      className="border border-gray-300 rounded px-2 py-1 text-xs w-full"
+                    />
                   ) : (
-                    <span className="font-mono font-medium">{dx.icd10Code}</span>
+                    <span className="font-mono font-medium">{dx.icd10Code ?? '—'}</span>
                   )}
                   {editingDxId === dx.dxId ? (
-                    <input value={editDxForm.description} onChange={(e) => setEditDxForm((f) => ({ ...f, description: e.target.value }))} className="border border-gray-300 rounded px-2 py-1 text-xs w-full" />
+                    <input
+                      value={editDxForm.description}
+                      onChange={(e) => setEditDxForm((f) => ({ ...f, description: e.target.value }))}
+                      className="border border-gray-300 rounded px-2 py-1 text-xs w-full"
+                    />
                   ) : (
-                    <span className="text-gray-700">{dx.description}</span>
+                    <span className="text-gray-700">{dx.description ?? '—'}</span>
                   )}
-                  <Badge status={dx.status} />
+                  <Badge status={dx.status ?? ''} />
                   <div className="flex gap-1">
-                    {dx.status === 'Active' && editingDxId !== dx.dxId && (
+                    {dx.status === 'Active' && editingDxId !== dx.dxId && lock == null && (
                       <>
                         <button
+                          type="button"
                           onClick={() => {
                             setEditingDxId(dx.dxId)
-                            setEditDxForm({ icd10Code: dx.icd10Code, description: dx.description, sequence: String(dx.sequence) })
+                            setEditDxForm({
+                              icd10Code: dx.icd10Code ?? '',
+                              description: dx.description ?? '',
+                              sequence: String(dx.sequence),
+                            })
                           }}
                           className="text-blue-500 hover:text-blue-700 text-xs underline"
-                          type="button"
                         >
                           Edit
                         </button>
-                        <button onClick={() => handleSoftDeleteDx(dx.dxId)} className="text-red-400 hover:text-red-600 text-xs underline ml-1" type="button">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDx(dx.dxId)}
+                          className="text-red-400 hover:text-red-600 text-xs underline ml-1"
+                        >
                           Remove
                         </button>
                       </>
                     )}
                     {editingDxId === dx.dxId && (
                       <>
-                        <button onClick={() => handleSaveDx(dx.dxId)} className="text-green-600 text-xs underline font-medium" type="button">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveDx(dx.dxId)}
+                          className="text-green-600 text-xs underline font-medium"
+                        >
                           Save
                         </button>
-                        <button onClick={() => setEditingDxId(null)} className="text-gray-400 text-xs underline ml-1" type="button">
+                        <button
+                          type="button"
+                          onClick={() => setEditingDxId(null)}
+                          className="text-gray-400 text-xs underline ml-1"
+                        >
                           Cancel
                         </button>
                       </>
@@ -515,7 +599,7 @@ export default function EncounterCodingView() {
                       required: 'ICD-10 code is required',
                       pattern: { value: /^[A-Z]\d{2}(\.\d{1,4})?$/, message: 'Invalid ICD-10 format (e.g. I10 or F41.1)' },
                       validate: (v) =>
-                        !activeDiagnoses.some((d) => d.icd10Code.toUpperCase() === v.toUpperCase()) ||
+                        !activeDiagnoses.some((d) => d.icd10Code?.toUpperCase() === v.toUpperCase()) ||
                         'This diagnosis code already exists on this encounter',
                     })}
                     placeholder="e.g. I10 or F41.1"
@@ -524,7 +608,9 @@ export default function EncounterCodingView() {
                       e.currentTarget.value = e.currentTarget.value.toUpperCase()
                     }}
                   />
-                  {dxForm.formState.errors.icd10Code && <p className="text-red-500 text-xs mt-1">{dxForm.formState.errors.icd10Code.message}</p>}
+                  {dxForm.formState.errors.icd10Code && (
+                    <p className="text-red-500 text-xs mt-1">{dxForm.formState.errors.icd10Code.message}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -544,7 +630,9 @@ export default function EncounterCodingView() {
                     })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
-                  {dxForm.formState.errors.sequence && <p className="text-red-500 text-xs mt-1">{dxForm.formState.errors.sequence.message}</p>}
+                  {dxForm.formState.errors.sequence && (
+                    <p className="text-red-500 text-xs mt-1">{dxForm.formState.errors.sequence.message}</p>
+                  )}
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
@@ -553,7 +641,9 @@ export default function EncounterCodingView() {
                     placeholder="e.g. Essential hypertension"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
-                  {dxForm.formState.errors.description && <p className="text-red-500 text-xs mt-1">{dxForm.formState.errors.description.message}</p>}
+                  {dxForm.formState.errors.description && (
+                    <p className="text-red-500 text-xs mt-1">{dxForm.formState.errors.description.message}</p>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end mt-3">
@@ -567,7 +657,7 @@ export default function EncounterCodingView() {
       </div>
 
       <div className="fixed bottom-0 left-64 right-0 bg-white border-t border-gray-200 px-6 py-3 z-20 flex items-center justify-between">
-        {validation ? (
+        {validation != null ? (
           <div className="flex-1 mr-6">
             {validation.errors.map((err, i) => (
               <p key={`e-${i}`} className="text-red-600 text-xs flex items-center gap-1">
@@ -591,8 +681,8 @@ export default function EncounterCodingView() {
 
         {lock == null ? (
           <div className="flex gap-3 items-center">
-            <Button variant="secondary" size="sm" onClick={() => setValidation(runValidation())}>
-              Validate
+            <Button variant="secondary" size="sm" onClick={handleValidate} disabled={validating}>
+              {validating ? 'Validating...' : 'Validate'}
             </Button>
             <Button
               variant="primary"
@@ -608,8 +698,8 @@ export default function EncounterCodingView() {
           <div className="flex items-center gap-4">
             <div className="text-sm">
               <span className="text-gray-500">Locked by </span>
-              <span className="font-medium text-gray-800">{lock.coderName}</span>
-              <span className="text-gray-400 ml-2 text-xs">on {new Date(lock.lockedDate).toLocaleDateString()}</span>
+              <span className="font-medium text-gray-800">{lock.coderName ?? 'Coder'}</span>
+              <span className="text-gray-400 ml-2 text-xs">on {formatDate(lock.lockedDate)}</span>
             </div>
             <Badge status="Locked" />
             <Button variant="danger" size="sm" onClick={() => setShowUnlockDialog(true)}>
@@ -621,7 +711,8 @@ export default function EncounterCodingView() {
 
       <Dialog isOpen={showLockDialog} onClose={() => setShowLockDialog(false)} title="Lock Encounter for Claim Build" maxWidth="md">
         <p className="text-sm text-gray-600 mb-3">
-          Locking this encounter will finalize the coding and trigger claim build. This action should only be taken when all diagnoses are complete and validated.
+          Locking this encounter will finalize the coding and trigger claim build. This action should only be taken when all
+          diagnoses are complete and validated.
         </p>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
@@ -634,25 +725,10 @@ export default function EncounterCodingView() {
           />
         </div>
         <div className="flex justify-end gap-2 mt-4">
-          <Button
-            variant="primary"
-            onClick={() => {
-              const newLock = {
-                codingLockId: Math.floor(Math.random() * 9000) + 4100,
-                coderName: 'Current Coder',
-                lockedDate: new Date().toISOString(),
-                status: 'Locked',
-              }
-              setLock(newLock)
-              setEncounter((prev) => ({ ...prev, status: 'Finalized' }))
-              setShowLockDialog(false)
-              setLockNotes('')
-              setValidation(null)
-            }}
-          >
-            Confirm Lock
+          <Button variant="primary" onClick={handleLockConfirm} disabled={locking}>
+            {locking ? 'Locking...' : 'Confirm Lock'}
           </Button>
-          <Button variant="secondary" onClick={() => setShowLockDialog(false)}>
+          <Button variant="secondary" onClick={() => setShowLockDialog(false)} disabled={locking}>
             Cancel
           </Button>
         </div>
@@ -672,20 +748,10 @@ export default function EncounterCodingView() {
           />
         </div>
         <div className="flex justify-end gap-2 mt-4">
-          <Button
-            variant="danger"
-            disabled={!unlockReason.trim()}
-            onClick={() => {
-              setLock(null)
-              setEncounter((prev) => ({ ...prev, status: 'ReadyForCoding' }))
-              setShowUnlockDialog(false)
-              setUnlockReason('')
-              setValidation(null)
-            }}
-          >
-            Confirm Unlock
+          <Button variant="danger" disabled={!unlockReason.trim() || unlocking} onClick={handleUnlockConfirm}>
+            {unlocking ? 'Unlocking...' : 'Confirm Unlock'}
           </Button>
-          <Button variant="secondary" onClick={() => setShowUnlockDialog(false)}>
+          <Button variant="secondary" onClick={() => setShowUnlockDialog(false)} disabled={unlocking}>
             Cancel
           </Button>
         </div>

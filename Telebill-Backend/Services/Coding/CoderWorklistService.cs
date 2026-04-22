@@ -11,7 +11,8 @@ namespace Telebill.Services.Coding
 {
     public class CoderWorklistService(
         ICodingEncounterRepository encounterRepo,
-        IDiagnosisRepository diagnosisRepo) : ICoderWorklistService
+        IDiagnosisRepository diagnosisRepo,
+        ICodingLockRepository lockRepo) : ICoderWorklistService
     {
         public async Task<List<CodingWorklistItemDto>> GetCodingWorklistAsync(int? providerId, int? planId)
         {
@@ -99,18 +100,24 @@ namespace Telebill.Services.Coding
             var allChargeLines = await encounterRepo.GetChargeLinesByEncounterAsync(enc.EncounterId);
             var finalizedLines = allChargeLines.Where(c => c.Status == "Finalized").ToList();
 
-            var coverage = enc.PatientId.HasValue
+            // Loose coverage for plan display (no date-window restriction)
+            var displayCoverage = enc.PatientId.HasValue
+                ? await encounterRepo.GetCoverageByPatientIdAsync(enc.PatientId.Value)
+                : null;
+
+            // Strict coverage for the warning flag (must be active within encounter date window)
+            var activeCoverage = enc.PatientId.HasValue
                 ? await encounterRepo.GetActiveCoverageForEncounterAsync(enc.PatientId.Value, enc.EncounterDateTime)
                 : null;
 
             PayerPlan? plan = null;
-            if (coverage != null && coverage.PlanId.HasValue)
+            if (displayCoverage?.PlanId.HasValue == true)
             {
-                plan = await encounterRepo.GetPayerPlanByIdAsync(coverage.PlanId.Value);
+                plan = await encounterRepo.GetPayerPlanByIdAsync(displayCoverage.PlanId.Value);
             }
 
             var diagnoses = await diagnosisRepo.GetActiveDiagnosesByEncounterAsync(enc.EncounterId);
-            var activeLock = await encounterRepo.GetActiveCoverageForEncounterAsync(0, DateTime.UtcNow); // placeholder to avoid unused warnings
+            var activeLockEntity = await lockRepo.GetActiveCodingLockAsync(encounterId);
 
             var acceptedModifiers = new List<string>();
             var requiredModifiers = new List<string>();
@@ -185,9 +192,6 @@ namespace Telebill.Services.Coding
                 })
                 .ToList();
 
-            CodingLockInfoDto? activeLockDto = null;
-            // Active lock details will be filled by CodingLockService when needed.
-
             var card = new CodingEncounterCardDto
             {
                 EncounterId = enc.EncounterId,
@@ -220,6 +224,8 @@ namespace Telebill.Services.Coding
                     {
                         PatientId = patient.PatientId,
                         Name = patient.Name,
+                        Mrn = patient.Mrn,
+                        Dob = patient.Dob,
                         Gender = patient.Gender
                     },
                 ChargeLines = chargeLineDtos,
@@ -233,11 +239,19 @@ namespace Telebill.Services.Coding
                         Posdefault = plan.Posdefault,
                         RequiredModifiers = requiredModifiers,
                         AcceptedModifiers = acceptedModifiers,
-                        MemberID = coverage?.MemberId
+                        MemberID = displayCoverage?.MemberId
                     },
-                CoverageWarning = coverage == null,
+                CoverageWarning = activeCoverage == null,
                 Diagnoses = diagnosisDtos,
-                ActiveLock = activeLockDto
+                ActiveLock = activeLockEntity == null
+                    ? null
+                    : new CodingLockInfoDto
+                    {
+                        CodingLockId = activeLockEntity.CodingLockId,
+                        CoderName = null,
+                        LockedDate = activeLockEntity.LockedDate ?? DateTime.UtcNow,
+                        Status = activeLockEntity.Status
+                    }
             };
 
             return card;
