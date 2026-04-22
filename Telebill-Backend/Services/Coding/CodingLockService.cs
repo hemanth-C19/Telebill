@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Services;
 using Telebill.Dto.Coding;
 using Telebill.Models;
 using Telebill.Repositories.Coding;
@@ -11,7 +8,8 @@ namespace Telebill.Services.Coding
     public class CodingLockService(
         ICodingEncounterRepository encounterRepo,
         IDiagnosisRepository diagnosisRepo,
-        ICodingLockRepository lockRepo) : ICodingLockService
+        ICodingLockRepository lockRepo,
+        IClaimService claimService) : ICodingLockService
     {
         public async Task<CodingValidationResultDto> ValidateCodingLockAsync(int encounterId)
         {
@@ -131,8 +129,16 @@ namespace Telebill.Services.Coding
             lockEntity = await lockRepo.AddCodingLockAsync(lockEntity);
             await encounterRepo.UpdateEncounterStatusAsync(dto.EncounterId, "Finalized");
 
-            // TODO: trigger claim build in Module 6
             var claimBuildTriggered = false;
+            try
+            {
+                await claimService.TriggerClaimBuildFromEncounterAsync(dto.EncounterId);
+                claimBuildTriggered = true;
+            }
+            catch
+            {
+                // Lock is already applied — claim build can be retried separately
+            }
 
             var result = new CodingLockResultDto
             {
