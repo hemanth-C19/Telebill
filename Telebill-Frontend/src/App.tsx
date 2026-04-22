@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import RequireAuth from './components/shared/RequireAuth'
 import AdminRoutes from './pages/admin-portal/AdminRoutes'
+import ArRoutes from './pages/AR-portal/ArRoutes'
 import SignIn from './pages/auth/SignIn'
 import CodingRoutes from './pages/coding-portal/CodingRoutes'
 import FrontDeskRoutes from './pages/frontdesk-portal/FrontDeskRoutes'
@@ -30,6 +31,10 @@ function AppRoutes() {
         <Route path="/coding/*" element={<CodingRoutes />} />
       </Route>
 
+      <Route element={<RequireAuth allowedRole="AR" />}>
+        <Route path="/ar/*" element={<ArRoutes />} />
+      </Route>
+
       <Route
         path="/"
         element={
@@ -39,6 +44,7 @@ function AppRoutes() {
               : user?.role === 'FrontDesk' ? '/frontdesk/dashboard'
               : user?.role === 'Provider' ? '/provider/encounters'
               : user?.role === 'Coder' ? '/coding/worklist'
+              : user?.role === 'AR' ? '/ar/dashboard'
               : '/sign-in'
             }
             replace
