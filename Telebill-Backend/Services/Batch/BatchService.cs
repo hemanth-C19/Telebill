@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Services;
 using Telebill.Dto.Batch;
 using Telebill.Models;
 using Telebill.Repositories.Batch;
 
 namespace Telebill.Services.Batch;
 
-public class BatchService(IBatchRepository repo) : IBatchService
+public class BatchService(IBatchRepository repo, IClaimX12Service x12Service) : IBatchService
 {
     public async Task<BatchSummaryDto> CreateBatchAsync(CreateBatchRequestDto dto, int currentUserID)
     {
@@ -131,9 +132,13 @@ public class BatchService(IBatchRepository repo) : IBatchService
             var x12 = await repo.GetX12RefByClaimIdAsync(claimId);
             if (x12 == null)
             {
-                failed.Add(claimId);
-                reasons.Add($"Claim #{claimId} does not have a generated 837P payload");
-                continue;
+                try { await x12Service.Generate837PAsync(claimId); }
+                catch
+                {
+                    failed.Add(claimId);
+                    reasons.Add($"Claim #{claimId} does not have an 837P payload and auto-generation failed");
+                    continue;
+                }
             }
 
             await repo.UpdateClaimStatusAsync(claimId, "Batched");

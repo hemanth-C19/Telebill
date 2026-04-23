@@ -135,9 +135,31 @@ namespace Telebill.Repositories.Coding
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<Coverage?> GetCoverageByPatientIdAsync(int patientId)
+        {
+            return await context.Coverages
+                .Where(c => c.PatientId == patientId)
+                .OrderByDescending(c => c.Status == "Active")
+                .ThenByDescending(c => c.EffectiveFrom)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<PayerPlan?> GetPayerPlanByIdAsync(int planId)
         {
             return await context.PayerPlans.FindAsync(planId);
+        }
+
+        public async Task<(List<Provider> Providers, List<PayerPlan> Plans)> GetWorklistFiltersAsync()
+        {
+            var providers = await context.Providers
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+
+            var plans = await context.PayerPlans
+                .OrderBy(p => p.PlanName)
+                .ToListAsync();
+
+            return (providers, plans);
         }
     }
 }

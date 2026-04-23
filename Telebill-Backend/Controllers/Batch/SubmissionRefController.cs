@@ -13,7 +13,7 @@ namespace Telebill.Controllers.Batch;
 public class SubmissionRefController(IBatchService service) : ControllerBase
 {
     [HttpPost("{batchID:int}/ack/999")]
-    [Authorize(Roles = "AR,Admin")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Record999(int batchID, [FromBody] Record999AckRequestDto dto)
     {
         try
@@ -32,7 +32,7 @@ public class SubmissionRefController(IBatchService service) : ControllerBase
     }
 
     [HttpPost("{batchID:int}/ack/277ca/{claimID:int}")]
-    [Authorize(Roles = "AR,Admin")]
+    [Authorize(Roles = "FrontDesk,AR,Admin")]
     public async Task<IActionResult> Record277(int batchID, int claimID, [FromBody] Record277CAAckRequestDto dto)
     {
         try

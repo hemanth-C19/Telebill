@@ -1,23 +1,23 @@
 import { useState } from 'react'
-import BalancesTab from './Balances/BalancesTab'
-import StatementsTab from './Balances/StatementsTab'
+import DenialsTab from './Worklist/DenialsTab'
+import UnderpaymentTab from './Worklist/UnderpaymentTab'
 
-type Tab = 'balances' | 'statements'
+type Tab = 'denials' | 'underpayments'
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'balances', label: 'Patient Balances' },
-  { key: 'statements', label: 'Statements' },
+  { key: 'denials', label: 'Denial Worklist' },
+  { key: 'underpayments', label: 'Underpayment Worklist' },
 ]
 
-export default function BalancesStatements() {
-  const [activeTab, setActiveTab] = useState<Tab>('balances')
+export default function ArWorklist() {
+  const [activeTab, setActiveTab] = useState<Tab>('denials')
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Balances &amp; Statements</h1>
+        <h1 className="text-2xl font-bold text-gray-900">AR Worklist</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Manage patient balances, aging buckets, and billing statements.
+          Triage open denials and identify underpaid claims.
         </p>
       </div>
 
@@ -40,7 +40,7 @@ export default function BalancesStatements() {
         </nav>
       </div>
 
-      {activeTab === 'balances' ? <BalancesTab /> : <StatementsTab />}
+      {activeTab === 'denials' ? <DenialsTab /> : <UnderpaymentTab />}
     </div>
   )
 }

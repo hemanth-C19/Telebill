@@ -31,7 +31,11 @@ namespace Telebill.Repositories.Coding
 
         // Coverage + PayerPlan
         Task<Coverage?> GetActiveCoverageForEncounterAsync(int patientId, DateTime encounterDateTime);
+        Task<Coverage?> GetCoverageByPatientIdAsync(int patientId);
         Task<PayerPlan?> GetPayerPlanByIdAsync(int planId);
+
+        // Worklist filters
+        Task<(List<Provider> Providers, List<PayerPlan> Plans)> GetWorklistFiltersAsync();
     }
 }
 

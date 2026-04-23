@@ -35,7 +35,7 @@ const POS_OPTIONS = [
   { value: '10', label: '10 — Telehealth (Patient Home)' },
 ] as const
 
-const PAGE_SIZE = 5
+const PAGE_SIZE = 8
 
 const selectClassName =
   'w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
