@@ -5,6 +5,7 @@ import { Badge } from '../../../components/shared/ui/Badge'
 import { Button } from '../../../components/shared/ui/Button'
 import { Card } from '../../../components/shared/ui/Card'
 import { Dialog } from '../../../components/shared/ui/Dialog'
+import { Table } from '../../../components/shared/ui/Table'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -89,6 +90,18 @@ function getAllowedTransitions(status: string | null): string[] {
   if (status === 'Appealed') return ['Resolved', 'WrittenOff']
   return []
 }
+
+const LIST_COLUMNS = [
+  { key: 'patient', label: 'Patient' },
+  { key: 'claimId', label: 'Claim ID' },
+  { key: 'payerPlan', label: 'Payer / Plan' },
+  { key: 'carc', label: 'CARC' },
+  { key: 'amountDenied', label: 'Amount Denied' },
+  { key: 'days', label: 'Days' },
+  { key: 'aging', label: 'Aging' },
+  { key: 'claimStatus', label: 'Claim Status' },
+  { key: 'denialStatus', label: 'Denial Status' },
+]
 
 const inputCls =
   'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -298,157 +311,68 @@ export default function DenialsTab() {
         </div>
 
         {/* Worklist Table */}
-        <div className="w-full overflow-x-auto">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                {[
-                  'Patient',
-                  'Claim ID',
-                  'Payer / Plan',
-                  'CARC',
-                  'Amount Denied',
-                  'Days',
-                  'Aging',
-                  'Claim Status',
-                  'Denial Status',
-                  '',
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading &&
-                Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    {Array.from({ length: 10 }).map((__, j) => (
-                      <td key={j} className="px-4 py-3">
-                        <div className="h-4 w-full rounded bg-gray-200" />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-
-              {!loading && items.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={10}
-                    className="px-4 py-10 text-center text-sm text-gray-400"
-                  >
-                    No denials found with the current filters.
-                  </td>
-                </tr>
-              )}
-
-              {!loading &&
-                items.map((item) => {
-                  const transitions = getAllowedTransitions(item.denialStatus)
-                  const canUpdate = transitions.length > 0
-
-                  return (
-                    <tr
-                      key={item.denialId}
-                      className="border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/ar/denials/${item.denialId}`)}
-                    >
-                      {/* Patient */}
-                      <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
-                        {item.patientName ?? '—'}
-                      </td>
-
-                      {/* Claim ID */}
-                      <td className="px-4 py-3 font-mono text-gray-600">
-                        #{item.claimId}
-                      </td>
-
-                      {/* Payer / Plan */}
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-gray-800">
-                          {item.payerName ?? '—'}
-                        </div>
-                        {item.planName && (
-                          <div className="text-xs text-gray-400">{item.planName}</div>
-                        )}
-                      </td>
-
-                      {/* CARC + Remark */}
-                      <td className="px-4 py-3">
-                        {item.reasonCode ? (
-                          <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
-                            {item.reasonCode}
-                          </span>
-                        ) : (
-                          '—'
-                        )}
-                        {item.remarkCode && (
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            {item.remarkCode}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Amount Denied */}
-                      <td className="px-4 py-3 font-semibold text-red-600 whitespace-nowrap">
-                        ${item.amountDenied.toFixed(2)}
-                      </td>
-
-                      {/* Days since denial */}
-                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
-                        {item.daysSinceDenial}d
-                      </td>
-
-                      {/* Aging bucket */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${
-                            AGING_STYLES[item.agingBucket ?? ''] ?? 'text-gray-700 bg-gray-50'
-                          }`}
-                        >
-                          {item.agingBucket ?? '—'}
-                        </span>
-                      </td>
-
-                      {/* Claim Status */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <Badge status={item.claimStatus ?? ''} />
-                      </td>
-
-                      {/* Denial Status */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <Badge status={item.denialStatus ?? ''} />
-                      </td>
-
-                      {/* Action — stop propagation so row click doesn't navigate */}
-                      <td
-                        className="px-4 py-3 whitespace-nowrap"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {canUpdate && (
-                          <button
-                            type="button"
-                            onClick={() => openUpdateDialog(item)}
-                            className="text-xs font-semibold text-blue-600 hover:underline"
-                          >
-                            Update Status
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-            </tbody>
-          </table>
-        </div>
+        <Table
+          columns={LIST_COLUMNS}
+          data={items.map((item) => ({
+            patient: item.patientName ?? '—',
+            claimId: `#${item.claimId}`,
+            payerPlan: (
+              <div className="flex flex-col">
+                <span className="font-medium text-gray-800">{item.payerName ?? '—'}</span>
+                {item.planName && (
+                  <span className="text-xs text-gray-400">{item.planName}</span>
+                )}
+              </div>
+            ),
+            carc: item.reasonCode ? (
+              <div className="flex flex-col gap-0.5">
+                <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+                  {item.reasonCode}
+                </span>
+                {item.remarkCode && (
+                  <span className="text-xs text-gray-400">{item.remarkCode}</span>
+                )}
+              </div>
+            ) : null,
+            amountDenied: `$${item.amountDenied.toFixed(2)}`,
+            days: `${item.daysSinceDenial}d`,
+            aging: (
+              <span
+                className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${
+                  AGING_STYLES[item.agingBucket ?? ''] ?? 'text-gray-700 bg-gray-50'
+                }`}
+              >
+                {item.agingBucket ?? '—'}
+              </span>
+            ),
+            claimStatus: <Badge status={item.claimStatus ?? ''} />,
+            denialStatus: <Badge status={item.denialStatus ?? ''} />,
+            // hidden — used by action handlers only
+            _denialId: item.denialId,
+            _denialStatus: item.denialStatus,
+          }))}
+          loading={loading}
+          showActions
+          actions={[
+            {
+              label: 'View Detail',
+              onClick: (row) => navigate(`/ar/denials/${row._denialId as number}`),
+            },
+            {
+              label: 'Update Status',
+              onClick: (row) => {
+                const item = items.find((i) => i.denialId === (row._denialId as number))
+                if (item && getAllowedTransitions(item.denialStatus).length > 0) {
+                  openUpdateDialog(item)
+                }
+              },
+            },
+          ]}
+        />
 
         {!loading && items.length > 0 && (
           <p className="mt-3 text-xs text-gray-400 text-right">
-            {items.length} denial{items.length !== 1 ? 's' : ''} — click a row to view full detail
+            {items.length} denial{items.length !== 1 ? 's' : ''}
           </p>
         )}
       </Card>

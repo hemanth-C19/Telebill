@@ -4,6 +4,7 @@ import { Badge } from '../../../components/shared/ui/Badge'
 import { Button } from '../../../components/shared/ui/Button'
 import { Card } from '../../../components/shared/ui/Card'
 import { Dialog } from '../../../components/shared/ui/Dialog'
+import { Table } from '../../../components/shared/ui/Table'
 import { useAuth } from '../../../hooks/useAuth'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -34,6 +35,31 @@ type UnderpaymentItem = {
   lines: LineUnderpayment[]
 }
 
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const LIST_COLUMNS = [
+  { key: 'patient', label: 'Patient' },
+  { key: 'claimId', label: 'Claim ID' },
+  { key: 'payerPlan', label: 'Payer / Plan' },
+  { key: 'encounterDate', label: 'Encounter Date' },
+  { key: 'billed', label: 'Billed' },
+  { key: 'allowed', label: 'Allowed' },
+  { key: 'paid', label: 'Paid' },
+  { key: 'underpayment', label: 'Underpayment' },
+  { key: 'claimStatus', label: 'Claim Status' },
+]
+
+const LINE_COLUMNS = [
+  { key: 'lineNo', label: 'Line' },
+  { key: 'cptHcpcs', label: 'CPT/HCPCS' },
+  { key: 'modifiers', label: 'Modifiers' },
+  { key: 'billed', label: 'Billed' },
+  { key: 'allowed', label: 'Allowed' },
+  { key: 'paid', label: 'Paid' },
+  { key: 'variance', label: 'Variance' },
+  { key: 'flagged', label: 'Flag?' },
+]
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function extractErrorMessage(err: unknown): string {
@@ -53,185 +79,10 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString()
 }
 
-// ── Row sub-component (avoids key-on-fragment issue) ─────────────────────────
+const inputCls =
+  'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 
-type RowProps = {
-  item: UnderpaymentItem
-  isExpanded: boolean
-  onToggle: () => void
-  onFlag: () => void
-  flagging: boolean
-}
-
-function UnderpaymentRow({ item, isExpanded, onToggle, onFlag, flagging }: RowProps) {
-  const variance = item.totalAllowed > 0 ? item.totalAllowed - item.totalPaid : null
-
-  return (
-    <>
-      <tr
-        className="border-b border-gray-100 hover:bg-amber-50 cursor-pointer transition-colors"
-        onClick={onToggle}
-      >
-        {/* Patient */}
-        <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
-          {item.patientName ?? '—'}
-        </td>
-
-        {/* Claim ID */}
-        <td className="px-4 py-3 font-mono text-gray-600">#{item.claimId}</td>
-
-        {/* Payer / Plan */}
-        <td className="px-4 py-3">
-          <div className="font-medium text-gray-800">{item.payerName ?? '—'}</div>
-          {item.planName && (
-            <div className="text-xs text-gray-400">{item.planName}</div>
-          )}
-        </td>
-
-        {/* Encounter Date */}
-        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-          {fmtDate(item.encounterDateTime)}
-        </td>
-
-        {/* Billed */}
-        <td className="px-4 py-3 text-gray-700">{fmt(item.totalCharge)}</td>
-
-        {/* Allowed */}
-        <td className="px-4 py-3 text-blue-700 font-medium">
-          {item.totalAllowed > 0 ? fmt(item.totalAllowed) : '—'}
-        </td>
-
-        {/* Paid */}
-        <td className="px-4 py-3 text-green-700">{fmt(item.totalPaid)}</td>
-
-        {/* Underpayment (variance) */}
-        <td className="px-4 py-3 font-semibold text-red-600 whitespace-nowrap">
-          {variance != null && variance > 0.01 ? fmt(variance) : '—'}
-        </td>
-
-        {/* Claim Status */}
-        <td className="px-4 py-3 whitespace-nowrap">
-          <Badge status={item.claimStatus ?? ''} />
-        </td>
-
-        {/* Actions — stop propagation */}
-        <td
-          className="px-4 py-3 whitespace-nowrap"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="text-xs font-semibold text-blue-600 hover:underline"
-              onClick={onToggle}
-            >
-              {isExpanded ? 'Hide Lines' : 'View Lines'}
-            </button>
-            <button
-              type="button"
-              disabled={flagging}
-              className="text-xs font-semibold text-amber-700 hover:underline disabled:opacity-50"
-              onClick={onFlag}
-            >
-              {flagging ? 'Flagging...' : 'Flag'}
-            </button>
-          </div>
-        </td>
-      </tr>
-
-      {isExpanded && (
-        <tr>
-          <td colSpan={10} className="bg-amber-50 px-6 py-4 border-b border-amber-100">
-            <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-3">
-              Line-level Underpayment Breakdown
-            </p>
-            <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
-              <thead>
-                <tr className="bg-white border-b border-gray-200">
-                  {[
-                    'Line',
-                    'CPT / HCPCS',
-                    'Modifiers',
-                    'Billed',
-                    'Allowed',
-                    'Paid',
-                    'Variance',
-                    'Flag?',
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-3 py-2 text-xs font-semibold text-gray-500 text-left whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {item.lines.map((line) => (
-                  <tr
-                    key={line.claimLineId}
-                    className={`border-b border-gray-100 ${
-                      line.isPotentialUnderpayment ? 'bg-red-50' : 'bg-white'
-                    }`}
-                  >
-                    <td className="px-3 py-2 text-gray-500">{line.lineNo}</td>
-                    <td className="px-3 py-2 font-medium">{line.cptHcpcs ?? '—'}</td>
-                    <td className="px-3 py-2 text-gray-500 text-xs">{line.modifiers ?? '—'}</td>
-                    <td className="px-3 py-2">{fmt(line.chargeAmount)}</td>
-                    <td className="px-3 py-2 text-blue-700">
-                      {line.allowedAmount != null ? fmt(line.allowedAmount) : '—'}
-                    </td>
-                    <td className="px-3 py-2 text-green-700">{fmt(line.amountPaid)}</td>
-                    <td className="px-3 py-2 font-semibold text-red-600">
-                      {line.variance != null && line.variance > 0.01
-                        ? fmt(line.variance)
-                        : '—'}
-                    </td>
-                    <td className="px-3 py-2">
-                      {line.isPotentialUnderpayment ? (
-                        <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 px-2 py-0.5 text-xs font-semibold">
-                          Yes
-                        </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs">No</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-
-                {/* Totals row */}
-                <tr className="bg-gray-50 border-t-2 border-gray-200">
-                  <td
-                    colSpan={3}
-                    className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase"
-                  >
-                    Totals
-                  </td>
-                  <td className="px-3 py-2 font-semibold">
-                    {fmt(item.lines.reduce((a, l) => a + l.chargeAmount, 0))}
-                  </td>
-                  <td className="px-3 py-2 font-semibold text-blue-700">
-                    {item.totalAllowed > 0 ? fmt(item.totalAllowed) : '—'}
-                  </td>
-                  <td className="px-3 py-2 font-semibold text-green-700">
-                    {fmt(item.totalPaid)}
-                  </td>
-                  <td className="px-3 py-2 font-bold text-red-600">
-                    {item.underpaymentAmount > 0.01 ? fmt(item.underpaymentAmount) : '—'}
-                  </td>
-                  <td />
-                </tr>
-              </tbody>
-            </table>
-          </td>
-        </tr>
-      )}
-    </>
-  )
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function UnderpaymentTab() {
   const { user } = useAuth()
@@ -241,13 +92,13 @@ export default function UnderpaymentTab() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionSuccess, setActionSuccess] = useState<string | null>(null)
 
-  // Expanded row tracking
-  const [expandedClaimId, setExpandedClaimId] = useState<number | null>(null)
+  // Lines detail dialog
+  const [linesTarget, setLinesTarget] = useState<UnderpaymentItem | null>(null)
 
   // Flag underpayment dialog
   const [flagTarget, setFlagTarget] = useState<UnderpaymentItem | null>(null)
   const [flagNotes, setFlagNotes] = useState('')
-  const [flaggingId, setFlaggingId] = useState<number | null>(null)
+  const [flagging, setFlagging] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -266,15 +117,10 @@ export default function UnderpaymentTab() {
     load()
   }, [load])
 
-  // Summary stats
   const totalUnderpaymentAmount = useMemo(
     () => items.reduce((s, i) => s + i.underpaymentAmount, 0),
     [items],
   )
-
-  function toggleRow(claimId: number) {
-    setExpandedClaimId((prev) => (prev === claimId ? null : claimId))
-  }
 
   function openFlagDialog(item: UnderpaymentItem) {
     setFlagTarget(item)
@@ -285,7 +131,7 @@ export default function UnderpaymentTab() {
 
   async function handleFlag() {
     if (!flagTarget) return
-    setFlaggingId(flagTarget.claimId)
+    setFlagging(true)
     setActionError(null)
     try {
       await apiClient.post(
@@ -300,12 +146,11 @@ export default function UnderpaymentTab() {
     } catch (err) {
       setActionError(extractErrorMessage(err))
     } finally {
-      setFlaggingId(null)
+      setFlagging(false)
     }
   }
 
-  const inputCls =
-    'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-5">
@@ -350,82 +195,172 @@ export default function UnderpaymentTab() {
         ))}
       </div>
 
+      {/* Worklist Table */}
       <Card title="Underpayment Worklist">
         <p className="text-xs text-gray-500 mb-4">
-          Claims where the payer paid less than the contracted fee schedule amount. Click a row or
-          "View Lines" to see the per-line breakdown. Use "Flag" to open a formal dispute.
+          Claims where the payer paid less than the contracted fee schedule amount. Use "View Lines"
+          to see the per-line breakdown, or "Flag" to open a formal dispute.
         </p>
 
-        <div className="w-full overflow-x-auto">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                {[
-                  'Patient',
-                  'Claim ID',
-                  'Payer / Plan',
-                  'Encounter Date',
-                  'Billed',
-                  'Allowed',
-                  'Paid',
-                  'Underpayment',
-                  'Claim Status',
-                  '',
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading &&
-                Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    {Array.from({ length: 10 }).map((__, j) => (
-                      <td key={j} className="px-4 py-3">
-                        <div className="h-4 w-full rounded bg-gray-200" />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-
-              {!loading && items.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-sm text-gray-400">
-                    No underpayment claims found. All PartiallyPaid claims are paid at or above
-                    the contracted fee schedule.
-                  </td>
-                </tr>
-              )}
-
-              {!loading &&
-                items.map((item) => (
-                  <UnderpaymentRow
-                    key={item.claimId}
-                    item={item}
-                    isExpanded={expandedClaimId === item.claimId}
-                    onToggle={() => toggleRow(item.claimId)}
-                    onFlag={() => openFlagDialog(item)}
-                    flagging={flaggingId === item.claimId}
-                  />
-                ))}
-            </tbody>
-          </table>
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <Table
+            columns={LIST_COLUMNS}
+            data={items.map((item) => {
+              const variance = item.totalAllowed > 0 ? item.totalAllowed - item.totalPaid : null
+              return {
+                patient: item.patientName ?? '—',
+                claimId: `#${item.claimId}`,
+                payerPlan: (
+                  <div className="flex flex-col">
+                    <span className="font-medium text-gray-800">{item.payerName ?? '—'}</span>
+                    {item.planName && (
+                      <span className="text-xs text-gray-400">{item.planName}</span>
+                    )}
+                  </div>
+                ),
+                encounterDate: fmtDate(item.encounterDateTime),
+                billed: fmt(item.totalCharge),
+                allowed: item.totalAllowed > 0 ? fmt(item.totalAllowed) : null,
+                paid: fmt(item.totalPaid),
+                underpayment:
+                  variance != null && variance > 0.01 ? fmt(variance) : null,
+                claimStatus: <Badge status={item.claimStatus ?? ''} />,
+                // hidden — used by action handlers only
+                _claimId: item.claimId,
+              }
+            })}
+            loading={loading}
+            showActions
+            actions={[
+              {
+                label: 'View Lines',
+                onClick: (row) => {
+                  const item = items.find((i) => i.claimId === (row._claimId as number))
+                  if (item) setLinesTarget(item)
+                },
+              },
+              {
+                label: 'Flag Underpayment',
+                variant: 'danger',
+                onClick: (row) => {
+                  const item = items.find((i) => i.claimId === (row._claimId as number))
+                  if (item) openFlagDialog(item)
+                },
+              },
+            ]}
+          />
         </div>
 
         {!loading && items.length > 0 && (
           <p className="mt-3 text-xs text-gray-400 text-right">
-            {items.length} claim{items.length !== 1 ? 's' : ''} with underpayment — ordered by
-            highest underpayment first
+            {items.length} claim{items.length !== 1 ? 's' : ''} with underpayment
           </p>
         )}
       </Card>
 
-      {/* Flag Underpayment Confirm Dialog */}
+      {/* ── Line Detail Dialog ── */}
+      <Dialog
+        isOpen={linesTarget !== null}
+        onClose={() => setLinesTarget(null)}
+        title={`Claim Lines — #${linesTarget?.claimId}`}
+        maxWidth="lg"
+      >
+        {linesTarget && (
+          <div className="space-y-4">
+            {/* Claim summary */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 rounded-lg bg-gray-50 px-4 py-3 text-sm">
+              <div className="flex gap-2">
+                <span className="text-gray-500 w-24">Patient</span>
+                <strong>{linesTarget.patientName ?? '—'}</strong>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-500 w-24">Payer</span>
+                <strong>{linesTarget.payerName ?? '—'}</strong>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-500 w-24">Total Billed</span>
+                <strong>{fmt(linesTarget.totalCharge)}</strong>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-500 w-24">Total Allowed</span>
+                <strong className="text-blue-700">{fmt(linesTarget.totalAllowed)}</strong>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-500 w-24">Total Paid</span>
+                <strong className="text-green-700">{fmt(linesTarget.totalPaid)}</strong>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-gray-500 w-24">Underpayment</span>
+                <strong className="text-red-600">{fmt(linesTarget.underpaymentAmount)}</strong>
+              </div>
+            </div>
+
+            {/* Lines table */}
+            <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+              <Table
+                columns={LINE_COLUMNS}
+                data={linesTarget.lines.map((line) => ({
+                  lineNo: line.lineNo,
+                  cptHcpcs: line.cptHcpcs,
+                  modifiers: line.modifiers,
+                  billed: fmt(line.chargeAmount),
+                  allowed: line.allowedAmount != null ? fmt(line.allowedAmount) : null,
+                  paid: fmt(line.amountPaid),
+                  variance:
+                    line.variance != null && line.variance > 0.01
+                      ? fmt(line.variance)
+                      : null,
+                  flagged: line.isPotentialUnderpayment ? (
+                    <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                      Yes
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400">No</span>
+                  ),
+                }))}
+              />
+            </div>
+
+            {/* Totals row */}
+            <div className="flex justify-end gap-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm">
+              <span className="text-gray-500 font-medium">Totals</span>
+              <span>
+                Billed:{' '}
+                <strong>
+                  {fmt(linesTarget.lines.reduce((a, l) => a + l.chargeAmount, 0))}
+                </strong>
+              </span>
+              <span>
+                Allowed: <strong className="text-blue-700">{fmt(linesTarget.totalAllowed)}</strong>
+              </span>
+              <span>
+                Paid: <strong className="text-green-700">{fmt(linesTarget.totalPaid)}</strong>
+              </span>
+              <span>
+                Underpayment:{' '}
+                <strong className="text-red-600">{fmt(linesTarget.underpaymentAmount)}</strong>
+              </span>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" onClick={() => setLinesTarget(null)}>
+                Close
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  openFlagDialog(linesTarget)
+                  setLinesTarget(null)
+                }}
+              >
+                Flag Underpayment
+              </Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+
+      {/* ── Flag Underpayment Dialog ── */}
       <Dialog
         isOpen={flagTarget !== null}
         onClose={() => setFlagTarget(null)}
@@ -433,7 +368,7 @@ export default function UnderpaymentTab() {
       >
         {flagTarget && (
           <div className="space-y-4">
-            <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm space-y-1.5">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm space-y-1.5">
               <p className="font-semibold text-amber-800 mb-2">
                 This will open a formal underpayment dispute for this claim.
               </p>
@@ -465,7 +400,7 @@ export default function UnderpaymentTab() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes (optional)
+                Notes <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <textarea
                 rows={2}
@@ -480,12 +415,8 @@ export default function UnderpaymentTab() {
               <Button variant="secondary" onClick={() => setFlagTarget(null)}>
                 Cancel
               </Button>
-              <Button
-                variant="primary"
-                disabled={flaggingId !== null}
-                onClick={handleFlag}
-              >
-                {flaggingId !== null ? 'Flagging...' : 'Flag Underpayment'}
+              <Button variant="primary" disabled={flagging} onClick={handleFlag}>
+                {flagging ? 'Flagging...' : 'Flag Underpayment'}
               </Button>
             </div>
           </div>
