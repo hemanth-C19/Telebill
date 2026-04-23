@@ -6,7 +6,7 @@ const ROLE_HOME: Record<UserRole, string> = {
   FrontDesk: '/frontdesk/dashboard',
   Provider: '/provider/encounters',
   Coder: '/coding/worklist',
-  AR: '/sign-in',
+  AR: '/ar/dashboard',
 }
 
 export default function RequireAuth({ allowedRole }: { allowedRole: UserRole }) {

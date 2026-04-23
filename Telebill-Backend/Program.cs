@@ -31,6 +31,8 @@ using Telebill.Services.Batch;
 using Telebill.Repositories.Batch;
 using Telebill.Services.Notifications;
 using Telebill.Repositories.Notifications;
+using Telebill.Services.AR;
+using Telebill.Repositories.AR;
 using Telebill.Extensions;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -141,6 +143,11 @@ builder.Services.AddTransient<IBatchRepository, BatchRepository>();
 builder.Services.AddTransient<INotificationService, NotificationService>();
 builder.Services.AddTransient<INotificationQueryService, NotificationQueryService>();
 builder.Services.AddTransient<INotificationRepository, NotificationRepository>();
+
+builder.Services.AddTransient<IArRepository, ArRepository>();
+builder.Services.AddTransient<IArDashboardService, ArDashboardService>();
+builder.Services.AddTransient<IDenialService, DenialService>();
+builder.Services.AddTransient<IUnderpaymentService, UnderpaymentService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Telebill.Validations.MasterData.PayerDtoValidator>();
 
