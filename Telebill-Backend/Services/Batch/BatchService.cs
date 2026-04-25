@@ -115,10 +115,11 @@ public class BatchService(IBatchRepository repo, IClaimX12Service x12Service) : 
                 continue;
             }
 
-            if (!string.Equals(claim.ClaimStatus, "Ready", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(claim.ClaimStatus, "Ready", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(claim.ClaimStatus, "Rejected", StringComparison.OrdinalIgnoreCase))
             {
                 failed.Add(claimId);
-                reasons.Add($"Claim #{claimId} is not in Ready status (current: {claim.ClaimStatus})");
+                reasons.Add($"Claim #{claimId} is not in Ready or Rejected status (current: {claim.ClaimStatus})");
                 continue;
             }
 
@@ -366,12 +367,12 @@ public class BatchService(IBatchRepository repo, IClaimX12Service x12Service) : 
         else
         {
             batch.Status = "Failed";
-            await repo.UpdateClaimStatusBulkAsync(claimIds, "Draft");
+            await repo.UpdateClaimStatusBulkAsync(claimIds, "Rejected");
             var arUsers = await repo.GetUsersByRoleAsync("AR");
             foreach (var u in arUsers)
             {
                 await repo.CreateNotificationAsync(u.UserId,
-                    $"Batch #{batchID} rejected by clearinghouse. All claims returned to Draft",
+                    $"Batch #{batchID} rejected by clearinghouse (999). {claimIds.Count} claim(s) set to Rejected — correct and resubmit.",
                     "Ack");
             }
         }
@@ -425,7 +426,7 @@ public class BatchService(IBatchRepository repo, IClaimX12Service x12Service) : 
         created = await repo.CreateSubmissionRefAsync(created);
 
         var accepted = string.Equals(dto.AckStatus, "Accepted", StringComparison.OrdinalIgnoreCase);
-        var newClaimStatus = accepted ? "Accepted" : "Draft";
+        var newClaimStatus = accepted ? "Accepted" : "Rejected";
         await repo.UpdateClaimStatusAsync(claimID, newClaimStatus);
 
         await repo.WriteAuditLogAsync(currentUserID, "RECORD_277CA_ACK", $"Claim:{claimID}",
@@ -437,17 +438,17 @@ public class BatchService(IBatchRepository repo, IClaimX12Service x12Service) : 
             foreach (var u in frontDesk)
             {
                 await repo.CreateNotificationAsync(u.UserId,
-                    $"Claim #{claimID} accepted by payer",
+                    $"Claim #{claimID} accepted by payer (277CA) — awaiting adjudication.",
                     "Ack");
             }
         }
         else
         {
-            var arUsers = await repo.GetUsersByRoleAsync("AR");
-            foreach (var u in arUsers)
+            var frontDesk = await repo.GetUsersByRoleAsync("FrontDesk");
+            foreach (var u in frontDesk)
             {
                 await repo.CreateNotificationAsync(u.UserId,
-                    $"Claim #{claimID} rejected by payer. Moved to Draft for correction",
+                    $"Claim #{claimID} rejected by payer (277CA). Correct and resubmit in a new batch.",
                     "Ack");
             }
         }
