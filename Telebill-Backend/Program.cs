@@ -36,6 +36,8 @@ using Telebill.Repositories.AR;
 using Telebill.Services.Posting;
 using Telebill.Repositories.Posting;
 using Telebill.Extensions;
+using ReportRepos = Telebill.Repositories.Reports;
+using ReportSvcs = Telebill.Services.Reports;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 
@@ -153,6 +155,14 @@ builder.Services.AddTransient<IUnderpaymentService, UnderpaymentService>();
 
 builder.Services.AddTransient<IPostingRepository, PostingRepository>();
 builder.Services.AddTransient<IPostingService, PostingService>();
+
+builder.Services.AddTransient<ReportRepos.IAuditRepository, ReportRepos.AuditRepository>();
+builder.Services.AddTransient<ReportRepos.IBillingReportRepository, ReportRepos.BillingReportRepository>();
+builder.Services.AddTransient<ReportRepos.IReportQueryRepository, ReportRepos.ReportQueryRepository>();
+builder.Services.AddTransient<ReportSvcs.IAuditSearchService, ReportSvcs.AuditSearchService>();
+builder.Services.AddTransient<ReportSvcs.IBillingReportService, ReportSvcs.BillingReportService>();
+builder.Services.AddTransient<ReportSvcs.IExportService, ReportSvcs.ExportService>();
+builder.Services.AddTransient<ReportSvcs.IKpiService, ReportSvcs.KpiService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Telebill.Validations.MasterData.PayerDtoValidator>();
 
