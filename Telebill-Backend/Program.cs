@@ -163,6 +163,7 @@ builder.Services.AddTransient<ReportSvcs.IAuditSearchService, ReportSvcs.AuditSe
 builder.Services.AddTransient<ReportSvcs.IBillingReportService, ReportSvcs.BillingReportService>();
 builder.Services.AddTransient<ReportSvcs.IExportService, ReportSvcs.ExportService>();
 builder.Services.AddTransient<ReportSvcs.IKpiService, ReportSvcs.KpiService>();
+builder.Services.AddTransient<ReportSvcs.IFrontDeskReportService, ReportSvcs.FrontDeskReportService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Telebill.Validations.MasterData.PayerDtoValidator>();
 
