@@ -16,7 +16,7 @@ public class ArDashboardService(IArRepository repo) : IArDashboardService
         var partialClaims = await repo.GetPartiallyPaidClaimsAsync();
         var today = DateOnly.FromDateTime(DateTime.Today);
 
-        // Aging breakdown
+        // ── Aging breakdown ───────────────────────────────────────────────────
         var agingBuckets = new[] { "0-30", "31-60", "61-90", "90+" };
         var agingDict = agingBuckets.ToDictionary(
             b => b,
@@ -30,37 +30,25 @@ public class ArDashboardService(IArRepository repo) : IArDashboardService
                 : days <= 60 ? "31-60"
                 : days <= 90 ? "61-90"
                 : "90+";
-
-            var dto = agingDict[bucket];
-            dto.Count += 1;
-            dto.Amount += d.AmountDenied ?? 0m;
+            agingDict[bucket].Count++;
+            agingDict[bucket].Amount += d.AmountDenied ?? 0m;
         }
 
-        var agingList = agingDict.Values.ToList();
-
-        // Payer breakdown
-        var byPayer = new List<PayerDenialSummaryDto>();
-        var claimsById = partialClaims
-            .Concat(openDenials.Where(d => d.ClaimId.HasValue)
-                .Select(d => new Claim { ClaimId = d.ClaimId!.Value }))
-            .GroupBy(c => c.ClaimId)
-            .ToDictionary(g => g.Key, g => g.First());
-
-        var planIds = openDenials
+        // ── Payer breakdown ───────────────────────────────────────────────────
+        var denialClaimIds = openDenials
             .Where(d => d.ClaimId.HasValue)
             .Select(d => d.ClaimId!.Value)
             .Distinct()
             .ToList();
 
-        var claimEntities = new List<Models.Claim>();
-        foreach (var id in planIds)
+        var claimEntities = new List<Claim>();
+        foreach (var id in denialClaimIds)
         {
             var claim = await repo.GetClaimByIdAsync(id);
-            if (claim != null)
-            {
-                claimEntities.Add(claim);
-            }
+            if (claim != null) claimEntities.Add(claim);
         }
+
+        var byPayer = new List<PayerDenialSummaryDto>();
 
         var payerGroups = claimEntities
             .Where(c => c.PlanId.HasValue)
@@ -69,67 +57,51 @@ public class ArDashboardService(IArRepository repo) : IArDashboardService
 
         foreach (var group in payerGroups)
         {
-            var planId = group.Key;
-            var plan = await repo.GetPayerPlanByIdAsync(planId);
-            var payer = plan != null ? await repo.GetPayerByPlanIdAsync(plan.PlanId) : null;
+            var payer = await repo.GetPayerByPlanIdAsync(group.Key);
             if (payer == null) continue;
 
-            var payerId = payer.PayerId;
-
+            var groupClaimIds = group.Select(c => c.ClaimId).ToHashSet();
             var payerDenials = openDenials
-                .Where(d => d.ClaimId.HasValue && group.Any(c => c.ClaimId == d.ClaimId.Value))
+                .Where(d => d.ClaimId.HasValue && groupClaimIds.Contains(d.ClaimId.Value))
                 .ToList();
 
-            var denialCount = payerDenials.Count;
-            var totalDenied = payerDenials.Sum(d => d.AmountDenied ?? 0m);
-            var totalSubmitted = await repo.GetTotalClaimsSubmittedByPayerAsync(payerId);
-            var rate = totalSubmitted > 0
-                ? Math.Round((double)denialCount / totalSubmitted * 100d, 1)
-                : 0d;
+            var totalSubmitted = await repo.GetTotalClaimsSubmittedByPayerAsync(payer.PayerId);
 
             byPayer.Add(new PayerDenialSummaryDto
             {
-                PayerId = payerId,
+                PayerId = payer.PayerId,
                 PayerName = payer.Name,
-                DenialCount = denialCount,
-                TotalAmountDenied = totalDenied,
-                DenialRate = rate
+                DenialCount = payerDenials.Count,
+                TotalAmountDenied = payerDenials.Sum(d => d.AmountDenied ?? 0m),
+                DenialRate = totalSubmitted > 0
+                    ? Math.Round((double)payerDenials.Count / totalSubmitted * 100d, 1)
+                    : 0d
             });
         }
 
-        // Reason code breakdown
-        var reasonDict = new Dictionary<string, DenialReasonSummaryDto>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var d in openDenials)
-        {
-            var code = d.ReasonCode ?? string.Empty;
-            if (!reasonDict.TryGetValue(code, out var summary))
+        // ── Reason code breakdown ─────────────────────────────────────────────
+        var byReason = openDenials
+            .GroupBy(d => d.ReasonCode ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new DenialReasonSummaryDto
             {
-                summary = new DenialReasonSummaryDto
-                {
-                    ReasonCode = code,
-                    Description = GetReasonDescription(code),
-                    Count = 0,
-                    TotalAmount = 0m
-                };
-                reasonDict[code] = summary;
-            }
-
-            summary.Count += 1;
-            summary.TotalAmount += d.AmountDenied ?? 0m;
-        }
-
-        var byReason = reasonDict.Values.ToList();
+                ReasonCode = g.Key,
+                Description = GetReasonDescription(g.Key),
+                Count = g.Count(),
+                TotalAmount = g.Sum(d => d.AmountDenied ?? 0m)
+            })
+            .ToList();
 
         return new ArDashboardSummaryDto
         {
-            TotalOpenDenials = openDenials.Count(d => string.Equals(d.Status, "Open", StringComparison.OrdinalIgnoreCase)),
+            TotalOpenDenials = openDenials.Count(d =>
+                string.Equals(d.Status, "Open", StringComparison.OrdinalIgnoreCase)),
             TotalAmountAtRisk = openDenials
                 .Where(d => string.Equals(d.Status, "Open", StringComparison.OrdinalIgnoreCase))
                 .Sum(d => d.AmountDenied ?? 0m),
-            TotalAppealedDenials = openDenials.Count(d => string.Equals(d.Status, "Appealed", StringComparison.OrdinalIgnoreCase)),
+            TotalAppealedDenials = openDenials.Count(d =>
+                string.Equals(d.Status, "Appealed", StringComparison.OrdinalIgnoreCase)),
             TotalUnderpayments = partialClaims.Count,
-            AgingBreakdown = agingList,
+            AgingBreakdown = agingDict.Values.ToList(),
             ByPayer = byPayer,
             ByReasonCode = byReason
         };
