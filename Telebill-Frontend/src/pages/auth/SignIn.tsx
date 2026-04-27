@@ -112,7 +112,11 @@ export default function SignIn() {
                 autoComplete="email"
                 placeholder="you@example.com"
                 className={inputClassName}
-                {...register('email', { required: 'Email is required' })}
+                {...register('email', {
+                  required: 'Email is required',
+                  setValueAs: (v: string) => v.trim(),
+                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address' },
+                })}
               />
               {errors.email != null && (
                 <p className="text-sm text-red-600">{errors.email.message}</p>
