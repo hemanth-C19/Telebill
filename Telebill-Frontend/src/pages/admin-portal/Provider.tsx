@@ -26,6 +26,7 @@ export default function ProviderManagement() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNo, setPageNo] = useState(1);
   const [loader, setLoader] = useState(true);
 
@@ -36,10 +37,18 @@ export default function ProviderManagement() {
     formState: { errors },
   } = useForm<ProviderFormValues>({ defaultValues: EMPTY_FORM });
 
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPageNo(1);
+    }, 700);
+    return () => clearTimeout(id);
+  }, [search]);
+
   async function GetProviders() {
     const response = await apiClient.get(
       "api/v1/MasterData/Provider/GetAllProviders",
-      { params: { search, page: pageNo, limit: 5 } },
+      { params: { search: debouncedSearch, page: pageNo, limit: 5 } },
     );
     setProviders(response.data);
     setLoader(false);
@@ -48,7 +57,7 @@ export default function ProviderManagement() {
   useEffect(() => {
     const load = async () => await GetProviders();
     load();
-  }, [search, pageNo]);
+  }, [debouncedSearch, pageNo]);
 
   function handleOpenAdd() {
     reset(EMPTY_FORM);
