@@ -85,6 +85,8 @@ export default function Encounters() {
 
   const [statusFilter, setStatusFilter] = useState('All')
   const [providerFilter, setProviderFilter] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [editingEncounter, setEditingEncounter] = useState<Encounter | null>(null)
@@ -110,6 +112,8 @@ export default function Encounters() {
     ])
     setPatientOptions(patientsRes.data)
     setProviderOptions(providersRes.data)
+    console.log(patientsRes.data)
+    console.log(providersRes.data)
   }
 
   useEffect(() => {
@@ -136,6 +140,14 @@ export default function Encounters() {
 
   // ── Filters & pagination ───────────────────────────────────────────
 
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(1);
+    }, 700)
+    return () => clearTimeout(id)
+  }, [searchQuery])
+
   const providerNamesDistinct = useMemo(
     () => [...new Set(encounters.map((e) => e.providerName))].sort(),
     [encounters],
@@ -145,8 +157,9 @@ export default function Encounters() {
     () =>
       encounters
         .filter((e) => statusFilter === 'All' || e.status === statusFilter)
-        .filter((e) => providerFilter === 'All' || e.providerName === providerFilter),
-    [encounters, statusFilter, providerFilter],
+        .filter((e) => providerFilter === 'All' || e.providerName === providerFilter)
+        .filter((e) => !debouncedSearch || e.patientName.toLowerCase().includes(debouncedSearch.toLowerCase())),
+    [encounters, statusFilter, providerFilter, debouncedSearch],
   )
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -228,6 +241,19 @@ export default function Encounters() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="flt-search" className="text-xs font-medium text-gray-600">
+            Patient Name
+          </label>
+          <input
+            id="flt-search"
+            type="text"
+            placeholder="Search patient..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-52 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
         <div className="flex min-w-35 flex-col gap-1">
           <label htmlFor="flt-status" className="text-xs font-medium text-gray-600">
             Status
@@ -264,7 +290,7 @@ export default function Encounters() {
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() => { setStatusFilter('All'); setProviderFilter('All'); setCurrentPage(1) }}
+          onClick={() => { setStatusFilter('All'); setProviderFilter('All'); setSearchQuery(''); setCurrentPage(1) }}
         >
           Clear
         </Button>
@@ -311,8 +337,8 @@ export default function Encounters() {
         onClose={() => setShowCreateDialog(false)}
         form={createForm}
         onSubmit={onCreateSubmit}
-        patientOptions={patientOptions.map((p) => ({ patientId: p.patientId, name: p.name, mrn: '' }))}
-        providerOptions={providerOptions.map((p) => ({ providerId: p.providerId, name: p.providerName, specialty: '' }))}
+        patientOptions={patientOptions.map((p) => ({ patientId: p.patientId, name: p.name}))}
+        providerOptions={providerOptions.map((p) => ({ providerId: p.providerId, name: p.providerName}))}
         posOptions={POS_OPTIONS}
         selectClassName={selectClassName}
         textareaClassName={textareaClassName}

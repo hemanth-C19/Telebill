@@ -135,13 +135,11 @@ export type PosOption = {
 export type EncounterPatientOption = {
   patientId: number
   name: string
-  mrn: string
 }
 
 export type EncounterProviderOption = {
   providerId: number
   name: string
-  specialty: string
 }
 
 // patient.types.ts — shared types for PatientCoverage module

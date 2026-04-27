@@ -1,6 +1,3 @@
-// PatientFormFields.tsx — Reusable form fields for Patient add/edit dialogs
-// Pattern mirrors ProviderFormFields.tsx
-
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { PatientFormValues } from "../../types/frontdesk.types";
 export type PatientFormFieldsProps = {
@@ -17,6 +14,7 @@ export function PatientFormFields({
   fieldClass,
 }: PatientFormFieldsProps) {
   const id = (name: string) => `${mode}-${name}`;
+  const today = new Date().toISOString().split("T")[0];
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -33,7 +31,11 @@ export function PatientFormFields({
           type="text"
           placeholder="Enter full name"
           className={fieldClass}
-          {...register("name", { required: "Full name is required" })}
+          {...register("name", {
+            required: "Full name is required",
+            setValueAs: (v: string) => v.trim(),
+            minLength: { value: 4, message: "Name must be at least 4 characters" },
+          })}
         />
         {errors.name && (
           <p className="text-sm text-red-600">{errors.name.message}</p>
@@ -52,8 +54,10 @@ export function PatientFormFields({
           id={id("dob")}
           type="date"
           className= {fieldClass}
+          max={today}
           {...register("dob", {
             required: mode === "add" ? "Date of birth is required" : false,
+            validate: (v) => !v || v <= today || "Date of birth cannot be in the future",
           })}
         />
         {errors.dob && (
@@ -61,26 +65,26 @@ export function PatientFormFields({
         )}
       </div>
 
-      {/* Gender — read-only in edit mode */}
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor={id("gender")}
-          className="text-sm font-medium text-gray-700"
-        >
+      {/* Gender */}
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-gray-700">
           Gender {mode === "add" ? "*" : ""}
-        </label>
-        <select
-          id={id("gender")}
-          className= {fieldClass}
-          {...register("gender", {
-            required: mode === "add" ? "Gender is required" : false,
-          })}
-        >
-          <option value="">Select…</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-        </select>
+        </span>
+        <div className="flex gap-6">
+          {["Male", "Female"].map((g) => (
+            <label key={g} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                value={g}
+                className="accent-blue-600"
+                {...register("gender", {
+                  required: mode === "add" ? "Gender is required" : false,
+                })}
+              />
+              <span className="text-sm text-gray-700">{g}</span>
+            </label>
+          ))}
+        </div>
         {errors.gender && (
           <p className="text-sm text-red-600">{errors.gender.message}</p>
         )}
@@ -99,8 +103,14 @@ export function PatientFormFields({
           type="text"
           placeholder="Enter contact info"
           className={fieldClass}
-          {...register("contactInfo")}
+          {...register("contactInfo", {
+            setValueAs: (v: string) => v.trim(),
+            pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email address" },
+          })}
         />
+        {errors.contactInfo && (
+          <p className="text-sm text-red-600">{errors.contactInfo.message}</p>
+        )}
       </div>
 
       {/* Street */}

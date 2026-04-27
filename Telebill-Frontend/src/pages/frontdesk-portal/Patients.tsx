@@ -25,7 +25,7 @@ const EMPTY_FORM: PatientFormValues = {
   street: "",
   area: "",
   city: "",
-  status: "",
+  status: "Active",
 };
 
 export default function Patients() {
@@ -33,18 +33,26 @@ export default function Patients() {
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(1);
+    }, 700);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
+
   async function GetPatients() {
-    console.log("sending request to backend");
     const result = await apiClient.get(
       "api/v1/PatientCoverage/Patient/GetAllPatients",
       {
         params: {
-          search: searchQuery,
+          search: debouncedSearch,
           page: currentPage,
           limit: 5,
         },
@@ -62,7 +70,7 @@ export default function Patients() {
 
   useEffect(() => {
     GetPatients();
-  }, [searchQuery, currentPage]);
+  }, [debouncedSearch, currentPage]);
 
   const {
     register,
