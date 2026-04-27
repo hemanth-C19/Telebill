@@ -97,20 +97,35 @@ export default function ScrubRules() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setSubmitting(true)
     setFormError(null)
+
+    const trimmedName = form.name.trim()
+    if (trimmedName.length < 4) {
+      setFormError('Name must be at least 4 characters.')
+      return
+    }
+
+    const trimmedExpr = form.expressionJSON.trim()
+    try {
+      JSON.parse(trimmedExpr)
+    } catch {
+      setFormError('Expression JSON is not valid JSON.')
+      return
+    }
+
+    setSubmitting(true)
     try {
       if (editingRule != null) {
         await apiClient.patch(`api/scrub-rules/${editingRule.ruleID}`, {
-          Name: form.name,
-          ExpressionJSON: form.expressionJSON,
+          Name: trimmedName,
+          ExpressionJSON: trimmedExpr,
           Severity: form.severity,
           Status: form.status,
         })
       } else {
         await apiClient.post('api/scrub-rules', {
-          Name: form.name,
-          ExpressionJSON: form.expressionJSON,
+          Name: trimmedName,
+          ExpressionJSON: trimmedExpr,
           Severity: form.severity,
         })
       }
