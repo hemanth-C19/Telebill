@@ -25,98 +25,6 @@ type PlanFormValues = {
   status: string;
 };
 
-// const DUMMY_PLANS: Record<number, PayerPlan[]> = {
-//   10: [
-//     {
-//       planId: 101,
-//       payerId: 10,
-//       planName: "BCBS PPO Basic",
-//       networkType: "PPO",
-//       posDefault: "02",
-//       telehealthModifiersJson: "GT,GQ",
-//       status: "Active",
-//     },
-//     {
-//       planId: 102,
-//       payerId: 10,
-//       planName: "BCBS HMO Plus",
-//       networkType: "HMO",
-//       posDefault: "10",
-//       telehealthModifiersJson: "GT",
-//       status: "Active",
-//     },
-//     {
-//       planId: 103,
-//       payerId: 10,
-//       planName: "BCBS Dental Rider",
-//       networkType: "PPO",
-//       posDefault: "02",
-//       telehealthModifiersJson: "",
-//       status: "Inactive",
-//     },
-//   ],
-//   20: [
-//     {
-//       planId: 201,
-//       payerId: 20,
-//       planName: "Aetna Select PPO",
-//       networkType: "PPO",
-//       posDefault: "02",
-//       telehealthModifiersJson: "GT",
-//       status: "Active",
-//     },
-//     {
-//       planId: 202,
-//       payerId: 20,
-//       planName: "Aetna Choice HMO",
-//       networkType: "HMO",
-//       posDefault: "10",
-//       telehealthModifiersJson: "GQ",
-//       status: "Active",
-//     },
-//   ],
-//   30: [
-//     {
-//       planId: 301,
-//       payerId: 30,
-//       planName: "UHC Gold PPO",
-//       networkType: "PPO",
-//       posDefault: "02",
-//       telehealthModifiersJson: "GT,95",
-//       status: "Active",
-//     },
-//     {
-//       planId: 302,
-//       payerId: 30,
-//       planName: "UHC Silver HMO",
-//       networkType: "HMO",
-//       posDefault: "10",
-//       telehealthModifiersJson: "GT",
-//       status: "Active",
-//     },
-//     {
-//       planId: 303,
-//       payerId: 30,
-//       planName: "UHC Bronze EPO",
-//       networkType: "EPO",
-//       posDefault: "02",
-//       telehealthModifiersJson: "",
-//       status: "Inactive",
-//     },
-//   ],
-//   40: [
-//     {
-//       planId: 401,
-//       payerId: 40,
-//       planName: "Cigna Connect HMO",
-//       networkType: "HMO",
-//       posDefault: "02",
-//       telehealthModifiersJson: "GT",
-//       status: "Inactive",
-//     },
-//   ],
-// };
-
 const fieldClassName =
   "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
@@ -134,19 +42,21 @@ export default function PayerPlans() {
   const [editingPlan, setEditingPlan] = useState<PayerPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 700);
+    return () => clearTimeout(id);
+  }, [search]);
 
   const FetchPayerPlans = async () => {
     try {
-      console.log("Requested Backend");
       const response = await apiClient.get(
         `api/v1/MasterData/PayerPlans/GetPlansByPayerId/${payerId}`,
-        {
-          params: {
-            search: search,
-          },
-        },
+        { params: { search: debouncedSearch } },
       );
-      console.log(response.data);
       setPlans(response.data);
       setIsLoading(false);
     } catch (error) {
@@ -156,7 +66,7 @@ export default function PayerPlans() {
 
   useEffect(() => {
     FetchPayerPlans();
-  }, [search]);
+  }, [debouncedSearch]);
 
   const addPlanForm = useForm<PlanFormValues>({
     defaultValues: { networkType: "PPO", posDefault: "02", status: "Active" },
@@ -319,6 +229,8 @@ export default function PayerPlans() {
               <input
                 {...addPlanForm.register("planName", {
                   required: "Plan name is required",
+                  setValueAs: (v: string) => v.trim(),
+                  minLength: { value: 3, message: "Plan name must be at least 3 characters" },
                 })}
                 className={fieldClassName}
               />
@@ -361,10 +273,18 @@ export default function PayerPlans() {
                 Telehealth Modifiers JSON
               </label>
               <input
-                {...addPlanForm.register("telehealthModifiersJson")}
+                {...addPlanForm.register("telehealthModifiersJson", {
+                  setValueAs: (v: string) => v.trim(),
+                  pattern: { value: /^[A-Z0-9]+(,[A-Z0-9]+)*$/i, message: "Use comma-separated modifier codes e.g. GT or GT,95" },
+                })}
                 className={fieldClassName}
                 placeholder="e.g. GT,GQ"
               />
+              {addPlanForm.formState.errors.telehealthModifiersJson && (
+                <p className="text-red-500 text-xs mt-1">
+                  {addPlanForm.formState.errors.telehealthModifiersJson.message}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -412,6 +332,8 @@ export default function PayerPlans() {
               <input
                 {...editPlanForm.register("planName", {
                   required: "Plan name is required",
+                  setValueAs: (v: string) => v.trim(),
+                  minLength: { value: 3, message: "Plan name must be at least 3 characters" },
                 })}
                 className={fieldClassName}
               />
@@ -454,10 +376,18 @@ export default function PayerPlans() {
                 Telehealth Modifiers JSON
               </label>
               <input
-                {...editPlanForm.register("telehealthModifiersJson")}
+                {...editPlanForm.register("telehealthModifiersJson", {
+                  setValueAs: (v: string) => v.trim(),
+                  pattern: { value: /^[A-Z0-9]+(,[A-Z0-9]+)*$/i, message: "Use comma-separated modifier codes e.g. GT or GT,95" },
+                })}
                 className={fieldClassName}
                 placeholder="e.g. GT,GQ"
               />
+              {editPlanForm.formState.errors.telehealthModifiersJson && (
+                <p className="text-red-500 text-xs mt-1">
+                  {editPlanForm.formState.errors.telehealthModifiersJson.message}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
