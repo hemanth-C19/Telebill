@@ -164,7 +164,6 @@ export default function Worklist() {
               { key: 'patientName', label: 'Patient Name' },
               { key: 'providerName', label: 'Provider' },
               { key: 'encounterDateText', label: 'Encounter Date' },
-              { key: 'visitType', label: 'Visit Type' },
               { key: 'planName', label: 'Plan' },
               { key: 'diagnoses', label: 'Diagnoses' },
               { key: 'chargeLines', label: 'Charge Lines' },
@@ -175,7 +174,6 @@ export default function Worklist() {
               encounterId: row.encounterId,
               providerName: row.providerName ?? '—',
               planName: row.planName ?? '—',
-              visitType: row.visitType ?? '—',
               patientName: (
                 <button
                   onClick={() => navigate(`/coding/encounter/${row.encounterId}`)}

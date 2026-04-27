@@ -78,7 +78,7 @@ type EncounterCard = {
 type DiagnosisItem = {
   dxId: number
   encounterId: number
-  icd10Code: string | null
+  iCD10Code: string | null
   description: string | null
   sequence: number
   status: string | null
@@ -140,9 +140,7 @@ export default function EncounterCodingView() {
   const [lockNotes, setLockNotes] = useState('')
   const [locking, setLocking] = useState(false)
 
-  const [showUnlockDialog, setShowUnlockDialog] = useState(false)
-  const [unlockReason, setUnlockReason] = useState('')
-  const [unlocking, setUnlocking] = useState(false)
+
 
   const [apiError, setApiError] = useState<string | null>(null)
 
@@ -290,26 +288,6 @@ export default function EncounterCodingView() {
     }
   }
 
-  const handleUnlockConfirm = async () => {
-    setUnlocking(true)
-    setApiError(null)
-    try {
-      const res = await apiClient.post<{ encounterId: number; encounterStatus: string; previousLockId: number }>(
-        `api/v1/coding/lock/unlock?userId=${userId}`,
-        { encounterId: encounterIdNum, reason: unlockReason },
-      )
-      setEncounter((prev) =>
-        prev == null ? null : { ...prev, status: res.data.encounterStatus, activeLock: null },
-      )
-      setShowUnlockDialog(false)
-      setUnlockReason('')
-      setValidation(null)
-    } catch (err) {
-      setApiError(extractErrorMessage(err))
-    } finally {
-      setUnlocking(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -515,68 +493,18 @@ export default function EncounterCodingView() {
                   <span className={`font-bold text-center text-sm ${dx.sequence === 1 ? 'text-purple-700' : 'text-gray-600'}`}>
                     {dx.sequence}{dx.sequence === 1 ? ' ★' : ''}
                   </span>
-                  {editingDxId === dx.dxId ? (
-                    <input
-                      value={editDxForm.icd10Code}
-                      onChange={(e) => setEditDxForm((f) => ({ ...f, icd10Code: e.target.value }))}
-                      className="border border-gray-300 rounded px-2 py-1 text-xs w-full"
-                    />
-                  ) : (
-                    <span className="font-mono font-medium">{dx.icd10Code ?? '—'}</span>
-                  )}
-                  {editingDxId === dx.dxId ? (
-                    <input
-                      value={editDxForm.description}
-                      onChange={(e) => setEditDxForm((f) => ({ ...f, description: e.target.value }))}
-                      className="border border-gray-300 rounded px-2 py-1 text-xs w-full"
-                    />
-                  ) : (
-                    <span className="text-gray-700">{dx.description ?? '—'}</span>
-                  )}
+                  <span className="font-mono font-medium">{dx.iCD10Code ?? '—'}</span>
+                  <span className="text-gray-700">{dx.description ?? '—'}</span>
                   <Badge status={dx.status ?? ''} />
                   <div className="flex gap-1">
-                    {dx.status === 'Active' && editingDxId !== dx.dxId && lock == null && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingDxId(dx.dxId)
-                            setEditDxForm({
-                              icd10Code: dx.icd10Code ?? '',
-                              description: dx.description ?? '',
-                              sequence: String(dx.sequence),
-                            })
-                          }}
-                          className="text-blue-500 hover:text-blue-700 text-xs underline"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveDx(dx.dxId)}
-                          className="text-red-400 hover:text-red-600 text-xs underline ml-1"
-                        >
-                          Remove
-                        </button>
-                      </>
-                    )}
-                    {editingDxId === dx.dxId && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveDx(dx.dxId)}
-                          className="text-green-600 text-xs underline font-medium"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingDxId(null)}
-                          className="text-gray-400 text-xs underline ml-1"
-                        >
-                          Cancel
-                        </button>
-                      </>
+                    {dx.status === 'Active' && lock == null && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDx(dx.dxId)}
+                        className="text-red-400 hover:text-red-600 text-xs underline"
+                      >
+                        Remove
+                      </button>
                     )}
                   </div>
                 </div>
@@ -597,9 +525,10 @@ export default function EncounterCodingView() {
                   <input
                     {...dxForm.register('icd10Code', {
                       required: 'ICD-10 code is required',
+                      setValueAs: (v: string) => v.trim().toUpperCase(),
                       pattern: { value: /^[A-Z]\d{2}(\.\d{1,4})?$/, message: 'Invalid ICD-10 format (e.g. I10 or F41.1)' },
                       validate: (v) =>
-                        !activeDiagnoses.some((d) => d.icd10Code?.toUpperCase() === v.toUpperCase()) ||
+                        !activeDiagnoses.some((d) => d.iCD10Code?.toUpperCase() === v.toUpperCase()) ||
                         'This diagnosis code already exists on this encounter',
                     })}
                     placeholder="e.g. I10 or F41.1"
@@ -624,9 +553,12 @@ export default function EncounterCodingView() {
                       required: 'Sequence is required',
                       min: { value: 1, message: 'Sequence must be between 1 and 12' },
                       max: { value: 12, message: 'Sequence must be between 1 and 12' },
-                      validate: (v) =>
-                        !activeDiagnoses.some((d) => d.sequence === Number(v)) ||
-                        `Sequence ${v} is already used by another active diagnosis`,
+                      validate: (v) => {
+                        if (!Number.isInteger(Number(v))) return 'Sequence must be a whole number'
+                        if (activeDiagnoses.some((d) => d.sequence === Number(v)))
+                          return `Sequence ${v} is already used by another active diagnosis`
+                        return true
+                      },
                     })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
@@ -702,9 +634,6 @@ export default function EncounterCodingView() {
               <span className="text-gray-400 ml-2 text-xs">on {formatDate(lock.lockedDate)}</span>
             </div>
             <Badge status="Locked" />
-            <Button variant="danger" size="sm" onClick={() => setShowUnlockDialog(true)}>
-              Unlock
-            </Button>
           </div>
         )}
       </div>
@@ -734,28 +663,6 @@ export default function EncounterCodingView() {
         </div>
       </Dialog>
 
-      <Dialog isOpen={showUnlockDialog} onClose={() => setShowUnlockDialog(false)} title="Unlock Encounter" maxWidth="sm">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 text-sm">
-          Unlocking will allow diagnosis changes. If a claim has already been built, it may need to be re-scrubbed.
-        </div>
-        <div className="mt-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
-          <input
-            value={unlockReason}
-            onChange={(e) => setUnlockReason(e.target.value)}
-            placeholder="Why is this being unlocked?"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="danger" disabled={!unlockReason.trim() || unlocking} onClick={handleUnlockConfirm}>
-            {unlocking ? 'Unlocking...' : 'Confirm Unlock'}
-          </Button>
-          <Button variant="secondary" onClick={() => setShowUnlockDialog(false)} disabled={unlocking}>
-            Cancel
-          </Button>
-        </div>
-      </Dialog>
     </div>
   )
 }
