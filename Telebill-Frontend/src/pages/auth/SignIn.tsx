@@ -14,7 +14,6 @@ const ROLES = [
 
 type SignInFormValues = {
   email: string
-  password: string
   selectedRole: string
 }
 
@@ -49,7 +48,7 @@ export default function SignIn() {
     watch,
     formState: { errors },
   } = useForm<SignInFormValues>({
-    defaultValues: { email: '', password: '', selectedRole: '' },
+    defaultValues: { email: '', selectedRole: '' },
   })
 
   const selectedRole = watch('selectedRole')
@@ -59,10 +58,10 @@ export default function SignIn() {
     setIsSubmitting(true)
     console.log(data)
     try {
-      await login(data.email, data.password, data.selectedRole)
+      await login(data.email, data.selectedRole)
       navigate(ROLE_HOME[data.selectedRole as UserRole], { replace: true })
     } catch {
-      setLoginError('Invalid credentials. Please check your email, password, and role.')
+      setLoginError('Invalid credentials. Please check your email and role.')
     } finally {
       setIsSubmitting(false)
     }
@@ -120,22 +119,6 @@ export default function SignIn() {
               )}
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="signin-password" className="text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="signin-password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className={inputClassName}
-                {...register('password', { required: 'Password is required' })}
-              />
-              {errors.password != null && (
-                <p className="text-sm text-red-600">{errors.password.message}</p>
-              )}
-            </div>
 
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-gray-700">Select your role</p>

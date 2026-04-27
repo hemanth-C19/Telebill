@@ -130,9 +130,6 @@ export default function EncounterCodingView() {
 
   const [editingModifiersId, setEditingModifiersId] = useState<number | null>(null)
   const [modifierInput, setModifierInput] = useState('')
-  const [editingDxId, setEditingDxId] = useState<number | null>(null)
-  const [editDxForm, setEditDxForm] = useState({ icd10Code: '', description: '', sequence: '' })
-
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [validating, setValidating] = useState(false)
 
@@ -202,25 +199,6 @@ export default function EncounterCodingView() {
           ? null
           : { ...prev, chargeLines: prev.chargeLines.map((cl) => (cl.chargeId === chargeId ? res.data : cl)) },
       )
-      setValidation(null)
-    } catch (err) {
-      setApiError(extractErrorMessage(err))
-    }
-  }
-
-  const handleSaveDx = async (dxId: number) => {
-    setApiError(null)
-    try {
-      const res = await apiClient.patch<DiagnosisItem>(
-        `api/v1/coding/diagnoses/${dxId}?userId=${userId}`,
-        {
-          icd10Code: editDxForm.icd10Code.toUpperCase(),
-          description: editDxForm.description,
-          sequence: Number(editDxForm.sequence),
-        },
-      )
-      setDiagnoses((prev) => prev.map((d) => (d.dxId === dxId ? res.data : d)))
-      setEditingDxId(null)
       setValidation(null)
     } catch (err) {
       setApiError(extractErrorMessage(err))
@@ -328,7 +306,7 @@ export default function EncounterCodingView() {
       )}
 
       <div className="flex gap-5 mt-4">
-        <div className="w-[42%] flex-shrink-0 space-y-4">
+        <div className="w-[42%] shrink-0 space-y-4">
           <Card title="Patient & Encounter Info">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <p><span className="text-gray-500">Patient:</span> <strong>{encounter.patient?.name ?? '—'}</strong></p>
