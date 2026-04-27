@@ -64,5 +64,8 @@ public interface IReportQueryRepository
 
     // SUM of AmountPaid across all PaymentPosts linked to claims for a RemitRef
     Task<decimal> GetTotalPostedByRemitIdAsync(int remitId);
+
+    // FrontDesk dashboard summary counts
+    Task<FrontDeskSummaryDto> GetFrontDeskSummaryAsync();
 }
 

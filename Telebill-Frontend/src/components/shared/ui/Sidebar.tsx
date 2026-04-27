@@ -16,9 +16,6 @@ export type SidebarProps = {
 export function Sidebar({ navItems }: SidebarProps) {
   return (
     <aside className="flex h-full w-full flex-col border-r border-gray-200 bg-white">
-      <div className="border-b border-gray-200 px-6 py-5">
-        <span className="text-xl font-bold text-blue-600">Telebill</span>
-      </div>
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         {navItems.map((item) => (
           <NavLink

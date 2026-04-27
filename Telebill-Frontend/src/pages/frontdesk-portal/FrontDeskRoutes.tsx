@@ -15,6 +15,7 @@ const Encounters = lazy(() => import('./Encounters'))
 const BatchList = lazy(() => import('./BatchList'))
 const BatchDetail = lazy(() => import('./BatchDetail'))
 const BalancesStatements = lazy(() => import('./BalancesStatements'))
+const RejectedClaims = lazy(() => import('./RejectedClaims'))
 const Notifications = lazy(() => import('../shared/Notifications'))
 
 export default function FrontDeskRoutes() {
@@ -48,6 +49,7 @@ export default function FrontDeskRoutes() {
               <Route path="batch-detail" element={<BatchDetail />} />
               <Route path="batch-detail/:batchId" element={<BatchDetail />} />
               <Route path="balances" element={<BalancesStatements />} />
+              <Route path="rejected-claims" element={<RejectedClaims />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>

@@ -46,6 +46,7 @@ type EligibleClaim = {
   planName: string
   payerName: string
   totalCharge: number
+  claimStatus?: string
 }
 
 type ClaimListResponse = {
@@ -163,8 +164,15 @@ export default function BatchDetail() {
     setShowAddClaims(true)
     setLoadingEligible(true)
     try {
-      const res = await apiClient.get<ClaimListResponse>('api/claims?claimStatus=Ready&pageSize=100')
-      setEligibleClaims(res.data.claims.filter((c) => !alreadyAdded.has(c.claimID)))
+      const [readyRes, rejectedRes] = await Promise.all([
+        apiClient.get<ClaimListResponse>('api/claims?claimStatus=Ready&pageSize=100'),
+        apiClient.get<ClaimListResponse>('api/claims?claimStatus=Rejected&pageSize=100'),
+      ])
+      const combined = [
+        ...readyRes.data.claims.map((c) => ({ ...c, claimStatus: 'Ready' })),
+        ...rejectedRes.data.claims.map((c) => ({ ...c, claimStatus: 'Rejected' })),
+      ].filter((c) => !alreadyAdded.has(c.claimID))
+      setEligibleClaims(combined)
     } catch {
       setEligibleClaims([])
     } finally {
@@ -346,7 +354,8 @@ export default function BatchDetail() {
       {/* Failed banner */}
       {detail.status === 'Failed' && (
         <div className="bg-red-50 border border-red-300 rounded-lg px-4 py-3 text-red-700 text-sm">
-          ⚠ 999 ACK rejected by clearinghouse. All claims in this batch have been reset to Draft status for rework.
+          ⚠ 999 ACK rejected by clearinghouse. All claims in this batch have been set to <strong>Rejected</strong> status.
+          Create a new batch, correct the issues, and re-add them via "Add Claims".
         </div>
       )}
 
@@ -719,7 +728,8 @@ export default function BatchDetail() {
         maxWidth="xl"
       >
         <p className="text-sm text-gray-500 mb-3">
-          Showing claims with status 'Ready' that are not already in this batch.
+          Showing <strong>Ready</strong> and <strong>Rejected</strong> claims not already in this batch.
+          Rejected claims were previously submitted but refused by the payer — correct the issue before resubmitting.
         </p>
         {loadingEligible ? (
           <div className="flex justify-center py-8">
@@ -753,6 +763,7 @@ export default function BatchDetail() {
                 <span className="text-sm text-gray-500">{claim.payerName}</span>
                 <span className="text-sm text-gray-500">{claim.planName}</span>
                 <span className="text-sm font-medium">${claim.totalCharge.toFixed(2)}</span>
+                <Badge status={claim.claimStatus ?? 'Ready'} />
               </div>
             ))}
             {eligibleClaims.length === 0 && (

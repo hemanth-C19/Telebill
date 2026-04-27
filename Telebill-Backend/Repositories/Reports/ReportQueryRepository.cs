@@ -251,5 +251,43 @@ public class ReportQueryRepository(TeleBillContext context) : IReportQueryReposi
             .Where(pp => pp.ClaimId.HasValue && claimIds.Contains(pp.ClaimId.Value))
             .SumAsync(pp => pp.AmountPaid ?? 0m);
     }
+
+    public async Task<FrontDeskSummaryDto> GetFrontDeskSummaryAsync()
+    {
+        var today = DateTime.Today;
+
+        var totalPatients = await context.Patients.CountAsync();
+
+        var todayEncounters = await context.Encounters
+            .CountAsync(e => e.EncounterDateTime.Date == today);
+
+        var billedEncounterIds = context.Claims
+            .Where(c => c.EncounterId.HasValue)
+            .Select(c => c.EncounterId!.Value);
+
+        var unbilledEncounters = await context.Encounters
+            .CountAsync(e => !billedEncounterIds.Contains(e.EncounterId));
+
+        var rejectedClaims = await context.Claims
+            .CountAsync(c => c.ClaimStatus == "Rejected");
+
+        var pendingBatches = await context.SubmissionBatches
+            .CountAsync(b => b.Status == "Ready" || b.Status == "Submitted");
+
+        var stmtAmounts = await context.Statements
+            .Where(s => s.Status == "Generated" || s.Status == "Sent")
+            .Select(s => s.AmountDue)
+            .ToListAsync();
+
+        return new FrontDeskSummaryDto(
+            TotalPatients: totalPatients,
+            TodayEncounters: todayEncounters,
+            UnbilledEncounters: unbilledEncounters,
+            RejectedClaims: rejectedClaims,
+            PendingBatches: pendingBatches,
+            OutstandingStatements: stmtAmounts.Count,
+            OutstandingAmount: stmtAmounts.Sum(a => a ?? 0m)
+        );
+    }
 }
 

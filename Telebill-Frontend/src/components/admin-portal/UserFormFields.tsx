@@ -1,16 +1,14 @@
-// Shared user form fields for Create / Edit user dialogs — used by UserManagement with react-hook-form register + errors.
-
-import type { FieldErrors, UseFormRegister } from 'react-hook-form'
-import type { UserFormData } from '../../types/admin.types'
+import type { FieldErrors, UseFormRegister } from "react-hook-form";
+import type { UserFormData } from "../../types/admin.types";
 
 export type UserFormFieldsProps = {
-  mode: 'create' | 'edit'
-  register: UseFormRegister<UserFormData>
-  errors: FieldErrors<UserFormData>
-  roles: readonly string[]
-  fieldClass: string
-  selectClass: string
-}
+  mode: "create" | "edit";
+  register: UseFormRegister<UserFormData>;
+  errors: FieldErrors<UserFormData>;
+  roles: readonly string[];
+  fieldClass: string;
+  selectClass: string;
+};
 
 export function UserFormFields({
   mode,
@@ -20,20 +18,30 @@ export function UserFormFields({
   fieldClass,
   selectClass,
 }: UserFormFieldsProps) {
-  const id = (name: string) => `${mode}-${name}`
+  const id = (name: string) => `${mode}-${name}`;
 
   return (
     <>
       <div className="flex flex-col gap-1">
-        <label htmlFor={id('name')} className="text-sm font-medium text-gray-700">
+        <label
+          htmlFor={id("name")}
+          className="text-sm font-medium text-gray-700"
+        >
           Full Name
         </label>
         <input
-          id={id('name')}
+          id={id("name")}
           type="text"
           placeholder="Enter full name"
           className={fieldClass}
-          {...register('name', { required: 'Name is required' })}
+          {...register("name", {
+            required: "Name is required",
+            setValueAs: (v: string) => v.trim(),
+            minLength: {
+              value: 4,
+              message: "Name should be atleast of 4 characters",
+            },
+          })}
         />
         {errors.name != null && (
           <p className="text-sm text-red-600">{errors.name.message}</p>
@@ -41,15 +49,25 @@ export function UserFormFields({
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={id('email')} className="text-sm font-medium text-gray-700">
+        <label
+          htmlFor={id("email")}
+          className="text-sm font-medium text-gray-700"
+        >
           Email Address
         </label>
         <input
-          id={id('email')}
+          id={id("email")}
           type="email"
           placeholder="Enter email address"
           className={fieldClass}
-          {...register('email', { required: 'Email is required' })}
+          {...register("email", {
+            required: "Email is required",
+            setValueAs: (v: string) => v.trim(),
+            pattern: {
+              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+              message: "Enter a valid email address",
+            },
+          })}
         />
         {errors.email != null && (
           <p className="text-sm text-red-600">{errors.email.message}</p>
@@ -57,15 +75,25 @@ export function UserFormFields({
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={id('phone')} className="text-sm font-medium text-gray-700">
+        <label
+          htmlFor={id("phone")}
+          className="text-sm font-medium text-gray-700"
+        >
           Phone Number
         </label>
         <input
-          id={id('phone')}
+          id={id("phone")}
           type="text"
-          placeholder="555-0000"
+          placeholder="10-digit number"
           className={fieldClass}
-          {...register('phone', { required: 'Phone is required' })}
+          {...register("phone", {
+            required: "Phone is required",
+            setValueAs: (v: string) => v.trim(),
+            pattern: {
+              value: /^\d{10}$/,
+              message: "Phone number must be exactly 10 digits",
+            },
+          })}
         />
         {errors.phone != null && (
           <p className="text-sm text-red-600">{errors.phone.message}</p>
@@ -73,10 +101,17 @@ export function UserFormFields({
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={id('role')} className="text-sm font-medium text-gray-700">
+        <label
+          htmlFor={id("role")}
+          className="text-sm font-medium text-gray-700"
+        >
           Role
         </label>
-        <select id={id('role')} className={selectClass} {...register('role', { required: 'Role is required' })}>
+        <select
+          id={id("role")}
+          className={selectClass}
+          {...register("role", { required: "Role is required" })}
+        >
           <option value="" disabled>
             Select a role
           </option>
@@ -92,14 +127,21 @@ export function UserFormFields({
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={id('status')} className="text-sm font-medium text-gray-700">
+        <label
+          htmlFor={id("status")}
+          className="text-sm font-medium text-gray-700"
+        >
           Status
         </label>
-        <select id={id('status')} className={selectClass} {...register('status')}>
+        <select
+          id={id("status")}
+          className={selectClass}
+          {...register("status")}
+        >
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
       </div>
     </>
-  )
+  );
 }

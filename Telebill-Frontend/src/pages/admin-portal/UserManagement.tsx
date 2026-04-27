@@ -8,8 +8,10 @@ import { Pagination } from "../../components/shared/ui/Pagination";
 import { UserFormFields } from "../../components/admin-portal/UserFormFields";
 import type { User, UserFormData } from "../../types/admin.types";
 import Badge from "../../components/shared/ui/Badge";
+import { Toast } from "../../components/shared/ui/Toast";
+import { useAuth } from "../../hooks/useAuth";
 
-const ROLES = ["Admin", "FrontDesk", "Provider", "Coder", "AR"] as const;
+const ROLES = ["Admin", "FrontDesk", "Coder", "AR"] as const;
 
 const EMPTY_FORM: UserFormData = {
   name: "",
@@ -34,29 +36,38 @@ const selectClass =
   "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 export default function UserManagement() {
+  const { user: loggedInUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' | 'warning' } | null>(null);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+      setCurrentPage(1);
+    }, 700);
+    return () => clearTimeout(id);
+  }, [searchTerm]);
 
   async function GetUsers() {
-    console.log("Request backend");
     const response = await apiClient.get(
       "api/v1/IdentityAccess/User/GetUsers",
       {
         params: {
-          search: searchTerm,
+          search: debouncedSearch,
           role: roleFilter,
           page: currentPage,
           limit: 5,
         },
       },
     );
-    console.log("got response ", response.data);
     const users: User[] = response.data;
     setUsers(users);
     setIsLoading(false);
@@ -68,7 +79,7 @@ export default function UserManagement() {
     };
 
     CallUsers();
-  }, [searchTerm, roleFilter, currentPage]);
+  }, [debouncedSearch, roleFilter, currentPage]);
 
   const {
     register: registerCreate,
@@ -122,8 +133,11 @@ export default function UserManagement() {
   }
 
   async function handleDelete(userId: number) {
+    if (userId === loggedInUser?.userId) {
+      setToast({ message: "You cannot delete your own account while logged in.", type: "error" });
+      return;
+    }
     await apiClient.delete(`api/v1/IdentityAccess/User/DeleteUser/${userId}`);
-    console.log("Deletion done");
     setIsLoading(true);
     await GetUsers();
   }
@@ -263,6 +277,14 @@ export default function UserManagement() {
           </div>
         </form>
       </Dialog>
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

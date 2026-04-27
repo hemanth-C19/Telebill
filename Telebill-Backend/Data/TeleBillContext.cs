@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Telebill.Models;
@@ -80,10 +80,6 @@ public partial class TeleBillContext : DbContext
 
     public virtual DbSet<X12837pRef> X12837pRefs { get; set; }
 
-//     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-// #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-//         => optionsBuilder.UseSqlServer("Server=LTIN719634\\SQLEXPRESS;initial catalog=TeleBill;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true;Integrated Security=true");
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Appeal>(entity =>
@@ -103,8 +99,10 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
 
+            // Denial deleted → Appeals deleted
             entity.HasOne(d => d.Denial).WithMany(p => p.Appeals)
                 .HasForeignKey(d => d.DenialId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Appeal__DenialID__58D1301D");
         });
 
@@ -121,12 +119,16 @@ public partial class TeleBillContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValue("Open");
 
+            // User deleted → unassign work items (preserve the item)
             entity.HasOne(d => d.AssignedToNavigation).WithMany(p => p.Arworkitems)
                 .HasForeignKey(d => d.AssignedTo)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__ARWorkite__Assig__5D95E53A");
 
+            // Claim deleted → work items deleted
             entity.HasOne(d => d.Claim).WithMany(p => p.Arworkitems)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__ARWorkite__Claim__5CA1C101");
         });
 
@@ -147,12 +149,16 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
 
+            // Claim deleted → attachments deleted
             entity.HasOne(d => d.Claim).WithMany(p => p.AttachmentRefs)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Attachmen__Claim__3587F3E0");
 
+            // User deleted → keep attachment, just clear who uploaded it
             entity.HasOne(d => d.UploadedByNavigation).WithMany(p => p.AttachmentRefs)
                 .HasForeignKey(d => d.UploadedBy)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__Attachmen__Uploa__367C1819");
         });
 
@@ -170,12 +176,16 @@ public partial class TeleBillContext : DbContext
             entity.Property(e => e.ProviderId).HasColumnName("ProviderID");
             entity.Property(e => e.Status).HasMaxLength(20);
 
+            // Encounter deleted → attestations deleted
             entity.HasOne(d => d.Encounter).WithMany(p => p.Attestations)
                 .HasForeignKey(d => d.EncounterId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Attestati__Encou__0B91BA14");
 
+            // Provider deleted → keep attestation, just clear provider ref
             entity.HasOne(d => d.Provider).WithMany(p => p.Attestations)
                 .HasForeignKey(d => d.ProviderId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__Attestati__Provi__0C85DE4D");
         });
 
@@ -193,8 +203,10 @@ public partial class TeleBillContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
+            // User deleted → preserve audit trail, just null out the user ref
             entity.HasOne(d => d.User).WithMany(p => p.AuditLogs)
                 .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__AuditLog__UserID__60A75C0F");
         });
 
@@ -230,8 +242,10 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValue("Draft");
             entity.Property(e => e.Units).HasDefaultValue(1);
 
+            // Encounter deleted → charge lines deleted
             entity.HasOne(d => d.Encounter).WithMany(p => p.ChargeLines)
                 .HasForeignKey(d => d.EncounterId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__ChargeLin__Encou__06CD04F7");
         });
 
@@ -254,16 +268,25 @@ public partial class TeleBillContext : DbContext
             entity.Property(e => e.SubscriberRel).HasMaxLength(50);
             entity.Property(e => e.TotalCharge).HasColumnType("decimal(18, 2)");
 
+            // SECONDARY path — Patient→Claim is the primary ownership cascade.
+            // Using NoAction here avoids the SQL Server "multiple cascade paths" error
+            // (Patient→Encounter→Claim would be a second path). At runtime this is safe
+            // because Patient→Claim CASCADE deletes claims before Encounters are removed.
             entity.HasOne(d => d.Encounter).WithMany(p => p.Claims)
                 .HasForeignKey(d => d.EncounterId)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("FK__Claim__Encounter__1AD3FDA4");
 
+            // Patient deleted → claims deleted (primary ownership)
             entity.HasOne(d => d.Patient).WithMany(p => p.Claims)
                 .HasForeignKey(d => d.PatientId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Claim__PatientID__1BC821DD");
 
+            // Plan deleted → keep claim, just null the plan reference
             entity.HasOne(d => d.Plan).WithMany(p => p.Claims)
                 .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__Claim__PlanID__1CBC4616");
         });
 
@@ -284,8 +307,10 @@ public partial class TeleBillContext : DbContext
                 .HasMaxLength(5)
                 .HasColumnName("POS");
 
+            // Claim deleted → claim lines deleted
             entity.HasOne(d => d.Claim).WithMany(p => p.ClaimLines)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__ClaimLine__Claim__2180FB33");
         });
 
@@ -305,12 +330,16 @@ public partial class TeleBillContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValue("Locked");
 
+            // User (coder) deleted → keep lock record, just clear who locked it
             entity.HasOne(d => d.Coder).WithMany(p => p.CodingLocks)
                 .HasForeignKey(d => d.CoderId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__CodingLoc__Coder__160F4887");
 
+            // Encounter deleted → coding locks deleted
             entity.HasOne(d => d.Encounter).WithMany(p => p.CodingLocks)
                 .HasForeignKey(d => d.EncounterId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__CodingLoc__Encou__151B244E");
         });
 
@@ -331,12 +360,16 @@ public partial class TeleBillContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValue("Active");
 
+            // Patient deleted → coverages deleted
             entity.HasOne(d => d.Patient).WithMany(p => p.Coverages)
                 .HasForeignKey(d => d.PatientId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Coverage__Patien__787EE5A0");
 
+            // Plan deleted → keep coverage record, just null the plan ref
             entity.HasOne(d => d.Plan).WithMany(p => p.Coverages)
                 .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__Coverage__PlanID__797309D9");
         });
 
@@ -354,12 +387,17 @@ public partial class TeleBillContext : DbContext
             entity.Property(e => e.RemarkCode).HasMaxLength(20);
             entity.Property(e => e.Status).HasMaxLength(20);
 
+            // Claim deleted → denials deleted (primary ownership)
             entity.HasOne(d => d.Claim).WithMany(p => p.Denials)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Denial__ClaimID__55009F39");
 
+            // SECONDARY path — Claim→Denial is the primary path.
+            // NoAction avoids SQL Server multiple-cascade-paths error (Claim→ClaimLine→Denial vs Claim→Denial).
             entity.HasOne(d => d.ClaimLine).WithMany(p => p.Denials)
                 .HasForeignKey(d => d.ClaimLineId)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("FK__Denial__ClaimLin__55F4C372");
         });
 
@@ -380,8 +418,10 @@ public partial class TeleBillContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValue("Active");
 
+            // Encounter deleted → diagnoses deleted
             entity.HasOne(d => d.Encounter).WithMany(p => p.Diagnoses)
                 .HasForeignKey(d => d.EncounterId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Diagnosis__Encou__10566F31");
         });
 
@@ -404,8 +444,10 @@ public partial class TeleBillContext : DbContext
                 .HasColumnName("ResponsePayloadURI");
             entity.Property(e => e.Result).HasMaxLength(50);
 
+            // Coverage deleted → eligibility check records deleted
             entity.HasOne(d => d.Coverage).WithMany(p => p.EligibilityRefs)
                 .HasForeignKey(d => d.CoverageId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Eligibili__Cover__7D439ABD");
         });
 
@@ -431,12 +473,16 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValue("Open");
             entity.Property(e => e.VisitType).HasMaxLength(50);
 
+            // Patient deleted → encounters deleted
             entity.HasOne(d => d.Patient).WithMany(p => p.Encounters)
                 .HasForeignKey(d => d.PatientId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Encounter__Patie__01142BA1");
 
+            // Provider deleted → keep encounter history, just null the provider ref
             entity.HasOne(d => d.Provider).WithMany(p => p.Encounters)
                 .HasForeignKey(d => d.ProviderId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__Encounter__Provi__02084FDA");
         });
 
@@ -457,8 +503,10 @@ public partial class TeleBillContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValue("Active");
 
+            // Plan deleted → fee schedules deleted
             entity.HasOne(d => d.Plan).WithMany(p => p.FeeSchedules)
                 .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__FeeSchedu__PlanI__70DDC3D8");
         });
 
@@ -478,8 +526,10 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValue("Unread");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
+            // User deleted → personal notifications deleted
             entity.HasOne(d => d.User).WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Notificat__UserI__6442E2C9");
         });
 
@@ -517,12 +567,17 @@ public partial class TeleBillContext : DbContext
             entity.Property(e => e.PatientId).HasColumnName("PatientID");
             entity.Property(e => e.Status).HasMaxLength(20);
 
+            // SECONDARY path — Patient→PatientBalance is the primary ownership.
+            // NoAction avoids SQL Server multiple-cascade-paths error (Patient→Claim→PatientBalance vs Patient→PatientBalance).
             entity.HasOne(d => d.Claim).WithMany(p => p.PatientBalances)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("FK__PatientBa__Claim__4D5F7D71");
 
+            // Patient deleted → balances deleted (primary ownership)
             entity.HasOne(d => d.Patient).WithMany(p => p.PatientBalances)
                 .HasForeignKey(d => d.PatientId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__PatientBa__Patie__4C6B5938");
         });
 
@@ -560,8 +615,10 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValue("Active");
             entity.Property(e => e.TelehealthModifiersJson).HasColumnName("TelehealthModifiersJSON");
 
+            // Payer deleted → all plans deleted
             entity.HasOne(d => d.Payer).WithMany(p => p.PayerPlans)
                 .HasForeignKey(d => d.PayerId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__PayerPlan__Payer__6C190EBB");
         });
 
@@ -581,16 +638,23 @@ public partial class TeleBillContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.Status).HasMaxLength(20);
 
+            // Claim deleted → payment posts deleted (primary ownership)
             entity.HasOne(d => d.Claim).WithMany(p => p.PaymentPosts)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__PaymentPo__Claim__46B27FE2");
 
+            // SECONDARY path — Claim→PaymentPost is the primary path.
+            // NoAction avoids SQL Server multiple-cascade-paths error (Claim→ClaimLine→PaymentPost vs Claim→PaymentPost).
             entity.HasOne(d => d.ClaimLine).WithMany(p => p.PaymentPosts)
                 .HasForeignKey(d => d.ClaimLineId)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("FK__PaymentPo__Claim__47A6A41B");
 
+            // User deleted → keep payment record, just clear who posted it
             entity.HasOne(d => d.PostedByNavigation).WithMany(p => p.PaymentPosts)
                 .HasForeignKey(d => d.PostedBy)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__PaymentPo__Poste__498EEC8D");
         });
 
@@ -606,12 +670,16 @@ public partial class TeleBillContext : DbContext
             entity.Property(e => e.PlanId).HasColumnName("PlanID");
             entity.Property(e => e.Status).HasMaxLength(20);
 
+            // Claim deleted → prior auths deleted
             entity.HasOne(d => d.Claim).WithMany(p => p.PriorAuths)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__PriorAuth__Claim__31B762FC");
 
+            // Plan deleted → keep prior auth record, just null the plan ref
             entity.HasOne(d => d.Plan).WithMany(p => p.PriorAuths)
                 .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__PriorAuth__PlanI__32AB8735");
         });
 
@@ -652,12 +720,16 @@ public partial class TeleBillContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.Status).HasMaxLength(20);
 
+            // Batch deleted → keep remit record, just null the batch ref (remit can outlive a batch)
             entity.HasOne(d => d.Batch).WithMany(p => p.RemitRefs)
                 .HasForeignKey(d => d.BatchId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__RemitRef__BatchI__42E1EEFE");
 
+            // Payer deleted → keep remit record, just null the payer ref
             entity.HasOne(d => d.Payer).WithMany(p => p.RemitRefs)
                 .HasForeignKey(d => d.PayerId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__RemitRef__PayerI__41EDCAC5");
         });
 
@@ -678,16 +750,23 @@ public partial class TeleBillContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValue("Open");
 
+            // Claim deleted → scrub issues deleted (primary ownership)
             entity.HasOne(d => d.Claim).WithMany(p => p.ScrubIssues)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__ScrubIssu__Claim__2739D489");
 
+            // SECONDARY path — Claim→ScrubIssue is the primary path.
+            // NoAction avoids SQL Server multiple-cascade-paths error (Claim→ClaimLine→ScrubIssue vs Claim→ScrubIssue).
             entity.HasOne(d => d.ClaimLine).WithMany(p => p.ScrubIssues)
                 .HasForeignKey(d => d.ClaimLineId)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("FK__ScrubIssu__Claim__282DF8C2");
 
+            // Rule deleted → keep scrub issue record, just null the rule ref
             entity.HasOne(d => d.Rule).WithMany(p => p.ScrubIssues)
                 .HasForeignKey(d => d.RuleId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK__ScrubIssu__RuleI__29221CFB");
         });
 
@@ -723,8 +802,10 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValue("Open");
             entity.Property(e => e.SummaryJson).HasColumnName("SummaryJSON");
 
+            // Patient deleted → statements deleted
             entity.HasOne(d => d.Patient).WithMany(p => p.Statements)
                 .HasForeignKey(d => d.PatientId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Statement__Patie__503BEA1C");
         });
 
@@ -764,12 +845,16 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
 
+            // Batch deleted → submission refs deleted
             entity.HasOne(d => d.Batch).WithMany(p => p.SubmissionRefs)
                 .HasForeignKey(d => d.BatchId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Submissio__Batch__3D2915A8");
 
+            // Claim deleted → submission refs deleted
             entity.HasOne(d => d.Claim).WithMany(p => p.SubmissionRefs)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__Submissio__Claim__3E1D39E1");
         });
 
@@ -808,8 +893,10 @@ public partial class TeleBillContext : DbContext
             entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.Version).HasMaxLength(20);
 
+            // Claim deleted → 837P refs deleted
             entity.HasOne(d => d.Claim).WithMany(p => p.X12837pRefs)
                 .HasForeignKey(d => d.ClaimId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK__X12_837P___Claim__2DE6D218");
         });
 

@@ -32,7 +32,11 @@ export function PayerFormFields({
           id={id("Name")}
           placeholder="Enter payer name"
           className={fieldClass}
-          {...register("Name", { required: "Payer name is required" })}
+          {...register("Name", {
+            required: "Payer name is required",
+            setValueAs: (v: string) => v.trim(),
+            minLength: { value: 3, message: "Payer name must be at least 3 characters" },
+          })}
         />
         {errors.Name && (
           <p className="text-red-500 text-xs mt-1">{errors.Name.message}</p>
@@ -50,7 +54,11 @@ export function PayerFormFields({
           id={id("PayerCode")}
           placeholder="Enter payer code"
           className={fieldClass}
-          {...register("PayerCode", { required: "Payer code is required" })}
+          {...register("PayerCode", {
+            required: "Payer code is required",
+            setValueAs: (v: string) => v.trim(),
+            minLength: { value: 2, message: "Payer code must be at least 2 characters" },
+          })}
         />
         {errors.PayerCode && (
           <p className="text-red-500 text-xs mt-1">
@@ -70,7 +78,9 @@ export function PayerFormFields({
           id={id("ClearinghouseCode")}
           placeholder="Enter clearinghouse code"
           className={fieldClass}
-          {...register("ClearinghouseCode")}
+          {...register("ClearinghouseCode", {
+            setValueAs: (v: string) => v.trim(),
+          })}
         />
       </div>
 
@@ -83,10 +93,16 @@ export function PayerFormFields({
         </label>
         <input
           id={id("ContactInfo")}
-          placeholder="Enter contact info"
+          placeholder="Enter contact email"
           className={fieldClass}
-          {...register("ContactInfo")}
+          {...register("ContactInfo", {
+            setValueAs: (v: string) => v.trim(),
+            pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email address" },
+          })}
         />
+        {errors.ContactInfo && (
+          <p className="text-red-500 text-xs mt-1">{errors.ContactInfo.message}</p>
+        )}
       </div>
 
       <div className="flex flex-col gap-1">

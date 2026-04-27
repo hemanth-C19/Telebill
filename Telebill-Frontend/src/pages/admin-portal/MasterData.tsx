@@ -33,6 +33,7 @@ export default function MasterData() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageNo, setPageNo] = useState(1);
 
   // ✅ ONE form instance — used for both Add and Edit
@@ -45,11 +46,19 @@ export default function MasterData() {
 
   // ─── Fetch Payers ─────────────────────────────────────
 
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPageNo(1);
+    }, 700);
+    return () => clearTimeout(id);
+  }, [search]);
+
   const FetchPayers = async () => {
     try {
       const response = await apiClient.get(
         "api/v1/MasterData/Payers/GetAllPayers",
-        { params: { search, page: pageNo, limit: 5 } },
+        { params: { search: debouncedSearch, page: pageNo, limit: 5 } },
       );
       console.log(response.data);
       setPayers(response.data);
@@ -61,7 +70,7 @@ export default function MasterData() {
 
   useEffect(() => {
     FetchPayers();
-  }, [search, pageNo]);
+  }, [debouncedSearch, pageNo]);
 
   // ─── Open Handlers ────────────────────────────────────
 

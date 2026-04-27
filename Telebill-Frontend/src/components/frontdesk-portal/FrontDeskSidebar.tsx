@@ -53,12 +53,20 @@ const NotificationsIcon = (
   </svg>
 )
 
+const RejectedIcon = (
+  <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M15 9l-6 6M9 9l6 6" />
+  </svg>
+)
+
 const navItems = [
   { label: 'Dashboard', path: '/frontdesk/dashboard', icon: DashboardIcon },
   { label: 'Patients', path: '/frontdesk/patients', icon: PatientsIcon },
   { label: 'Encounters', path: '/frontdesk/encounters', icon: EncountersIcon },
   { label: 'Batch Management', path: '/frontdesk/batches', icon: BatchesIcon },
   { label: 'Batch Details & ACK', path: '/frontdesk/batch-detail', icon: BatchDetailIcon },
+  { label: 'Rejected Claims', path: '/frontdesk/rejected-claims', icon: RejectedIcon },
   { label: 'Balances & Statements', path: '/frontdesk/balances', icon: BalancesIcon },
   { label: 'Notifications', path: '/frontdesk/notifications', icon: NotificationsIcon },
 ]

@@ -221,6 +221,8 @@ export default function FeeSchedules() {
               <input
                 {...addFeeForm.register("cptHcpcs", {
                   required: "CPT/HCPCS is required",
+                  setValueAs: (v: string) => v.trim().toUpperCase(),
+                  pattern: { value: /^[A-Z0-9]{4,5}$/i, message: "Enter a valid CPT/HCPCS code (4–5 characters)" },
                 })}
                 className={fieldClassName}
                 placeholder="e.g. 99213"
@@ -236,10 +238,16 @@ export default function FeeSchedules() {
                 Modifier Combo
               </label>
               <input
-                {...addFeeForm.register("modifierCombo")}
+                {...addFeeForm.register("modifierCombo", {
+                  setValueAs: (v: string) => v.trim().toUpperCase(),
+                  pattern: { value: /^[A-Z0-9]+(,[A-Z0-9]+)*$/i, message: "Use comma-separated codes e.g. GT or GT,95" },
+                })}
                 className={fieldClassName}
                 placeholder="e.g. GT or GT,95"
               />
+              {addFeeForm.formState.errors.modifierCombo && (
+                <p className="text-red-500 text-xs mt-1">{addFeeForm.formState.errors.modifierCombo.message}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -286,6 +294,8 @@ export default function FeeSchedules() {
                 type="date"
                 {...addFeeForm.register("effectiveTo", {
                   required: "Effective to is required",
+                  validate: (v) =>
+                    v > addFeeForm.getValues("effectiveFrom") || "Must be after Effective From",
                 })}
                 className={fieldClassName}
               />
@@ -338,6 +348,8 @@ export default function FeeSchedules() {
               <input
                 {...editFeeForm.register("cptHcpcs", {
                   required: "CPT/HCPCS is required",
+                  setValueAs: (v: string) => v.trim().toUpperCase(),
+                  pattern: { value: /^[A-Z0-9]{4,5}$/i, message: "Enter a valid CPT/HCPCS code (4–5 characters)" },
                 })}
                 className={fieldClassName}
                 placeholder="e.g. 99213"
@@ -353,10 +365,16 @@ export default function FeeSchedules() {
                 Modifier Combo
               </label>
               <input
-                {...editFeeForm.register("modifierCombo")}
+                {...editFeeForm.register("modifierCombo", {
+                  setValueAs: (v: string) => v.trim().toUpperCase(),
+                  pattern: { value: /^[A-Z0-9]+(,[A-Z0-9]+)*$/i, message: "Use comma-separated codes e.g. GT or GT,95" },
+                })}
                 className={fieldClassName}
                 placeholder="e.g. GT or GT,95"
               />
+              {editFeeForm.formState.errors.modifierCombo && (
+                <p className="text-red-500 text-xs mt-1">{editFeeForm.formState.errors.modifierCombo.message}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -403,6 +421,8 @@ export default function FeeSchedules() {
                 type="date"
                 {...editFeeForm.register("effectiveTo", {
                   required: "Effective to is required",
+                  validate: (v) =>
+                    v > editFeeForm.getValues("effectiveFrom") || "Must be after Effective From",
                 })}
                 className={fieldClassName}
               />

@@ -69,7 +69,7 @@ export function CreateEncounterDialog({
               <option value="">Select patient…</option>
               {patientOptions.map((p) => (
                 <option key={p.patientId} value={p.patientId}>
-                  {p.mrn} — {p.name}
+                  {p.name}
                 </option>
               ))}
             </select>
@@ -100,7 +100,7 @@ export function CreateEncounterDialog({
               <option value="">Select provider…</option>
               {providerOptions.map((p) => (
                 <option key={p.providerId} value={p.providerId}>
-                  {p.name} ({p.specialty})
+                  {p.name}
                 </option>
               ))}
             </select>
@@ -113,7 +113,11 @@ export function CreateEncounterDialog({
         <Input
           label="Encounter Date & Time"
           type="datetime-local"
-          {...register('encounterDate', { required: 'Encounter date is required' })}
+          min={new Date().toISOString().slice(0, 16)}
+          {...register('encounterDate', {
+            required: 'Encounter date is required',
+            validate: (v) => !v || v >= new Date().toISOString().slice(0, 16) || 'Encounter date cannot be in the past',
+          })}
           error={formState.errors.encounterDate?.message}
         />
 
@@ -138,8 +142,14 @@ export function CreateEncounterDialog({
             id="enc-notes"
             rows={3}
             className={textareaClassName}
-            {...register('notes')}
+            {...register('notes', {
+              setValueAs: (v: string) => v.trim(),
+              maxLength: { value: 500, message: 'Notes cannot exceed 500 characters' },
+            })}
           />
+          {formState.errors.notes != null && (
+            <p className="text-sm text-red-600">{formState.errors.notes.message}</p>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
