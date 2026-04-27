@@ -36,7 +36,7 @@ export function Toast({
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-50 flex min-w-64 max-w-sm items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium shadow-lg ${typeStyles[type]}`}
+      className={`fixed top-4 right-4 z-50 flex min-w-64 max-w-sm items-center gap-3 rounded-lg border px-4 py-3 text-sm font-medium shadow-lg ${typeStyles[type]}`}
       role="status"
     >
       <span className={`h-2 w-2 shrink-0 rounded-full ${dotColors[type]}`} />
