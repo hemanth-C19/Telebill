@@ -331,6 +331,8 @@ export default function PatientCoverage() {
             label="Member ID"
             {...coverageForm.register("memberId", {
               required: "Member ID is required",
+              setValueAs: (v: string) => v.trim(),
+              minLength: { value: 3, message: "Member ID must be at least 3 characters" },
             })}
             error={coverageForm.formState.errors.memberId?.message}
           />
@@ -338,6 +340,8 @@ export default function PatientCoverage() {
             label="Group Number"
             {...coverageForm.register("groupNumber", {
               required: "Group number is required",
+              setValueAs: (v: string) => v.trim(),
+              minLength: { value: 3, message: "Group number must be at least 3 characters" },
             })}
             error={coverageForm.formState.errors.groupNumber?.message}
           />
@@ -345,14 +349,18 @@ export default function PatientCoverage() {
             label="Effective From"
             type="date"
             {...coverageForm.register("effectiveFrom", {
-              required: "Required",
+              required: "Effective from is required",
             })}
             error={coverageForm.formState.errors.effectiveFrom?.message}
           />
           <Input
             label="Effective To"
             type="date"
-            {...coverageForm.register("effectiveTo", { required: "Required" })}
+            {...coverageForm.register("effectiveTo", {
+              required: "Effective to is required",
+              validate: (v) =>
+                v > coverageForm.getValues("effectiveFrom") || "Must be after Effective From",
+            })}
             error={coverageForm.formState.errors.effectiveTo?.message}
           />
 

@@ -26,7 +26,7 @@ export type AuthUser = {
 type AuthContextValue = {
   user: AuthUser | null
   isAuthenticated: boolean
-  login: (email: string, password: string, role: string) => Promise<void>
+  login: (email: string, role: string) => Promise<void>
   logout: () => void
 }
 
@@ -47,10 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored != null ? toAuthUser(stored) : null
   })
 
-  const login = useCallback(async (email: string, password: string, role: string) => {
+  const login = useCallback(async (email: string, role: string) => {
     const res = await apiClient.post('api/Auth-Module/login', {
       Email: email,
-      Password: password,
       Role: role,
     })
     console.log(res.data)

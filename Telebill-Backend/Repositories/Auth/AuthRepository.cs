@@ -11,11 +11,8 @@ namespace Telebill.Repositories.Auth
 {
     public class AuthRepository(TeleBillContext context) : IAuthRepository
     {
-        public async Task<User?> LoginAsync(string email, string password, string role)
+        public async Task<User?> LoginAsync(string email, string role)
         {
-            if (string.IsNullOrWhiteSpace(password))
-                return null;
-
             if (role == "Provider")
             {
                 var provider = await context.Providers.SingleOrDefaultAsync(p => p.ContactInfo.ToLower() == email);

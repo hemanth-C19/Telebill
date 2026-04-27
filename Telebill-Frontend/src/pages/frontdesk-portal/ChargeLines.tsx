@@ -321,20 +321,31 @@ export default function ChargeLines() {
           <Input
             label="CPT/HCPCS"
             placeholder="e.g. 99213"
-            {...addForm.register('cptCode', { required: 'CPT/HCPCS is required' })}
+            {...addForm.register('cptCode', {
+              required: 'CPT/HCPCS is required',
+              setValueAs: (v: string) => v.trim().toUpperCase(),
+              pattern: { value: /^[A-Z0-9]{4,5}$/i, message: 'Enter a valid CPT/HCPCS code (4–5 characters)' },
+            })}
             error={addForm.formState.errors.cptCode?.message}
           />
           <Input
             label="Modifiers"
-            placeholder="e.g. 95, GT"
-            {...addForm.register('modifiers')}
+            placeholder="e.g. GT or GT,95"
+            {...addForm.register('modifiers', {
+              setValueAs: (v: string) => v.trim().toUpperCase(),
+              pattern: { value: /^[A-Z0-9]+(,[A-Z0-9]+)*$/i, message: 'Use comma-separated codes e.g. GT or GT,95' },
+            })}
+            error={addForm.formState.errors.modifiers?.message}
           />
           <Input
             label="Units"
             type="number"
             min={1}
             step={1}
-            {...addForm.register('units', { required: 'Required' })}
+            {...addForm.register('units', {
+              required: 'Units is required',
+              validate: (v) => Number(v) >= 1 || 'Units must be at least 1',
+            })}
             error={addForm.formState.errors.units?.message}
           />
           <Input
@@ -343,18 +354,27 @@ export default function ChargeLines() {
             min={0}
             step={0.01}
             placeholder="0.00"
-            {...addForm.register('chargeAmount', { required: 'Required' })}
+            {...addForm.register('chargeAmount', {
+              required: 'Charge amount is required',
+              validate: (v) => Number(v) > 0 || 'Charge amount must be greater than 0',
+            })}
             error={addForm.formState.errors.chargeAmount?.message}
           />
           <Input
             label="Revenue Code"
             placeholder="Optional"
-            {...addForm.register('revenueCode')}
+            {...addForm.register('revenueCode', {
+              setValueAs: (v: string) => v.trim(),
+            })}
           />
           <Input
             label="Notes"
             placeholder="Optional"
-            {...addForm.register('notes')}
+            {...addForm.register('notes', {
+              setValueAs: (v: string) => v.trim(),
+              maxLength: { value: 500, message: 'Notes cannot exceed 500 characters' },
+            })}
+            error={addForm.formState.errors.notes?.message}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setShowAddDialog(false)}>
@@ -393,15 +413,22 @@ export default function ChargeLines() {
             >
               <Input
                 label="Modifiers"
-                placeholder="e.g. 95, GT"
-                {...editForm.register('modifiers')}
+                placeholder="e.g. GT or GT,95"
+                {...editForm.register('modifiers', {
+                  setValueAs: (v: string) => v.trim().toUpperCase(),
+                  pattern: { value: /^[A-Z0-9]+(,[A-Z0-9]+)*$/i, message: 'Use comma-separated codes e.g. GT or GT,95' },
+                })}
+                error={editForm.formState.errors.modifiers?.message}
               />
               <Input
                 label="Units"
                 type="number"
                 min={1}
                 step={1}
-                {...editForm.register('units', { required: 'Required' })}
+                {...editForm.register('units', {
+                  required: 'Units is required',
+                  validate: (v) => Number(v) >= 1 || 'Units must be at least 1',
+                })}
                 error={editForm.formState.errors.units?.message}
               />
               <Input
@@ -409,13 +436,20 @@ export default function ChargeLines() {
                 type="number"
                 min={0}
                 step={0.01}
-                {...editForm.register('chargeAmount', { required: 'Required' })}
+                {...editForm.register('chargeAmount', {
+                  required: 'Charge amount is required',
+                  validate: (v) => Number(v) > 0 || 'Charge amount must be greater than 0',
+                })}
                 error={editForm.formState.errors.chargeAmount?.message}
               />
               <Input
                 label="Notes"
                 placeholder="Optional"
-                {...editForm.register('notes')}
+                {...editForm.register('notes', {
+                  setValueAs: (v: string) => v.trim(),
+                  maxLength: { value: 500, message: 'Notes cannot exceed 500 characters' },
+                })}
+                error={editForm.formState.errors.notes?.message}
               />
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-700">Status</label>

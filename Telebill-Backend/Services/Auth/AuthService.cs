@@ -18,7 +18,7 @@ public class AuthService(
 {
     public async Task<LoginResponseDto?> LoginAsync(LoginDto loginDto)
     {
-        var user = await authRepository.LoginAsync(loginDto.Email.ToLower(), loginDto.Password, loginDto.Role);
+        var user = await authRepository.LoginAsync(loginDto.Email.ToLower(), loginDto.Role);
         if (user == null)
             return null;
 
