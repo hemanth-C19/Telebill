@@ -24,7 +24,7 @@ namespace Telebill.Repositories.Auth
             }
             else
             {
-                var user = await context.Users.SingleOrDefaultAsync(u => u.Email.ToLower() == email);
+                var user = await context.Users.SingleOrDefaultAsync(u => u.Email.ToLower() == email && u.Role == role);
                 if(user == null)
                 {
                     throw new KeyNotFoundException($"{role} Not Found");
