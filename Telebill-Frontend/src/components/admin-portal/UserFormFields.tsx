@@ -41,6 +41,10 @@ export function UserFormFields({
               value: 4,
               message: "Name should be atleast of 4 characters",
             },
+            pattern: {
+              value: /^[A-Za-z\s'-]+$/,
+              message: "Name must not contain numbers or special characters",
+            },
           })}
         />
         {errors.name != null && (

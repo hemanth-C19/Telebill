@@ -32,13 +32,6 @@ const BatchesIcon = (
   </svg>
 )
 
-const BatchDetailIcon = (
-  <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-    <path d="M22 4L12 14.01l-3-3" />
-  </svg>
-)
-
 const BalancesIcon = (
   <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="12" y1="1" x2="12" y2="23" />
@@ -65,7 +58,6 @@ const navItems = [
   { label: 'Patients', path: '/frontdesk/patients', icon: PatientsIcon },
   { label: 'Encounters', path: '/frontdesk/encounters', icon: EncountersIcon },
   { label: 'Batch Management', path: '/frontdesk/batches', icon: BatchesIcon },
-  { label: 'Batch Details & ACK', path: '/frontdesk/batch-detail', icon: BatchDetailIcon },
   { label: 'Rejected Claims', path: '/frontdesk/rejected-claims', icon: RejectedIcon },
   { label: 'Balances & Statements', path: '/frontdesk/balances', icon: BalancesIcon },
   { label: 'Notifications', path: '/frontdesk/notifications', icon: NotificationsIcon },

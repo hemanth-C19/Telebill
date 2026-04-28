@@ -36,6 +36,10 @@ export function PayerFormFields({
             required: "Payer name is required",
             setValueAs: (v: string) => v.trim(),
             minLength: { value: 3, message: "Payer name must be at least 3 characters" },
+            pattern: {
+              value: /^[A-Za-z\s'-]+$/,
+              message: "Payer name must not contain numbers or special characters",
+            },
           })}
         />
         {errors.Name && (

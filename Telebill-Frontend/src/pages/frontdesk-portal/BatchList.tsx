@@ -170,13 +170,7 @@ export default function BatchList() {
             </button>
           ),
         }))}
-        showActions={true}
-        actions={[
-          {
-            label: 'Open Detail',
-            onClick: (row) => navigate(`/frontdesk/batch-detail/${(row as BatchSummary).batchID}`),
-          },
-        ]}
+        showActions={false}
       />
 
       {!loading && batches.length === 0 && error == null && (
@@ -201,6 +195,7 @@ export default function BatchList() {
             <input
               type="date"
               value={newBatchDate}
+              min={new Date().toISOString().split('T')[0]}
               onChange={(e) => setNewBatchDate(e.target.value)}
               className={inputClassName}
             />

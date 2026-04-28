@@ -32,6 +32,10 @@ export function ProviderFormFields({
             required: "Name is required",
             setValueAs: (v: string) => v.trim(),
             minLength: { value: 4, message: "Name must be at least 4 characters" },
+            pattern: {
+              value: /^[A-Za-z\s'-]+$/,
+              message: "Name must not contain numbers or special characters",
+            },
           })}
         />
         {errors.name && (
