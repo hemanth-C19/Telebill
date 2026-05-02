@@ -1,6 +1,5 @@
 using FluentValidation;
 using Telebill.Dto.MasterData;
-using Telebill.Validations;
 
 namespace Telebill.Validations.MasterData;
 
@@ -29,9 +28,8 @@ public class FeeDtoValidator : AbstractValidator<AddFeeDTO>
             .WithMessage("EffectiveTo must be on or after EffectiveFrom.");
 
         RuleFor(x => x.Status)
-            .Must(EnumValidationHelpers.IsValidEnumName<MasterEntityStatus>)
-            .WithMessage(_ =>
-                $"Status must be one of: {EnumValidationHelpers.AllowedNames<MasterEntityStatus>()}.")
+            .Must(v => Enum.TryParse<MasterEntityStatus>(v, ignoreCase: true, out _))
+            .WithMessage($"Status must be one of: {string.Join(", ", Enum.GetNames<MasterEntityStatus>())}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Status));
     }
 }

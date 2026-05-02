@@ -1,6 +1,5 @@
 using FluentValidation;
 using Telebill.Dto.MasterData;
-using Telebill.Validations;
 
 namespace Telebill.Validations.MasterData;
 
@@ -17,15 +16,13 @@ public class PayerPlanDtoValidator : AbstractValidator<AddPayerPlanDTO>
             .WithMessage("PayerId is required and must be greater than zero.");
 
         RuleFor(x => x.NetworkType)
-            .Must(EnumValidationHelpers.IsValidEnumName<PlanNetworkType>)
-            .WithMessage(_ =>
-                $"NetworkType must be one of: {EnumValidationHelpers.AllowedNames<PlanNetworkType>()}.")
+            .Must(v => Enum.TryParse<PlanNetworkType>(v, ignoreCase: true, out _))
+            .WithMessage($"NetworkType must be one of: {string.Join(", ", Enum.GetNames<PlanNetworkType>())}.")
             .When(x => !string.IsNullOrWhiteSpace(x.NetworkType));
 
         RuleFor(x => x.Posdefault)
             .Must(p => string.IsNullOrWhiteSpace(p) || TelehealthPosCodes.IsValid(p))
-            .WithMessage(_ =>
-                $"POSDefault must be {TelehealthPosCodes.OtherThanPatientHome} or {TelehealthPosCodes.PatientHome}.")
+            .WithMessage($"POSDefault must be {TelehealthPosCodes.OtherThanPatientHome} or {TelehealthPosCodes.PatientHome}.")
             .When(x => x.Posdefault != null);
 
         RuleFor(x => x.TelehealthModifiersJson)
@@ -33,9 +30,8 @@ public class PayerPlanDtoValidator : AbstractValidator<AddPayerPlanDTO>
             .When(x => x.TelehealthModifiersJson != null);
 
         RuleFor(x => x.Status)
-            .Must(EnumValidationHelpers.IsValidEnumName<MasterEntityStatus>)
-            .WithMessage(_ =>
-                $"Status must be one of: {EnumValidationHelpers.AllowedNames<MasterEntityStatus>()}.")
+            .Must(v => Enum.TryParse<MasterEntityStatus>(v, ignoreCase: true, out _))
+            .WithMessage($"Status must be one of: {string.Join(", ", Enum.GetNames<MasterEntityStatus>())}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Status));
     }
 }

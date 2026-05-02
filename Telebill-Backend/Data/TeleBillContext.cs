@@ -99,7 +99,6 @@ public partial class TeleBillContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
 
-            // Denial deleted → Appeals deleted
             entity.HasOne(d => d.Denial).WithMany(p => p.Appeals)
                 .HasForeignKey(d => d.DenialId)
                 .OnDelete(DeleteBehavior.Cascade)

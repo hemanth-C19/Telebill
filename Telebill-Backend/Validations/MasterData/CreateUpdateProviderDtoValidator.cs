@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using FluentValidation;
 using Telebill.Dto.MasterData;
-using Telebill.Validations;
 
 namespace Telebill.Validations.MasterData;
 
@@ -29,9 +28,8 @@ public class CreateUpdateProviderDtoValidator : AbstractValidator<CreateUpdatePr
             .When(x => x.ProviderContact != null);
 
         RuleFor(x => x.ProviderStatus)
-            .Must(EnumValidationHelpers.IsValidEnumName<MasterEntityStatus>)
-            .WithMessage(_ =>
-                $"ProviderStatus must be one of: {EnumValidationHelpers.AllowedNames<MasterEntityStatus>()}.")
+            .Must(v => Enum.TryParse<MasterEntityStatus>(v, ignoreCase: true, out _))
+            .WithMessage($"ProviderStatus must be one of: {string.Join(", ", Enum.GetNames<MasterEntityStatus>())}.")
             .When(x => !string.IsNullOrWhiteSpace(x.ProviderStatus));
     }
 }
