@@ -123,7 +123,8 @@ public class BatchService(IBatchRepository repo, IClaimX12Service x12Service) : 
                 continue;
             }
 
-            if (await repo.ClaimAlreadyBatchedAsync(claimId))
+            var isReset = string.Equals(claim.ClaimStatus, "Ready", StringComparison.OrdinalIgnoreCase);
+            if (!isReset && await repo.ClaimAlreadyBatchedAsync(claimId))
             {
                 failed.Add(claimId);
                 reasons.Add($"Claim #{claimId} already assigned to a batch");

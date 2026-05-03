@@ -76,6 +76,26 @@ export default function RejectedClaims() {
   const [refs, setRefs] = useState<SubmissionRef[]>([])
   const [loadingRefs, setLoadingRefs] = useState(false)
 
+  // Mark as Ready
+  const [readyTarget, setReadyTarget] = useState<RejectedClaim | null>(null)
+  const [markingReady, setMarkingReady] = useState(false)
+  const [readyError, setReadyError] = useState<string | null>(null)
+
+  async function handleMarkReady() {
+    if (!readyTarget) return
+    setMarkingReady(true)
+    setReadyError(null)
+    try {
+      await apiClient.patch(`api/claims/${readyTarget.claimID}/status`, { newStatus: 'Ready' })
+      setReadyTarget(null)
+      load()
+    } catch {
+      setReadyError('Failed to reset claim status. Please try again.')
+    } finally {
+      setMarkingReady(false)
+    }
+  }
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -126,26 +146,6 @@ export default function RejectedClaims() {
         </p>
       </div>
 
-      {/* How-to strip */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 space-y-1">
-        <p className="font-semibold">How to resubmit a rejected claim</p>
-        <ol className="list-decimal ml-4 space-y-0.5 text-amber-700">
-          <li>Click "View History" to understand why the claim was rejected.</li>
-          <li>Correct the issue (patient demographics, NPI, eligibility, duplicate check).</li>
-          <li>
-            Go to{' '}
-            <button
-              type="button"
-              className="underline hover:text-amber-900"
-              onClick={() => navigate('/frontdesk/batches')}
-            >
-              Batch Management
-            </button>
-            , create a new batch, open it, and use "Add Claims" — rejected claims appear there.
-          </li>
-        </ol>
-      </div>
-
       {error && <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
       <Card title={`Rejected Claims${!loading ? ` (${totalCount})` : ''}`}>
@@ -171,6 +171,13 @@ export default function RejectedClaims() {
                   if (claim) openHistory(claim)
                 },
               },
+              {
+                label: 'Mark as Ready',
+                onClick: (row) => {
+                  const claim = claims.find((c) => c.claimID === (row._claimID as number))
+                  if (claim) { setReadyTarget(claim); setReadyError(null) }
+                },
+              },
             ]}
           />
         </div>
@@ -181,6 +188,30 @@ export default function RejectedClaims() {
           </p>
         )}
       </Card>
+
+      {/* ── Mark as Ready Dialog ── */}
+      <Dialog
+        isOpen={readyTarget !== null}
+        onClose={() => setReadyTarget(null)}
+        title="Reset Claim to Ready"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-700">
+            This will reset <strong>Claim #{readyTarget?.claimID}</strong> ({readyTarget?.patientName}) back
+            to <strong>Ready</strong> status so it can be added to a new batch.
+          </p>
+          {readyError && <p className="text-sm text-red-600">{readyError}</p>}
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setReadyTarget(null)} disabled={markingReady}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleMarkReady} disabled={markingReady}>
+              {markingReady ? 'Resetting...' : 'Confirm'}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       {/* ── Submission History Dialog ── */}
       <Dialog

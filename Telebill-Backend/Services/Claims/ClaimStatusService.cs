@@ -39,7 +39,7 @@ public class ClaimStatusService(IClaimRepository repo) : IClaimStatusService
         newStatus switch
         {
             "ScrubError" => oldStatus is "Draft",
-            "Ready" => oldStatus is "Draft" or "ScrubError",
+            "Ready" => oldStatus is "Draft" or "ScrubError" or "Rejected",
             "Batched" => oldStatus is "Ready",
             "Submitted" => oldStatus is "Batched",
             "Accepted" or "Rejected" => oldStatus is "Submitted",
