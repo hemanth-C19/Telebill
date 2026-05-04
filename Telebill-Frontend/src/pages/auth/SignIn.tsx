@@ -34,7 +34,6 @@ export default function SignIn() {
   const [loginError, setLoginError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Redirect already-authenticated users away from sign-in
   useEffect(() => {
     if (user != null) {
       navigate(ROLE_HOME[user.role], { replace: true })
