@@ -1,0 +1,31 @@
+using FluentValidation;
+using Telebill.Dto.MasterData;
+
+namespace Telebill.Validations.MasterData;
+
+public class PayerDtoValidator : AbstractValidator<PayerDTO>
+{
+    public PayerDtoValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(255);
+
+        RuleFor(x => x.PayerCode)
+            .MaximumLength(50)
+            .When(x => x.PayerCode != null);
+
+        RuleFor(x => x.ClearinghouseCode)
+            .MaximumLength(50)
+            .When(x => x.ClearinghouseCode != null);
+
+        RuleFor(x => x.ContactInfo)
+            .MaximumLength(100)
+            .When(x => x.ContactInfo != null);
+
+        RuleFor(x => x.Status)
+            .Must(v => Enum.TryParse<MasterEntityStatus>(v, ignoreCase: true, out _))
+            .WithMessage($"Status must be one of: {string.Join(", ", Enum.GetNames<MasterEntityStatus>())}.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Status));
+    }
+}
